@@ -1,6 +1,13 @@
-import { PrismaClient } from "../lib/generated/prisma";
+import { expand } from "dotenv-expand";
+import { config } from "dotenv";
+expand(config({ path: ".env.local", override: false }));
+expand(config({ path: ".env", override: false }));
 
-const prisma = new PrismaClient();
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../lib/generated/prisma/client";
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   await prisma.title.createMany({
