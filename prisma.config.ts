@@ -12,7 +12,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // DIRECT_URL for migrations (bypasses pgbouncer); falls back to DATABASE_URL locally
     url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
   },
 });
