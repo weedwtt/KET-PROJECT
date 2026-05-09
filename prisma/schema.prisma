@@ -90,6 +90,54 @@ model Student {
   @@map("students")
 }
 
+/// คำนำหน้าชื่อครู เช่น นาย, นาง, นางสาว, ดร., ผศ.
+model TeacherTitle {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique @db.VarChar(50)
+  teachers Teacher[]
+
+  @@map("teacher_titles")
+}
+
+// ─── Teacher ───────────────────────────────────────────────────────────────────
+
+model Teacher {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // ────── ชื่อ ──────
+  titleId   Int          @map("title_id")
+  title     TeacherTitle @relation(fields: [titleId], references: [id])
+
+  firstName String @db.VarChar(100) @map("first_name")
+  lastName  String @db.VarChar(100) @map("last_name")
+
+  // ────── ติดต่อ ──────
+  phone String @db.VarChar(20)
+
+  // ────── ที่อยู่ ──────
+  addressHouseNo     String  @db.VarChar(20)  @map("address_house_no")
+  addressMoo         String? @db.VarChar(10)  @map("address_moo")
+  addressVillage     String? @db.VarChar(100) @map("address_village")
+  addressRoad        String? @db.VarChar(100) @map("address_road")
+  addressSoi         String? @db.VarChar(100) @map("address_soi")
+  addressSubDistrict String  @db.VarChar(100) @map("address_sub_district")
+  addressDistrict    String  @db.VarChar(100) @map("address_district")
+  addressProvince    String  @db.VarChar(100) @map("address_province")
+  addressPostalCode  String  @db.Char(5)      @map("address_postal_code")
+
+  // ────── ลายเซ็น ──────
+  /// path ของไฟล์ลายเซ็น เก็บใน local storage หรือ cloud (เช่น /uploads/signatures/42.png)
+  /// null = ยังไม่ได้อัปโหลดลายเซ็น
+  signatureUrl       String?   @db.VarChar(500) @map("signature_url")
+  signatureUpdatedAt DateTime? @map("signature_updated_at")
+
+  @@index([firstName, lastName], map: "idx_teacher_name")
+
+  @@map("teachers")
+}
+
 model Guardian {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now()) @map("created_at")
