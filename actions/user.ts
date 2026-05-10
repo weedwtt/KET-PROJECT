@@ -1,14 +1,16 @@
-"use server";
+"use server"
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache"
+import { db } from "@/lib/db"
+import { hashPassword } from "@/lib/password"
 
 export async function createUser(formData: FormData) {
-  const email = formData.get("email") as string;
-  const name = formData.get("name") as string | undefined;
+  const username = formData.get("username") as string
+  const password = formData.get("password") as string
 
-  if (!email) throw new Error("email is required");
+  if (!username) throw new Error("username is required")
+  if (!password) throw new Error("password is required")
 
-  await prisma.user.create({ data: { email, name } });
-  revalidatePath("/");
+  await db.user.create({ data: { username, passwordHash: hashPassword(password) } })
+  revalidatePath("/")
 }

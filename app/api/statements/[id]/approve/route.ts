@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { db } from "@/lib/db"
+import { TeacherRole } from "@/lib/generated/prisma/client"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const teacher = await db.teacher.findFirst({
-    where: { id: Number(teacherId), role: { in: ["ผอ", "รองผอ"] } },
+    where: { id: Number(teacherId), role: { in: [TeacherRole.DIRECTOR, TeacherRole.VICE_DIRECTOR] } },
   })
   if (!teacher) return Response.json({ error: "ไม่พบครูที่มีสิทธิ์อนุมัติ" }, { status: 403 })
 

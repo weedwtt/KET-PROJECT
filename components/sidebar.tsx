@@ -14,6 +14,8 @@ import {
   LogOut,
   Database,
   ShieldCheck,
+  Users,
+  UserCog,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -22,7 +24,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ userName, role }: SidebarProps) {
-  const isApprover = role === "ผอ" || role === "รองผอ"
+  const isApprover = role === "DIRECTOR" || role === "VICE_DIRECTOR"
+  const isAdmin = role === "ADMIN"
   const pathname = usePathname()
   const [recordOpen, setRecordOpen] = useState(true)
   const [masterOpen, setMasterOpen] = useState(false)
@@ -61,8 +64,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
           <span>Dashboard/รายงาน</span>
         </Link>
 
-        {/* บันทึกข้อมูล (collapsible) */}
-        <div>
+        {/* บันทึกข้อมูล (collapsible) — ซ่อนสำหรับ ผอ/รองผอ */}
+        {!isApprover && <div>
           <button
             onClick={() => setRecordOpen((prev) => !prev)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/80 hover:text-white hover:bg-white/8 transition-colors text-sm font-medium"
@@ -88,19 +91,10 @@ export function Sidebar({ userName, role }: SidebarProps) {
               >
                 บันทึกถ้อยคำนักเรียน
               </Link>
-              <Link
-                href="/record/probation"
-                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive("/record/probation")
-                    ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
-                    : "text-white/70 hover:text-white hover:bg-white/8"
-                }`}
-              >
-                บันทึกทัณฑ์บนนักเรียน
-              </Link>
+
             </div>
           )}
-        </div>
+        </div>}
 
         {/* รออนุมัติ — เฉพาะ ผอ/รองผอ */}
         {isApprover && (
@@ -130,8 +124,39 @@ export function Sidebar({ userName, role }: SidebarProps) {
           <span>ประวัติและรายการบันทึก</span>
         </Link>
 
-        {/* ตารางข้อมูลหลัก */}
-        <div>
+        {/* จัดการครู & ผู้ใช้ — เฉพาะ admin */}
+        {isAdmin && (
+          <div className="mt-1 space-y-0.5">
+            <p className="text-white/40 text-xs font-medium px-2 mt-4 mb-2 tracking-wider uppercase">
+              จัดการระบบ
+            </p>
+            <Link
+              href="/dashboard/master/teachers"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive("/dashboard/master/teachers")
+                  ? "bg-[#F5A623] text-[#1a1a1a]"
+                  : "text-white/80 hover:text-white hover:bg-white/8"
+              }`}
+            >
+              <Users className="w-4 h-4 shrink-0 text-white/60" />
+              <span>จัดการครู</span>
+            </Link>
+            <Link
+              href="/dashboard/master/users"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive("/dashboard/master/users")
+                  ? "bg-[#F5A623] text-[#1a1a1a]"
+                  : "text-white/80 hover:text-white hover:bg-white/8"
+              }`}
+            >
+              <UserCog className="w-4 h-4 shrink-0 text-white/60" />
+              <span>จัดการผู้ใช้</span>
+            </Link>
+          </div>
+        )}
+
+        {/* ตารางข้อมูลหลัก — ซ่อนสำหรับ ผอ/รองผอ */}
+        {!isApprover && <div>
           <button
             onClick={() => setMasterOpen((prev) => !prev)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/80 hover:text-white hover:bg-white/8 transition-colors text-sm font-medium"
@@ -177,9 +202,19 @@ export function Sidebar({ userName, role }: SidebarProps) {
               >
                 หมวดการผิดระเบียบ
               </Link>
+              <Link
+                href="/dashboard/master/violation-sub-category"
+                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive("/dashboard/master/violation-sub-category")
+                    ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
+                    : "text-white/70 hover:text-white hover:bg-white/8"
+                }`}
+              >
+                หมวดย่อยการผิดระเบียบ
+              </Link>
             </div>
           )}
-        </div>
+        </div>}
       </nav>
 
       {/* Footer */}

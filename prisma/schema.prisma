@@ -101,6 +101,26 @@ model TeacherTitle {
   @@map("teacher_titles")
 }
 
+// ─── Teacher Enums ─────────────────────────────────────────────────────────────
+
+/// บทบาทของครู
+enum TeacherRole {
+  DIRECTOR      @map("ผอ")
+  VICE_DIRECTOR @map("รองผอ")
+  TEACHER       @map("ครู")
+  ADMIN         @map("admin")
+}
+
+/// ระดับชั้นที่ครูดูแล (ใช้สำหรับหัวหน้าระดับชั้น)
+enum GradeHeadLevel {
+  M1 @map("ม.1")
+  M2 @map("ม.2")
+  M3 @map("ม.3")
+  M4 @map("ม.4")
+  M5 @map("ม.5")
+  M6 @map("ม.6")
+}
+
 // ─── Teacher ───────────────────────────────────────────────────────────────────
 
 model Teacher {
@@ -130,13 +150,16 @@ model Teacher {
   addressPostalCode  String  @db.Char(5)      @map("address_postal_code")
 
   // ────── บทบาท ──────
-  /// บทบาทพิเศษของครู: "หัวหน้าระดับชั้น" | "ครูฝ่ายปกครอง" | null = ครูทั่วไป
-  role String? @db.VarChar(50)
+  /// บทบาทของครู: DIRECTOR=ผอ, VICE_DIRECTOR=รองผอ, TEACHER=ครู, ADMIN=admin
+  role           TeacherRole?
+
+  /// ระดับชั้นที่ดูแลในฐานะหัวหน้าระดับชั้น (M1–M6) null = ไม่ได้เป็นหัวหน้าระดับชั้น
+  gradeHeadLevel GradeHeadLevel? @map("grade_head_level")
 
   // ────── ลายเซ็น ──────
   /// path ของไฟล์ลายเซ็น เก็บใน local storage หรือ cloud (เช่น /uploads/signatures/42.png)
   /// null = ยังไม่ได้อัปโหลดลายเซ็น
-  signatureUrl       String?   @db.VarChar(500) @map("signature_url")
+  signatureUrl       String?   @db.Text @map("signature_url")
   signatureUpdatedAt DateTime? @map("signature_updated_at")
 
   advisorOf              StudentAdvisor[]
@@ -217,11 +240,23 @@ model AcademicYear {
 }
 
 model ViolationCategory {
-  id               Int               @id @default(autoincrement())
-  name             String            @unique @db.VarChar(200)
+  id               Int                    @id @default(autoincrement())
+  name             String                 @unique @db.VarChar(200)
+  subCategories    ViolationSubCategory[]
   statementRecords StatementRecord[]
 
   @@map("violation_categories")
+}
+
+model ViolationSubCategory {
+  id                  Int               @id @default(autoincrement())
+  name                String            @db.VarChar(300)
+  violationCategoryId Int               @map("violation_category_id")
+  violationCategory   ViolationCategory @relation(fields: [violationCategoryId], references: [id], onDelete: Cascade)
+  statementRecords    StatementRecord[]
+
+  @@index([violationCategoryId], map: "idx_sub_category_parent")
+  @@map("violation_sub_categories")
 }
 
 // ─── Disciplinary Records ──────────────────────────────────────────────────────
@@ -242,8 +277,11 @@ model StatementRecord {
   academicYearId      Int               @map("academic_year_id")
   academicYear        AcademicYear      @relation(fields: [academicYearId], references: [id])
 
-  violationCategoryId Int               @map("violation_category_id")
-  violationCategory   ViolationCategory @relation(fields: [violationCategoryId], references: [id])
+  violationCategoryId    Int               @map("violation_category_id")
+  violationCategory      ViolationCategory @relation(fields: [violationCategoryId], references: [id])
+
+  violationSubCategoryId Int?                  @map("violation_sub_category_id")
+  violationSubCategory   ViolationSubCategory? @relation(fields: [violationSubCategoryId], references: [id])
 
   subject    String   @db.VarChar(500)
   content    String   @db.Text

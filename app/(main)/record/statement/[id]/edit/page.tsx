@@ -337,6 +337,38 @@ export default function EditStatementPage() {
   // Bond step (3) is hidden → logical steps 4 and 5 display as 3 and 4
   const displayStep = !showBondStep && step >= 4 ? step - 1 : step
 
+  const visibleStepsList = STEPS.filter((_, i) => i !== 3 || showBondStep)
+
+  function isActualStepComplete(actualStep: number): boolean {
+    switch (actualStep) {
+      case 0: return true
+      case 1: return !!(
+        formData.semesterId &&
+        formData.academicYearId &&
+        formData.violationCategoryId &&
+        formData.subject &&
+        formData.detail &&
+        formData.incidentDateTime &&
+        formData.recorder
+      )
+      case 2: return measureData.selected.length > 0
+      case 3: return bondData.selectedGuardianIndex !== null && bondData.penaltyActions.length > 0
+      case 4: return true
+      case 5: return true
+      default: return false
+    }
+  }
+
+  const stepCompleted = visibleStepsList.map((s) => {
+    const actualIdx = STEPS.indexOf(s)
+    return isActualStepComplete(actualIdx)
+  })
+
+  function handleStepClick(visibleIndex: number) {
+    const actualIdx = STEPS.indexOf(visibleStepsList[visibleIndex])
+    setStep(actualIdx)
+  }
+
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-[300px]">
@@ -367,7 +399,12 @@ export default function EditStatementPage() {
       </div>
 
       {/* Stepper */}
-      <Stepper currentStep={displayStep} showBondStep={showBondStep} />
+      <Stepper
+        currentStep={displayStep}
+        showBondStep={showBondStep}
+        stepCompleted={stepCompleted}
+        onStepClick={handleStepClick}
+      />
 
       {/* Step panels */}
       {step === 0 && (
@@ -433,49 +470,61 @@ export default function EditStatementPage() {
 
 // ── Stepper indicator ──────────────────────────────────────────────────────────
 
-function Stepper({ currentStep, showBondStep }: { currentStep: number; showBondStep?: boolean }) {
+function Stepper({
+  currentStep,
+  showBondStep,
+  stepCompleted,
+  onStepClick,
+}: {
+  currentStep: number
+  showBondStep?: boolean
+  stepCompleted: boolean[]
+  onStepClick: (visibleIndex: number) => void
+}) {
   const visibleSteps = STEPS.filter((_, i) => i !== 3 || showBondStep)
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-5">
       <div className="flex items-start">
-        {visibleSteps.map((s, vi) => (
-          <div key={vi} className="flex items-start flex-1 last:flex-none">
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 ${
-                  vi < currentStep
-                    ? "bg-green-500 text-white"
-                    : vi === currentStep
-                    ? "bg-[#F5A623] text-white ring-4 ring-amber-100"
-                    : "bg-gray-100 text-gray-400"
-                }`}
-              >
-                {vi < currentStep ? <Check className="w-3.5 h-3.5" /> : vi + 1}
-              </div>
-              <div className="mt-2 text-center w-[60px]">
-                <p
-                  className={`text-[10px] font-semibold leading-tight ${
-                    vi === currentStep
-                      ? "text-[#F5A623]"
-                      : vi < currentStep
-                      ? "text-green-600"
-                      : "text-gray-400"
+        {visibleSteps.map((s, vi) => {
+          const isActive = vi === currentStep
+          const isDone = !isActive && stepCompleted[vi]
+          return (
+            <div key={vi} className="flex items-start flex-1 last:flex-none">
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => onStepClick(vi)}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 cursor-pointer ${
+                    isActive
+                      ? "bg-[#F5A623] text-white ring-4 ring-amber-100"
+                      : isDone
+                      ? "bg-green-500 text-white hover:bg-green-600"
+                      : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                   }`}
                 >
-                  {s.label}
-                </p>
+                  {isDone ? <Check className="w-3.5 h-3.5" /> : vi + 1}
+                </button>
+                <div className="mt-2 text-center w-[60px]">
+                  <p
+                    className={`text-[10px] font-semibold leading-tight ${
+                      isActive ? "text-[#F5A623]" : isDone ? "text-green-600" : "text-gray-400"
+                    }`}
+                  >
+                    {s.label}
+                  </p>
+                </div>
               </div>
+              {vi < visibleSteps.length - 1 && (
+                <div
+                  className={`h-0.5 flex-1 mx-1.5 mt-3.5 transition-colors duration-300 ${
+                    stepCompleted[vi] ? "bg-green-400" : "bg-gray-200"
+                  }`}
+                />
+              )}
             </div>
-            {vi < visibleSteps.length - 1 && (
-              <div
-                className={`h-0.5 flex-1 mx-1.5 mt-3.5 transition-colors duration-300 ${
-                  vi < currentStep ? "bg-green-400" : "bg-gray-200"
-                }`}
-              />
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

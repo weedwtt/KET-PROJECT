@@ -44,7 +44,7 @@ export default async function ApprovePage() {
   const session = await auth()
   const role = session?.user?.role
 
-  if (role !== "ผอ" && role !== "รองผอ") redirect("/dashboard")
+  if (role !== "DIRECTOR" && role !== "VICE_DIRECTOR") redirect("/dashboard")
 
   const statements = await getPendingStatements()
 

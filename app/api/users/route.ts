@@ -1,22 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server"
+import { db } from "@/lib/db"
 
 export async function GET() {
-  const users = await prisma.user.findMany({
-    select: { id: true, email: true, name: true, createdAt: true },
+  const users = await db.user.findMany({
+    select: { id: true, username: true, teacherId: true, createdAt: true },
     orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(users);
-}
-
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { email, name } = body as { email: string; name?: string };
-
-  if (!email) {
-    return NextResponse.json({ error: "email is required" }, { status: 400 });
-  }
-
-  const user = await prisma.user.create({ data: { email, name } });
-  return NextResponse.json(user, { status: 201 });
+  })
+  return NextResponse.json(users)
 }

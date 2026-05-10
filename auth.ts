@@ -18,12 +18,6 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    teacherId?: number | null
-    role?: string | null
-  }
-}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -68,9 +62,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     session({ session, token }) {
-      session.user.id = token.sub!
-      session.user.teacherId = token.teacherId
-      session.user.role = token.role
+      const t = token as typeof token & { teacherId?: number | null; role?: string | null }
+      session.user.id = t.sub!
+      session.user.teacherId = t.teacherId
+      session.user.role = t.role
       return session
     },
   },
