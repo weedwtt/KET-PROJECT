@@ -129,13 +129,21 @@ model Teacher {
   addressProvince    String  @db.VarChar(100) @map("address_province")
   addressPostalCode  String  @db.Char(5)      @map("address_postal_code")
 
+  // ────── บทบาท ──────
+  /// บทบาทพิเศษของครู: "หัวหน้าระดับชั้น" | "ครูฝ่ายปกครอง" | null = ครูทั่วไป
+  role String? @db.VarChar(50)
+
   // ────── ลายเซ็น ──────
   /// path ของไฟล์ลายเซ็น เก็บใน local storage หรือ cloud (เช่น /uploads/signatures/42.png)
   /// null = ยังไม่ได้อัปโหลดลายเซ็น
   signatureUrl       String?   @db.VarChar(500) @map("signature_url")
   signatureUpdatedAt DateTime? @map("signature_updated_at")
 
-  advisorOf StudentAdvisor[]
+  advisorOf              StudentAdvisor[]
+  disciplineStatements   StatementRecord[] @relation("DisciplineTeacher")
+  gradeHeadStatements    StatementRecord[] @relation("GradeHeadTeacher")
+  approvedStatements     StatementRecord[] @relation("ApprovedBy")
+  user                   User?
 
   @@index([firstName, lastName], map: "idx_teacher_name")
 
@@ -156,6 +164,8 @@ model Guardian {
 
   relationId Int              @map("relation_id")
   relation   GuardianRelation @relation(fields: [relationId], references: [id])
+
+  bonds StatementBond[]
 
   @@index([studentId], map: "idx_guardian_student")
 
@@ -242,8 +252,76 @@ model StatementRecord {
 
   recordedBy String @db.VarChar(100) @map("recorded_by")
 
+  // ────── Step 4: มาตรการ ──────
+  /// รหัสมาตรการพิจารณา เช่น ["notify_parent", "invite_parent"]
+  considerationMeasures String[] @default([]) @map("consideration_measures")
+  /// รหัสผลการพิจารณา เช่น ["verbal_warning", "deduct_score"]
+  resultMeasures        String[] @default([]) @map("result_measures")
+  measureNotes          String?  @db.Text @map("measure_notes")
+
+  // ────── Step 5: ลายเซ็น ──────
+  studentSignature  String? @db.Text @map("student_signature")
+  guardianSignature String? @db.Text @map("guardian_signature")
+  advisorSignature  String? @db.Text @map("advisor_signature")
+
+  disciplineTeacherId Int?     @map("discipline_teacher_id")
+  disciplineTeacher   Teacher? @relation("DisciplineTeacher", fields: [disciplineTeacherId], references: [id])
+
+  gradeHeadTeacherId Int?     @map("grade_head_teacher_id")
+  gradeHeadTeacher   Teacher? @relation("GradeHeadTeacher", fields: [gradeHeadTeacherId], references: [id])
+
+  // ────── Step 5 (Bond): ทัณฑ์บน ──────
+  bond StatementBond?
+
+  // ────── สถานะการอนุมัติ ──────
+  /// "pending" = รอดำเนินการ, "approved" = อนุมัติแล้ว
+  status              String   @default("pending") @db.VarChar(20)
+  approvedByTeacherId Int?     @map("approved_by_teacher_id")
+  approvedByTeacher   Teacher? @relation("ApprovedBy", fields: [approvedByTeacherId], references: [id])
+  approvedAt          DateTime? @map("approved_at")
+
   @@index([studentId], map: "idx_statement_student")
   @@index([recordDate], map: "idx_statement_date")
 
   @@map("statement_records")
+}
+
+// ─── User (Login) ─────────────────────────────────────────────────────────────
+
+/// บัญชีผู้ใช้สำหรับเข้าสู่ระบบ — ผูกกับครู 1 คน (1:1)
+model User {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+
+  /// null = super admin (ไม่ผูกกับครูคนใด)
+  teacherId    Int?     @unique @map("teacher_id")
+  teacher      Teacher? @relation(fields: [teacherId], references: [id])
+
+  @@map("users")
+}
+
+/// สัญญาทัณฑ์บน — สร้างเมื่อเลือกมาตรการ "ทำทัณฑ์บน" เท่านั้น
+model StatementBond {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  statementRecordId Int             @unique @map("statement_record_id")
+  statementRecord   StatementRecord @relation(fields: [statementRecordId], references: [id], onDelete: Cascade)
+
+  guardianId Int      @map("guardian_id")
+  guardian   Guardian @relation(fields: [guardianId], references: [id])
+
+  /// บทลงโทษหากทำผิดซ้ำ เช่น ["deduct_score", "suspension"]
+  penaltyActions String[] @default([]) @map("penalty_actions")
+
+  /// จำนวนคะแนนที่ตัด (ใช้เมื่อ penaltyActions มี "deduct_score")
+  deductPoints Int? @map("deduct_points")
+
+  witnessName String? @db.VarChar(200) @map("witness_name")
+
+  @@map("statement_bonds")
 }

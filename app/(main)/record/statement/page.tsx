@@ -5,6 +5,7 @@ import { StatementGrid } from "@/components/statement-grid"
 async function getStatements() {
   try {
     const rows = await db.statementRecord.findMany({
+      where: { status: "pending" },
       include: {
         student: {
           select: {
@@ -30,6 +31,7 @@ async function getStatements() {
       semester: r.semester.value,
       academicYear: r.academicYear.year,
       violationCategory: r.violationCategory.name,
+      status: r.status,
       student: r.student,
     }))
   } catch {
@@ -42,16 +44,15 @@ export default async function StatementListPage() {
 
   return (
     <div className="p-6 space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[#2D1B00]">บันทึกถ้อยคำนักเรียน</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            ทั้งหมด {statements.length} รายการ
+            รอดำเนินการ {statements.length} รายการ
           </p>
         </div>
         <Link
-          href="/dashboard/record/statement/new"
+          href="/record/statement/new"
           className="flex items-center gap-2 px-4 py-2.5 bg-[#F5A623] hover:bg-[#e09518] text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <svg
@@ -72,7 +73,6 @@ export default async function StatementListPage() {
         </Link>
       </div>
 
-      {/* Grid */}
       <StatementGrid data={statements} />
     </div>
   )

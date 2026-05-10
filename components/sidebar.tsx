@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import { signOut } from "next-auth/react"
 import {
   BookOpen,
   FileText,
@@ -12,14 +13,16 @@ import {
   BarChart2,
   LogOut,
   Database,
+  ShieldCheck,
 } from "lucide-react"
 
 interface SidebarProps {
   userName: string
-  signOutAction: () => Promise<void>
+  role?: string | null
 }
 
-export function Sidebar({ userName, signOutAction }: SidebarProps) {
+export function Sidebar({ userName, role }: SidebarProps) {
+  const isApprover = role === "ผอ" || role === "รองผอ"
   const pathname = usePathname()
   const [recordOpen, setRecordOpen] = useState(true)
   const [masterOpen, setMasterOpen] = useState(false)
@@ -45,6 +48,19 @@ export function Sidebar({ userName, signOutAction }: SidebarProps) {
           เมนูหลัก
         </p>
 
+        {/* Dashboard/รายงาน — อยู่บนสุด */}
+        <Link
+          href="/dashboard"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            pathname === "/dashboard"
+              ? "bg-[#F5A623] text-[#1a1a1a]"
+              : "text-white/80 hover:text-white hover:bg-white/8"
+          }`}
+        >
+          <BarChart2 className="w-4 h-4 shrink-0 text-white/60" />
+          <span>Dashboard/รายงาน</span>
+        </Link>
+
         {/* บันทึกข้อมูล (collapsible) */}
         <div>
           <button
@@ -63,9 +79,9 @@ export function Sidebar({ userName, signOutAction }: SidebarProps) {
           {recordOpen && (
             <div className="mt-1 ml-4 pl-3 border-l border-white/10 space-y-0.5">
               <Link
-                href="/dashboard/record/statement"
+                href="/record/statement"
                 className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive("/dashboard/record/statement")
+                  isActive("/record/statement")
                     ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
                     : "text-white/70 hover:text-white hover:bg-white/8"
                 }`}
@@ -73,9 +89,9 @@ export function Sidebar({ userName, signOutAction }: SidebarProps) {
                 บันทึกถ้อยคำนักเรียน
               </Link>
               <Link
-                href="/dashboard/record/probation"
+                href="/record/probation"
                 className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive("/dashboard/record/probation")
+                  isActive("/record/probation")
                     ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
                     : "text-white/70 hover:text-white hover:bg-white/8"
                 }`}
@@ -85,6 +101,21 @@ export function Sidebar({ userName, signOutAction }: SidebarProps) {
             </div>
           )}
         </div>
+
+        {/* รออนุมัติ — เฉพาะ ผอ/รองผอ */}
+        {isApprover && (
+          <Link
+            href="/dashboard/approve"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isActive("/dashboard/approve")
+                ? "bg-[#F5A623] text-[#1a1a1a]"
+                : "text-white/80 hover:text-white hover:bg-white/8"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 shrink-0 text-white/60" />
+            <span>รออนุมัติ</span>
+          </Link>
+        )}
 
         {/* ประวัติและรายการบันทึก */}
         <Link
@@ -97,19 +128,6 @@ export function Sidebar({ userName, signOutAction }: SidebarProps) {
         >
           <Clock className="w-4 h-4 shrink-0 text-white/60" />
           <span>ประวัติและรายการบันทึก</span>
-        </Link>
-
-        {/* Dashboard/รายงาน */}
-        <Link
-          href="/dashboard"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            isActive("/dashboard")
-              ? "bg-[#F5A623] text-[#1a1a1a]"
-              : "text-white/80 hover:text-white hover:bg-white/8"
-          }`}
-        >
-          <BarChart2 className="w-4 h-4 shrink-0 text-white/60" />
-          <span>Dashboard/รายงาน</span>
         </Link>
 
         {/* ตารางข้อมูลหลัก */}
@@ -167,15 +185,13 @@ export function Sidebar({ userName, signOutAction }: SidebarProps) {
       {/* Footer */}
       <div className="px-4 py-4 border-t border-white/10">
         <p className="text-white/40 text-xs mb-3">เข้าสู่ระบบโดย: {userName}</p>
-        <form action={signOutAction}>
-          <button
-            type="submit"
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/8 transition-colors text-sm cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>ออกจากระบบ</span>
-          </button>
-        </form>
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/8 transition-colors text-sm cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>ออกจากระบบ</span>
+        </button>
       </div>
     </aside>
   )

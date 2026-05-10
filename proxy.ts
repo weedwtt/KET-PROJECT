@@ -1,27 +1,22 @@
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 
-export async function proxy(request: NextRequest) {
-  const session = await auth()
-  const { pathname } = request.nextUrl
+export const proxy = auth((req) => {
+  const { pathname } = req.nextUrl
 
-  if (pathname.startsWith("/api/auth")) return NextResponse.next()
-
-  const isLoginPage = pathname === "/"
-  const isProtected = pathname.startsWith("/dashboard")
-
-  if (isProtected && !session) {
-    return NextResponse.redirect(new URL("/", request.url))
+  // ถ้ายังไม่ login และพยายามเข้า /dashboard
+  if (!req.auth && pathname.startsWith("/dashboard")) {
+    const loginUrl = new URL("/", req.url)
+    loginUrl.searchParams.set("callbackUrl", pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
-  if (isLoginPage && session) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+  // ถ้า login แล้วและเข้า login page ให้ redirect ไป dashboard
+  if (req.auth && pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
-
-  return NextResponse.next()
-}
+})
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/", "/dashboard/:path*"],
 }
