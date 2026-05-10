@@ -3,16 +3,14 @@
 import { useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { Search, ChevronLeft, ChevronRight, Eye, Pencil, CheckCircle2, Clock } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight, Eye } from "lucide-react"
 
-type Statement = {
+type HistoryRow = {
   id: number
-  recordDate: Date
+  recordDate: string
   semester: number
   academicYear: number
   violationCategory: string
-  recordedBy: string
-  status: string
   student: {
     studentCode: string
     firstName: string
@@ -21,10 +19,15 @@ type Statement = {
     classRoom: number
     title: { name: string }
   }
+  approvedByTeacher: {
+    firstName: string
+    lastName: string
+    title: { name: string }
+  } | null
 }
 
-interface StatementGridProps {
-  data: Statement[]
+interface HistoryGridProps {
+  data: HistoryRow[]
   total: number
   page: number
   totalPages: number
@@ -32,7 +35,14 @@ interface StatementGridProps {
   pageSize: number
 }
 
-export function StatementGrid({ data, total, page, totalPages, search: initialSearch, pageSize }: StatementGridProps) {
+const THAI_MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."]
+
+function formatThaiDate(isoStr: string) {
+  const dt = new Date(isoStr)
+  return `${dt.getDate()} ${THAI_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`
+}
+
+export function HistoryGrid({ data, total, page, totalPages, search: initialSearch, pageSize }: HistoryGridProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [searchValue, setSearchValue] = useState(initialSearch)
@@ -54,14 +64,6 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
     }, 400)
   }
 
-  function formatDate(d: Date) {
-    return new Date(d).toLocaleDateString("th-TH", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-  }
-
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1
   const end = Math.min(page * pageSize, total)
 
@@ -76,7 +78,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="ค้นหาชื่อ, รหัส, ชั้น, หมวดความผิด..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 focus:border-[#F5A623]"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500"
           />
         </div>
       </div>
@@ -92,34 +94,28 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
               <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อ-นามสกุล</th>
               <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ชั้น/ห้อง</th>
               <th className="text-left px-4 py-3 font-semibold text-gray-600">หมวดความผิด</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ผู้บันทึก</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ผู้อนุมัติ</th>
               <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ภาคเรียน</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">สถานะ</th>
-              <th className="px-4 py-3 font-semibold text-gray-600 text-center">จัดการ</th>
+              <th className="px-4 py-3 font-semibold text-gray-600 text-center">ดู</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {data.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center py-16 text-gray-400">
-                  {initialSearch || searchValue ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีรายการบันทึกถ้อยคำ"}
+                <td colSpan={9} className="text-center py-16 text-gray-400">
+                  {initialSearch || searchValue ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีรายการที่อนุมัติแล้ว"}
                 </td>
               </tr>
             ) : (
               data.map((row, idx) => (
-                <tr key={row.id} className="hover:bg-amber-50/40 transition-colors">
-                  <td className="px-5 py-3.5 text-gray-400 tabular-nums">
-                    {start + idx}
-                  </td>
+                <tr key={row.id} className="hover:bg-green-50/40 transition-colors">
+                  <td className="px-5 py-3.5 text-gray-400 tabular-nums">{start + idx}</td>
                   <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap tabular-nums">
-                    {formatDate(row.recordDate)}
+                    {formatThaiDate(row.recordDate)}
                   </td>
-                  <td className="px-4 py-3.5 font-mono text-gray-700">
-                    {row.student.studentCode}
-                  </td>
+                  <td className="px-4 py-3.5 font-mono text-gray-700">{row.student.studentCode}</td>
                   <td className="px-4 py-3.5 text-gray-900 font-medium">
-                    {row.student.title.name}
-                    {row.student.firstName} {row.student.lastName}
+                    {row.student.title.name}{row.student.firstName} {row.student.lastName}
                   </td>
                   <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap">
                     {row.student.gradeLevel}/{row.student.classRoom}
@@ -128,41 +124,21 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                     {row.violationCategory}
                   </td>
                   <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap">
-                    {row.recordedBy}
+                    {row.approvedByTeacher
+                      ? `${row.approvedByTeacher.title.name}${row.approvedByTeacher.firstName} ${row.approvedByTeacher.lastName}`
+                      : "-"}
                   </td>
                   <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap tabular-nums">
                     {row.semester}/{row.academicYear}
                   </td>
-                  <td className="px-4 py-3.5">
-                    {row.status === "approved" ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap">
-                        <CheckCircle2 className="w-3 h-3" /> อนุมัติแล้ว
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full whitespace-nowrap">
-                        <Clock className="w-3 h-3" /> รอดำเนินการ
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center justify-center gap-1">
-                      <Link
-                        href={`/record/statement/${row.id}`}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="ดูรายละเอียด"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      {row.status !== "approved" && (
-                        <Link
-                          href={`/record/statement/${row.id}/edit`}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-[#F5A623] hover:bg-amber-50 transition-colors"
-                          title="แก้ไข"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Link>
-                      )}
-                    </div>
+                  <td className="px-4 py-3.5 text-center">
+                    <Link
+                      href={`/record/statement/${row.id}`}
+                      className="inline-flex p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                      title="ดูรายละเอียด"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Link>
                   </td>
                 </tr>
               ))
@@ -200,7 +176,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                   onClick={() => navigate(p as number, searchValue)}
                   className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
                     page === p
-                      ? "bg-[#F5A623] text-white"
+                      ? "bg-green-600 text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >

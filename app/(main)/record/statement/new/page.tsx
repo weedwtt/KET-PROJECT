@@ -116,6 +116,8 @@ type StatementFormData = {
   academicYearLabel: string
   violationCategoryId: string
   violationCategoryLabel: string
+  violationSubCategoryId: string
+  violationSubCategoryLabel: string
   subject: string
   detail: string
   incidentDateTime: string
@@ -172,6 +174,8 @@ export default function NewStatementPage() {
     academicYearLabel: "",
     violationCategoryId: "",
     violationCategoryLabel: "",
+    violationSubCategoryId: "",
+    violationSubCategoryLabel: "",
     subject: "",
     detail: "",
     incidentDateTime: "",
@@ -289,6 +293,7 @@ export default function NewStatementPage() {
           semesterId: formData.semesterId,
           academicYearId: formData.academicYearId,
           violationCategoryId: formData.violationCategoryId,
+          violationSubCategoryId: formData.violationSubCategoryId || null,
           subject: formData.subject,
           detail: formData.detail,
           incidentDateTime: formData.incidentDateTime,
@@ -738,12 +743,15 @@ interface Step3Props {
 type SemesterItem = { id: number; name: string; value: number }
 type AcademicYearItem = { id: number; year: number }
 type ViolationCategoryItem = { id: number; name: string }
+type ViolationSubCategoryItem = { id: number; name: string; violationCategoryId: number }
 
 function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step3Props) {
   const [semesters, setSemesters] = useState<SemesterItem[]>([])
   const [academicYears, setAcademicYears] = useState<AcademicYearItem[]>([])
   const [violationCategories, setViolationCategories] = useState<ViolationCategoryItem[]>([])
+  const [violationSubCategories, setViolationSubCategories] = useState<ViolationSubCategoryItem[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
+  const [loadingSubCategories, setLoadingSubCategories] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -757,6 +765,21 @@ function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step
       setLoadingMaster(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (!formData.violationCategoryId) {
+      setViolationSubCategories([])
+      return
+    }
+    setLoadingSubCategories(true)
+    fetch(`/api/master/violation-sub-categories?categoryId=${formData.violationCategoryId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setViolationSubCategories(data)
+        setLoadingSubCategories(false)
+      })
+      .catch(() => setLoadingSubCategories(false))
+  }, [formData.violationCategoryId])
 
   function update(fields: Partial<StatementFormData>) {
     setFormData((prev) => ({ ...prev, ...fields }))
@@ -825,12 +848,44 @@ function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step
                   value={formData.violationCategoryId}
                   onChange={(v) => {
                     const found = violationCategories.find((c) => String(c.id) === v)
-                    update({ violationCategoryId: v, violationCategoryLabel: found?.name ?? "" })
+                    update({
+                      violationCategoryId: v,
+                      violationCategoryLabel: found?.name ?? "",
+                      violationSubCategoryId: "",
+                      violationSubCategoryLabel: "",
+                    })
                   }}
                   placeholder="เลือกหมวด"
                   options={violationCategories.map((c) => ({ value: String(c.id), label: c.name }))}
                 />
               </FormGroup>
+
+              {/* Violation sub-category — แสดงเมื่อเลือกหมวดหลักแล้วและมีหมวดย่อย */}
+              {formData.violationCategoryId && (
+                <FormGroup label="เรื่อง (หมวดย่อย)">
+                  {loadingSubCategories ? (
+                    <div className="flex items-center gap-2 py-2 text-sm text-gray-400">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      กำลังโหลด...
+                    </div>
+                  ) : violationSubCategories.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-2">ไม่มีหมวดย่อยสำหรับหมวดนี้</p>
+                  ) : (
+                    <NativeSelect
+                      value={formData.violationSubCategoryId}
+                      onChange={(v) => {
+                        const found = violationSubCategories.find((s) => String(s.id) === v)
+                        update({ violationSubCategoryId: v, violationSubCategoryLabel: found?.name ?? "" })
+                      }}
+                      placeholder="เลือกหมวดย่อย (ถ้ามี)"
+                      options={violationSubCategories.map((s) => ({ value: String(s.id), label: s.name }))}
+                    />
+                  )}
+                </FormGroup>
+              )}
 
               {/* Subject */}
               <FormGroup label="เรื่อง" required>
@@ -1659,6 +1714,9 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
               <Field label="ภาคเรียน" value={formData.semesterLabel} />
               <Field label="ปีการศึกษา" value={formData.academicYearLabel} />
               <Field label="หมวดการผิดระเบียบ" value={formData.violationCategoryLabel} />
+              {formData.violationSubCategoryLabel && (
+                <Field label="เรื่อง (หมวดย่อย)" value={formData.violationSubCategoryLabel} />
+              )}
               <Field label="วันที่เกิดเหตุ" value={formatThaiDateTime(formData.incidentDateTime)} />
               <Field label="สถานที่" value={formData.location} />
               <Field label="ผู้บันทึก" value={formData.recorder} />

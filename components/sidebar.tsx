@@ -168,6 +168,16 @@ export function Sidebar({ userName, role }: SidebarProps) {
               >
                 หมวดการผิดระเบียบ
               </Link>
+              <Link
+                href="/dashboard/master/violation-sub-category"
+                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive("/dashboard/master/violation-sub-category")
+                    ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
+                    : "text-white/70 hover:text-white hover:bg-white/8"
+                }`}
+              >
+                หมวดย่อยการผิดระเบียบ
+              </Link>
             </div>
           )}
         </div>}

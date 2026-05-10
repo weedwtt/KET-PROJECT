@@ -217,11 +217,23 @@ model AcademicYear {
 }
 
 model ViolationCategory {
-  id               Int               @id @default(autoincrement())
-  name             String            @unique @db.VarChar(200)
+  id               Int                    @id @default(autoincrement())
+  name             String                 @unique @db.VarChar(200)
+  subCategories    ViolationSubCategory[]
   statementRecords StatementRecord[]
 
   @@map("violation_categories")
+}
+
+model ViolationSubCategory {
+  id                  Int               @id @default(autoincrement())
+  name                String            @db.VarChar(300)
+  violationCategoryId Int               @map("violation_category_id")
+  violationCategory   ViolationCategory @relation(fields: [violationCategoryId], references: [id], onDelete: Cascade)
+  statementRecords    StatementRecord[]
+
+  @@index([violationCategoryId], map: "idx_sub_category_parent")
+  @@map("violation_sub_categories")
 }
 
 // ─── Disciplinary Records ──────────────────────────────────────────────────────
@@ -242,8 +254,11 @@ model StatementRecord {
   academicYearId      Int               @map("academic_year_id")
   academicYear        AcademicYear      @relation(fields: [academicYearId], references: [id])
 
-  violationCategoryId Int               @map("violation_category_id")
-  violationCategory   ViolationCategory @relation(fields: [violationCategoryId], references: [id])
+  violationCategoryId    Int               @map("violation_category_id")
+  violationCategory      ViolationCategory @relation(fields: [violationCategoryId], references: [id])
+
+  violationSubCategoryId Int?                  @map("violation_sub_category_id")
+  violationSubCategory   ViolationSubCategory? @relation(fields: [violationSubCategoryId], references: [id])
 
   subject    String   @db.VarChar(500)
   content    String   @db.Text

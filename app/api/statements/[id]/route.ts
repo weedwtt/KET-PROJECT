@@ -55,6 +55,7 @@ const STATEMENT_INCLUDE = {
   semester: { select: { id: true, name: true, value: true } },
   academicYear: { select: { id: true, year: true } },
   violationCategory: { select: { id: true, name: true } },
+  violationSubCategory: { select: { id: true, name: true } },
   bond: true,
   disciplineTeacher: {
     select: {
@@ -111,6 +112,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     semesterId,
     academicYearId,
     violationCategoryId,
+    violationSubCategoryId,
     subject,
     detail,
     incidentDateTime,
@@ -158,6 +160,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       semesterId: semesterId ? Number(semesterId) : undefined,
       academicYearId: academicYearId ? Number(academicYearId) : undefined,
       violationCategoryId: violationCategoryId ? Number(violationCategoryId) : undefined,
+      violationSubCategoryId: violationSubCategoryId !== undefined
+        ? (violationSubCategoryId ? Number(violationSubCategoryId) : null)
+        : undefined,
       subject: subject ?? undefined,
       content: detail ?? undefined,
       incidentAt: incidentDateTime ? new Date(incidentDateTime) : undefined,
