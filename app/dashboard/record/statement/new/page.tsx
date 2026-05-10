@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Search, ChevronRight, ChevronLeft, User, Users, MapPin, Check } from "lucide-react"
+import { Search, ChevronRight, ChevronLeft, User, Users, MapPin, Check, FileText, Clock } from "lucide-react"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -57,8 +57,41 @@ const STEPS = [
   { label: "ค้นหานักเรียน", desc: "ค้นหาด้วยรหัสหรือชื่อ" },
   { label: "ข้อมูลนักเรียน", desc: "ยืนยันข้อมูลที่พบ" },
   { label: "บันทึกถ้อยคำ", desc: "กรอกรายละเอียด" },
+  { label: "มาตรการ", desc: "เลือกการดำเนินการ" },
+  { label: "ทำทัณฑ์บน", desc: "กรอกสัญญา" },
   { label: "ยืนยันและบันทึก", desc: "ตรวจสอบและบันทึก" },
 ]
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+
+const THAI_MONTHS = [
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+]
+
+const VIOLATION_CATEGORIES = [
+  "หมวดที่ 1 ความประพฤติและมารยาท",
+  "หมวดที่ 2 การแต่งกายและการไว้ทรงผม",
+  "หมวดที่ 3 ความรับผิดชอบในการเรียน",
+  "หมวดที่ 4 การใช้สิ่งเสพติดและอบายมุข",
+  "หมวดที่ 5 ทรัพย์สินและความสะอาด",
+  "หมวดที่ 6 ความปลอดภัยและการทะเลาะวิวาท",
+  "หมวดที่ 7 อื่น ๆ",
+]
+
+type StatementFormData = {
+  semester: string
+  academicYear: string
+  violationCategory: string
+  subject: string
+  detail: string
+  incidentDay: string
+  incidentMonth: string
+  incidentYear: string
+  incidentTime: string
+  location: string
+  recorder: string
+}
 
 // ── Root page ──────────────────────────────────────────────────────────────────
 
@@ -69,6 +102,19 @@ export default function NewStatementPage() {
   const [results, setResults] = useState<Student[] | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Student | null>(null)
+  const [formData, setFormData] = useState<StatementFormData>({
+    semester: "",
+    academicYear: "",
+    violationCategory: "",
+    subject: "",
+    detail: "",
+    incidentDay: "",
+    incidentMonth: "",
+    incidentYear: "",
+    incidentTime: "",
+    location: "",
+    recorder: "",
+  })
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -105,8 +151,12 @@ export default function NewStatementPage() {
   }
 
   function handleBack() {
-    setStep((s) => Math.max(0, s - 1))
     if (step === 1) setSelected(null)
+    setStep((s) => Math.max(0, s - 1))
+  }
+
+  function handleNext() {
+    setStep((s) => s + 1)
   }
 
   return (
@@ -126,7 +176,7 @@ export default function NewStatementPage() {
       </div>
 
       {/* Stepper */}
-      <Stepper currentStep={step} />
+      <Stepper currentStep={step} showBondStep={false} />
 
       {/* Step panels */}
       {step === 0 && (
@@ -142,7 +192,17 @@ export default function NewStatementPage() {
       )}
 
       {step === 1 && selected && (
-        <Step2Student student={selected} onBack={handleBack} />
+        <Step2Student student={selected} onBack={handleBack} onNext={handleNext} />
+      )}
+
+      {step === 2 && selected && (
+        <Step3Statement
+          student={selected}
+          formData={formData}
+          setFormData={setFormData}
+          onBack={handleBack}
+          onNext={handleNext}
+        />
       )}
     </div>
   )
@@ -150,48 +210,58 @@ export default function NewStatementPage() {
 
 // ── Stepper indicator ──────────────────────────────────────────────────────────
 
-function Stepper({ currentStep }: { currentStep: number }) {
+// Step index 4 (ทำทัณฑ์บน) is conditional — hidden until step 3 activates it
+function Stepper({ currentStep, showBondStep }: { currentStep: number; showBondStep?: boolean }) {
+  const visibleSteps = STEPS.filter((_, i) => i !== 4 || showBondStep)
+
+  // Map visible index to actual step index for coloring
+  const actualIndices = STEPS.map((_, i) => i).filter((i) => i !== 4 || showBondStep)
+
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-6 py-5">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-5">
       <div className="flex items-start">
-        {STEPS.map((s, i) => (
-          <div key={i} className="flex items-start flex-1 last:flex-none">
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-all duration-300 ${
-                  i < currentStep
-                    ? "bg-green-500 text-white"
-                    : i === currentStep
-                    ? "bg-[#F5A623] text-white ring-4 ring-amber-100"
-                    : "bg-gray-100 text-gray-400"
-                }`}
-              >
-                {i < currentStep ? <Check className="w-4 h-4" /> : i + 1}
-              </div>
-              <div className="mt-2 text-center w-[72px]">
-                <p
-                  className={`text-[11px] font-semibold leading-tight ${
-                    i === currentStep
-                      ? "text-[#F5A623]"
-                      : i < currentStep
-                      ? "text-green-600"
-                      : "text-gray-400"
+        {visibleSteps.map((s, vi) => {
+          const ai = actualIndices[vi]
+          return (
+            <div key={ai} className="flex items-start flex-1 last:flex-none">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 ${
+                    ai < currentStep
+                      ? "bg-green-500 text-white"
+                      : ai === currentStep
+                      ? "bg-[#F5A623] text-white ring-4 ring-amber-100"
+                      : ai === 4 && !showBondStep
+                      ? "bg-gray-100 text-gray-300 ring-2 ring-dashed ring-gray-200"
+                      : "bg-gray-100 text-gray-400"
                   }`}
                 >
-                  {s.label}
-                </p>
-                <p className="text-[10px] text-gray-400 mt-0.5 leading-tight hidden sm:block">{s.desc}</p>
+                  {ai < currentStep ? <Check className="w-3.5 h-3.5" /> : vi + 1}
+                </div>
+                <div className="mt-2 text-center w-[60px]">
+                  <p
+                    className={`text-[10px] font-semibold leading-tight ${
+                      ai === currentStep
+                        ? "text-[#F5A623]"
+                        : ai < currentStep
+                        ? "text-green-600"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {s.label}
+                  </p>
+                </div>
               </div>
+              {vi < visibleSteps.length - 1 && (
+                <div
+                  className={`h-0.5 flex-1 mx-1.5 mt-3.5 transition-colors duration-300 ${
+                    ai < currentStep ? "bg-green-400" : "bg-gray-200"
+                  }`}
+                />
+              )}
             </div>
-            {i < STEPS.length - 1 && (
-              <div
-                className={`h-0.5 flex-1 mx-2 mt-4 transition-colors duration-300 ${
-                  i < currentStep ? "bg-green-400" : "bg-gray-200"
-                }`}
-              />
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -301,7 +371,7 @@ function Step1Search({ query, setQuery, searching, results, error, onSearch, onS
 
 // ── Step 2: Confirm student info ───────────────────────────────────────────────
 
-function Step2Student({ student, onBack }: { student: Student; onBack: () => void }) {
+function Step2Student({ student, onBack, onNext }: { student: Student; onBack: () => void; onNext: () => void }) {
   const fullName = `${student.title.name}${student.firstName} ${student.lastName}`
 
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
@@ -423,15 +493,273 @@ function Step2Student({ student, onBack }: { student: Student; onBack: () => voi
         </button>
 
         <button
-          disabled
-          className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed"
-          title="กำลังพัฒนา"
+          onClick={onNext}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           ถัดไป — บันทึกถ้อยคำ
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>
+  )
+}
+
+// ── Step 3: Statement form ─────────────────────────────────────────────────────
+
+interface Step3Props {
+  student: Student
+  formData: StatementFormData
+  setFormData: React.Dispatch<React.SetStateAction<StatementFormData>>
+  onBack: () => void
+  onNext: () => void
+}
+
+function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step3Props) {
+  const currentBEYear = new Date().getFullYear() + 543
+  const academicYears = Array.from({ length: 5 }, (_, i) => String(currentBEYear - i))
+
+  function update(field: keyof StatementFormData, value: string) {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const isValid =
+    formData.semester &&
+    formData.academicYear &&
+    formData.violationCategory &&
+    formData.subject.trim() &&
+    formData.detail.trim() &&
+    formData.incidentDay &&
+    formData.incidentMonth &&
+    formData.incidentYear &&
+    formData.location.trim() &&
+    formData.recorder.trim()
+
+  return (
+    <div className="space-y-4">
+      {/* Student mini-card */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center shrink-0">
+          <User className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800">
+            {student.title.name}{student.firstName} {student.lastName}
+          </p>
+          <p className="text-xs text-gray-400">
+            รหัส {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
+          </p>
+        </div>
+      </div>
+
+      {/* Form card */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-[#F5A623]" />
+          <h2 className="text-sm font-bold text-[#2D1B00]">บันทึกถ้อยคำ</h2>
+        </div>
+
+        <div className="px-6 py-5 space-y-5">
+          {/* Row 1: Semester + Category */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormGroup label="ภาคเรียน" required>
+              <NativeSelect
+                value={formData.semester}
+                onChange={(v) => update("semester", v)}
+                placeholder="เลือกภาคเรียน"
+                options={[
+                  { value: "1", label: "ภาคเรียนที่ 1" },
+                  { value: "2", label: "ภาคเรียนที่ 2" },
+                ]}
+              />
+            </FormGroup>
+
+            <FormGroup label="ปีการศึกษา" required>
+              <NativeSelect
+                value={formData.academicYear}
+                onChange={(v) => update("academicYear", v)}
+                placeholder="เลือกปีการศึกษา"
+                options={academicYears.map((y) => ({ value: y, label: y }))}
+              />
+            </FormGroup>
+          </div>
+
+          {/* Violation category */}
+          <FormGroup label="ได้ประพฤติผิดระเบียบในหมวด" required>
+            <NativeSelect
+              value={formData.violationCategory}
+              onChange={(v) => update("violationCategory", v)}
+              placeholder="เลือกหมวด"
+              options={VIOLATION_CATEGORIES.map((c) => ({ value: c, label: c }))}
+            />
+          </FormGroup>
+
+          {/* Subject */}
+          <FormGroup label="เรื่อง" required>
+            <textarea
+              value={formData.subject}
+              onChange={(e) => update("subject", e.target.value)}
+              placeholder="กรอกพฤติกรรมที่กระทำความผิด"
+              rows={3}
+              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+            />
+          </FormGroup>
+
+          {/* Detail */}
+          <FormGroup label="ซึ่งมีรายละเอียดการผิดระเบียบ คือ" required>
+            <textarea
+              value={formData.detail}
+              onChange={(e) => update("detail", e.target.value)}
+              placeholder="กรอกรายละเอียดการกระทำความผิด"
+              rows={3}
+              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+            />
+          </FormGroup>
+
+          {/* Incident date + time */}
+          <FormGroup label="เหตุเกิดเมื่อวันที่" required>
+            <div className="flex gap-2">
+              <NativeSelect
+                value={formData.incidentDay}
+                onChange={(v) => update("incidentDay", v)}
+                placeholder="วัน"
+                className="w-[90px]"
+                options={Array.from({ length: 31 }, (_, i) => ({
+                  value: String(i + 1),
+                  label: String(i + 1),
+                }))}
+              />
+              <NativeSelect
+                value={formData.incidentMonth}
+                onChange={(v) => update("incidentMonth", v)}
+                placeholder="เดือน"
+                options={THAI_MONTHS.map((m, i) => ({ value: String(i + 1), label: m }))}
+              />
+              <NativeSelect
+                value={formData.incidentYear}
+                onChange={(v) => update("incidentYear", v)}
+                placeholder="ปี"
+                className="w-[110px]"
+                options={Array.from({ length: 5 }, (_, i) => {
+                  const y = String(currentBEYear - i)
+                  return { value: y, label: y }
+                })}
+              />
+              <div className="relative flex-1">
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={formData.incidentTime}
+                  onChange={(e) => update("incidentTime", e.target.value)}
+                  placeholder="เวลา เช่น 13.00 น."
+                  className="w-full pl-8 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                />
+              </div>
+            </div>
+          </FormGroup>
+
+          {/* Location + Recorder */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormGroup label="สถานที่เกิดเหตุ" required>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => update("location", e.target.value)}
+                placeholder="ระบุสถานที่"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+              />
+            </FormGroup>
+
+            <FormGroup label="ผู้บันทึกข้อมูล" required>
+              <input
+                type="text"
+                value={formData.recorder}
+                onChange={(e) => update("recorder", e.target.value)}
+                placeholder="ชื่อผู้บันทึก"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+              />
+            </FormGroup>
+          </div>
+
+          {/* Auto date note */}
+          <p className="text-xs text-[#F5A623] font-medium">
+            ลงวันที่: ประทับวันอัตโนมัติเมื่อบันทึกข้อมูล
+          </p>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between pt-1">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          ย้อนกลับ
+        </button>
+
+        <button
+          onClick={onNext}
+          disabled={!isValid}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+        >
+          ถัดไป — มาตรการ
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Form helpers ───────────────────────────────────────────────────────────────
+
+function FormGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-semibold text-gray-600">
+        {label}
+        {required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+function NativeSelect({
+  value,
+  onChange,
+  placeholder,
+  options,
+  className = "",
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+  options: { value: string; label: string }[]
+  className?: string
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] appearance-none cursor-pointer ${
+        value ? "text-gray-800" : "text-gray-400"
+      } ${className}`}
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "right 12px center",
+        paddingRight: "2rem",
+      }}
+    >
+      <option value="" disabled>
+        {placeholder}
+      </option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   )
 }
 
