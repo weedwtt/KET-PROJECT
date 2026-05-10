@@ -61,8 +61,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
           <span>Dashboard/รายงาน</span>
         </Link>
 
-        {/* บันทึกข้อมูล (collapsible) */}
-        <div>
+        {/* บันทึกข้อมูล (collapsible) — ซ่อนสำหรับ ผอ/รองผอ */}
+        {!isApprover && <div>
           <button
             onClick={() => setRecordOpen((prev) => !prev)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/80 hover:text-white hover:bg-white/8 transition-colors text-sm font-medium"
@@ -88,19 +88,10 @@ export function Sidebar({ userName, role }: SidebarProps) {
               >
                 บันทึกถ้อยคำนักเรียน
               </Link>
-              <Link
-                href="/record/probation"
-                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive("/record/probation")
-                    ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
-                    : "text-white/70 hover:text-white hover:bg-white/8"
-                }`}
-              >
-                บันทึกทัณฑ์บนนักเรียน
-              </Link>
+
             </div>
           )}
-        </div>
+        </div>}
 
         {/* รออนุมัติ — เฉพาะ ผอ/รองผอ */}
         {isApprover && (
@@ -130,8 +121,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
           <span>ประวัติและรายการบันทึก</span>
         </Link>
 
-        {/* ตารางข้อมูลหลัก */}
-        <div>
+        {/* ตารางข้อมูลหลัก — ซ่อนสำหรับ ผอ/รองผอ */}
+        {!isApprover && <div>
           <button
             onClick={() => setMasterOpen((prev) => !prev)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/80 hover:text-white hover:bg-white/8 transition-colors text-sm font-medium"
@@ -179,7 +170,7 @@ export function Sidebar({ userName, role }: SidebarProps) {
               </Link>
             </div>
           )}
-        </div>
+        </div>}
       </nav>
 
       {/* Footer */}
