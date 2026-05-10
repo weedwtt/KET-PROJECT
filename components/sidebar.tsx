@@ -11,6 +11,7 @@ import {
   Clock,
   BarChart2,
   LogOut,
+  Database,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -21,6 +22,7 @@ interface SidebarProps {
 export function Sidebar({ userName, signOutAction }: SidebarProps) {
   const pathname = usePathname()
   const [recordOpen, setRecordOpen] = useState(true)
+  const [masterOpen, setMasterOpen] = useState(false)
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/")
 
@@ -109,6 +111,57 @@ export function Sidebar({ userName, signOutAction }: SidebarProps) {
           <BarChart2 className="w-4 h-4 shrink-0 text-white/60" />
           <span>Dashboard/รายงาน</span>
         </Link>
+
+        {/* ตารางข้อมูลหลัก */}
+        <div>
+          <button
+            onClick={() => setMasterOpen((prev) => !prev)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/80 hover:text-white hover:bg-white/8 transition-colors text-sm font-medium"
+          >
+            <Database className="w-4 h-4 shrink-0 text-white/60" />
+            <span className="flex-1 text-left">ตารางข้อมูลหลัก</span>
+            {masterOpen ? (
+              <ChevronUp className="w-4 h-4 text-white/40" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-white/40" />
+            )}
+          </button>
+
+          {masterOpen && (
+            <div className="mt-1 ml-4 pl-3 border-l border-white/10 space-y-0.5">
+              <Link
+                href="/dashboard/master/semester"
+                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive("/dashboard/master/semester")
+                    ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
+                    : "text-white/70 hover:text-white hover:bg-white/8"
+                }`}
+              >
+                ภาคเรียน
+              </Link>
+              <Link
+                href="/dashboard/master/academic-year"
+                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive("/dashboard/master/academic-year")
+                    ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
+                    : "text-white/70 hover:text-white hover:bg-white/8"
+                }`}
+              >
+                ปีการศึกษา
+              </Link>
+              <Link
+                href="/dashboard/master/violation-category"
+                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive("/dashboard/master/violation-category")
+                    ? "bg-[#F5A623] text-[#1a1a1a] font-semibold"
+                    : "text-white/70 hover:text-white hover:bg-white/8"
+                }`}
+              >
+                หมวดการผิดระเบียบ
+              </Link>
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Footer */}

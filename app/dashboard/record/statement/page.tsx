@@ -16,10 +16,22 @@ async function getStatements() {
             title: { select: { name: true } },
           },
         },
+        semester: { select: { value: true } },
+        academicYear: { select: { year: true } },
+        violationCategory: { select: { name: true } },
       },
       orderBy: { recordDate: "desc" },
     })
-    return rows
+
+    return rows.map((r) => ({
+      id: r.id,
+      recordDate: r.recordDate,
+      recordedBy: r.recordedBy,
+      semester: r.semester.value,
+      academicYear: r.academicYear.year,
+      violationCategory: r.violationCategory.name,
+      student: r.student,
+    }))
   } catch {
     return []
   }

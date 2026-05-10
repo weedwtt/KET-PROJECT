@@ -1,9 +1,41 @@
-import { PrismaClient } from "../lib/generated/prisma";
+import { PrismaClient } from "../lib/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("🌱 Seeding...");
+
+  // ── 0. Discipline Master Tables ───────────────────────────────────────────
+
+  await prisma.semester.createMany({
+    data: [
+      { name: "ภาคเรียนที่ 1", value: 1 },
+      { name: "ภาคเรียนที่ 2", value: 2 },
+    ],
+    skipDuplicates: true,
+  });
+
+  await prisma.academicYear.createMany({
+    data: Array.from({ length: 10 }, (_, i) => ({ year: 2564 + i })),
+    skipDuplicates: true,
+  });
+
+  await prisma.violationCategory.createMany({
+    data: [
+      { name: "หมวดที่ 1 ความประพฤติและมารยาท" },
+      { name: "หมวดที่ 2 การแต่งกายและการไว้ทรงผม" },
+      { name: "หมวดที่ 3 ความรับผิดชอบในการเรียน" },
+      { name: "หมวดที่ 4 การใช้สิ่งเสพติดและอบายมุข" },
+      { name: "หมวดที่ 5 ทรัพย์สินและความสะอาด" },
+      { name: "หมวดที่ 6 ความปลอดภัยและการทะเลาะวิวาท" },
+      { name: "หมวดที่ 7 อื่น ๆ" },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log("✓ Discipline master tables");
 
   // ── 1. Master Tables ──────────────────────────────────────────────────────
 
@@ -684,6 +716,89 @@ async function main() {
   }
 
   console.log(`✓ Students (${studentCount}), Guardians (${guardianCount})`);
+
+  // ── 5. Student Advisors ───────────────────────────────────────────────────
+  // Assign 2 advisors per class (slot 1 = primary, slot 2 = secondary)
+  // Teachers: [2]=สมชาย(ม.1), [3]=วิภา(ม.2), [4]=มาลี(ม.3), [5]=อนันต์, [6]=สุดา, [7]=ชาญชัย
+
+  const allTeachers = await prisma.teacher.findMany({ orderBy: { id: "asc" } });
+  const allStudents = await prisma.student.findMany({ orderBy: { id: "asc" } });
+
+  const advisorAssignments: { studentCode: string; slot: number; teacherIndex: number }[] = [
+    // ม.1/1 → สมชาย (2) + สุดา (6)
+    ...["67110001","67110002","67110003","67110004","67110005"].flatMap((code) => [
+      { studentCode: code, slot: 1, teacherIndex: 2 },
+      { studentCode: code, slot: 2, teacherIndex: 6 },
+    ]),
+    // ม.1/2 → สมชาย (2) + ชาญชัย (7)
+    ...["67120001","67120002","67120003","67120004","67120005"].flatMap((code) => [
+      { studentCode: code, slot: 1, teacherIndex: 2 },
+      { studentCode: code, slot: 2, teacherIndex: 7 },
+    ]),
+    // ม.2/1 → วิภา (3) + อนันต์ (5)
+    ...["67210001","67210002","67210003","67210004","67210005"].flatMap((code) => [
+      { studentCode: code, slot: 1, teacherIndex: 3 },
+      { studentCode: code, slot: 2, teacherIndex: 5 },
+    ]),
+    // ม.2/2 → วิภา (3) + สุดา (6)
+    ...["67220001","67220002","67220003","67220004","67220005"].flatMap((code) => [
+      { studentCode: code, slot: 1, teacherIndex: 3 },
+      { studentCode: code, slot: 2, teacherIndex: 6 },
+    ]),
+    // ม.3/1 → มาลี (4) + ชาญชัย (7)
+    ...["67310001","67310002","67310003","67310004","67310005"].flatMap((code) => [
+      { studentCode: code, slot: 1, teacherIndex: 4 },
+      { studentCode: code, slot: 2, teacherIndex: 7 },
+    ]),
+  ];
+
+  const studentCodeToId = Object.fromEntries(allStudents.map((s) => [s.studentCode, s.id]));
+  let advisorCount = 0;
+  for (const { studentCode, slot, teacherIndex } of advisorAssignments) {
+    const studentId = studentCodeToId[studentCode];
+    const teacherId = allTeachers[teacherIndex]?.id;
+    if (!studentId || !teacherId) continue;
+    await prisma.studentAdvisor.upsert({
+      where: { studentId_slot: { studentId, slot } },
+      update: {},
+      create: { studentId, teacherId, slot },
+    });
+    advisorCount++;
+  }
+  console.log(`✓ StudentAdvisors (${advisorCount})`);
+
+  // ── 6. Semesters & AcademicYears ─────────────────────────────────────────
+
+  await prisma.semester.createMany({
+    data: [
+      { name: "ภาคเรียนที่ 1", value: 1 },
+      { name: "ภาคเรียนที่ 2", value: 2 },
+    ],
+    skipDuplicates: true,
+  });
+
+  const currentYear = new Date().getFullYear() + 543;
+  await prisma.academicYear.createMany({
+    data: Array.from({ length: 5 }, (_, i) => ({ year: currentYear - i })),
+    skipDuplicates: true,
+  });
+
+  // ── 7. ViolationCategories ────────────────────────────────────────────────
+
+  await prisma.violationCategory.createMany({
+    data: [
+      { name: "หมวดที่ 1 ความประพฤติและมารยาท" },
+      { name: "หมวดที่ 2 การแต่งกายและการไว้ทรงผม" },
+      { name: "หมวดที่ 3 ความรับผิดชอบในการเรียน" },
+      { name: "หมวดที่ 4 การใช้สิ่งเสพติดและอบายมุข" },
+      { name: "หมวดที่ 5 ทรัพย์สินและความสะอาด" },
+      { name: "หมวดที่ 6 ความปลอดภัยและการทะเลาะวิวาท" },
+      { name: "หมวดที่ 7 อื่น ๆ" },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log("✓ Semesters, AcademicYears, ViolationCategories");
   console.log("✅ Seed complete");
 }
 
