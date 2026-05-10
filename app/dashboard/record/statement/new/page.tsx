@@ -1,8 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Search, ChevronRight, ChevronLeft, User, Users, MapPin, Check, FileText, Clock } from "lucide-react"
+import {
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  User,
+  Users,
+  MapPin,
+  Check,
+  FileText,
+  Clock,
+  ShieldAlert,
+  ScrollText,
+  CheckCircle2,
+} from "lucide-react"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -79,42 +93,83 @@ const VIOLATION_CATEGORIES = [
   "หมวดที่ 7 อื่น ๆ",
 ]
 
+const MEASURES = [
+  { id: "verbal_warning", label: "ตักเตือนด้วยวาจา" },
+  { id: "written_warning", label: "ตักเตือนเป็นลายลักษณ์อักษร" },
+  { id: "parent_meeting", label: "เรียกพบผู้ปกครอง" },
+  { id: "community_service", label: "ทำกิจกรรมบำเพ็ญประโยชน์" },
+  { id: "suspension", label: "พักการเรียน" },
+  { id: "probation_bond", label: "ทำทัณฑ์บน" },
+]
+
+// ── Form data types ────────────────────────────────────────────────────────────
+
 type StatementFormData = {
-  semester: string
-  academicYear: string
-  violationCategory: string
+  semesterId: string
+  semesterLabel: string
+  academicYearId: string
+  academicYearLabel: string
+  violationCategoryId: string
+  violationCategoryLabel: string
   subject: string
   detail: string
-  incidentDay: string
-  incidentMonth: string
-  incidentYear: string
-  incidentTime: string
+  incidentDateTime: string
   location: string
   recorder: string
+}
+
+type MeasureFormData = {
+  selected: string[]         // measure IDs
+  notes: string              // additional notes for measures
+}
+
+type BondFormData = {
+  studentStatement: string   // ถ้อยคำของนักเรียน
+  conditions: string         // เงื่อนไขทัณฑ์บน
+  parentName: string         // ชื่อผู้ปกครองลงนาม
+  witnessName: string        // ชื่อพยาน
 }
 
 // ── Root page ──────────────────────────────────────────────────────────────────
 
 export default function NewStatementPage() {
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [query, setQuery] = useState("")
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<Student[] | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Student | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
   const [formData, setFormData] = useState<StatementFormData>({
-    semester: "",
-    academicYear: "",
-    violationCategory: "",
+    semesterId: "",
+    semesterLabel: "",
+    academicYearId: "",
+    academicYearLabel: "",
+    violationCategoryId: "",
+    violationCategoryLabel: "",
     subject: "",
     detail: "",
-    incidentDay: "",
-    incidentMonth: "",
-    incidentYear: "",
-    incidentTime: "",
+    incidentDateTime: "",
     location: "",
     recorder: "",
   })
+
+  const [measureData, setMeasureData] = useState<MeasureFormData>({
+    selected: [],
+    notes: "",
+  })
+
+  const [bondData, setBondData] = useState<BondFormData>({
+    studentStatement: "",
+    conditions: "",
+    parentName: "",
+    witnessName: "",
+  })
+
+  const showBondStep = measureData.selected.includes("probation_bond")
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -156,8 +211,59 @@ export default function NewStatementPage() {
   }
 
   function handleNext() {
+    // If step 3 (measures) → skip bond step (step 4) if not selected
+    if (step === 3 && !showBondStep) {
+      setStep(5) // jump to step 5 (confirm)
+      return
+    }
     setStep((s) => s + 1)
   }
+
+  function handleNextFromBond() {
+    setStep(5)
+  }
+
+  function handleBackFromConfirm() {
+    if (showBondStep) {
+      setStep(4)
+    } else {
+      setStep(3)
+    }
+  }
+
+  async function handleSubmit() {
+    if (!selected) return
+    setSaving(true)
+    setSaveError(null)
+
+    try {
+      const res = await fetch("/api/statements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId: selected.id,
+          ...formData,
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        setSaveError(err.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่")
+        return
+      }
+
+      router.push("/dashboard/record/statement")
+    } catch {
+      setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Map logical step index for the stepper display
+  // Steps 0-3 = indices 0-3; bond=4; confirm=5
+  // When bond is hidden, display steps are 0-4 (skip index 4)
+  const displayStep = step === 5 && !showBondStep ? 4 : step
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-5">
@@ -176,7 +282,7 @@ export default function NewStatementPage() {
       </div>
 
       {/* Stepper */}
-      <Stepper currentStep={step} showBondStep={false} />
+      <Stepper currentStep={displayStep} showBondStep={showBondStep} />
 
       {/* Step panels */}
       {step === 0 && (
@@ -204,17 +310,48 @@ export default function NewStatementPage() {
           onNext={handleNext}
         />
       )}
+
+      {step === 3 && (
+        <Step4Measures
+          measureData={measureData}
+          setMeasureData={setMeasureData}
+          onBack={handleBack}
+          onNext={handleNext}
+        />
+      )}
+
+      {step === 4 && showBondStep && selected && (
+        <Step5Bond
+          student={selected}
+          formData={formData}
+          bondData={bondData}
+          setBondData={setBondData}
+          onBack={handleBack}
+          onNext={handleNextFromBond}
+        />
+      )}
+
+      {step === 5 && selected && (
+        <Step6Confirm
+          student={selected}
+          formData={formData}
+          measureData={measureData}
+          bondData={bondData}
+          showBondStep={showBondStep}
+          saving={saving}
+          saveError={saveError}
+          onBack={handleBackFromConfirm}
+          onSubmit={handleSubmit}
+        />
+      )}
     </div>
   )
 }
 
 // ── Stepper indicator ──────────────────────────────────────────────────────────
 
-// Step index 4 (ทำทัณฑ์บน) is conditional — hidden until step 3 activates it
 function Stepper({ currentStep, showBondStep }: { currentStep: number; showBondStep?: boolean }) {
   const visibleSteps = STEPS.filter((_, i) => i !== 4 || showBondStep)
-
-  // Map visible index to actual step index for coloring
   const actualIndices = STEPS.map((_, i) => i).filter((i) => i !== 4 || showBondStep)
 
   return (
@@ -222,28 +359,30 @@ function Stepper({ currentStep, showBondStep }: { currentStep: number; showBondS
       <div className="flex items-start">
         {visibleSteps.map((s, vi) => {
           const ai = actualIndices[vi]
+          // Map display index for coloring
+          const displayIndex = ai > 4 && !showBondStep ? vi : vi
           return (
             <div key={ai} className="flex items-start flex-1 last:flex-none">
               <div className="flex flex-col items-center">
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 ${
-                    ai < currentStep
+                    displayIndex < currentStep
                       ? "bg-green-500 text-white"
-                      : ai === currentStep
+                      : displayIndex === currentStep
                       ? "bg-[#F5A623] text-white ring-4 ring-amber-100"
                       : ai === 4 && !showBondStep
                       ? "bg-gray-100 text-gray-300 ring-2 ring-dashed ring-gray-200"
                       : "bg-gray-100 text-gray-400"
                   }`}
                 >
-                  {ai < currentStep ? <Check className="w-3.5 h-3.5" /> : vi + 1}
+                  {displayIndex < currentStep ? <Check className="w-3.5 h-3.5" /> : vi + 1}
                 </div>
                 <div className="mt-2 text-center w-[60px]">
                   <p
                     className={`text-[10px] font-semibold leading-tight ${
-                      ai === currentStep
+                      displayIndex === currentStep
                         ? "text-[#F5A623]"
-                        : ai < currentStep
+                        : displayIndex < currentStep
                         ? "text-green-600"
                         : "text-gray-400"
                     }`}
@@ -255,7 +394,7 @@ function Stepper({ currentStep, showBondStep }: { currentStep: number; showBondS
               {vi < visibleSteps.length - 1 && (
                 <div
                   className={`h-0.5 flex-1 mx-1.5 mt-3.5 transition-colors duration-300 ${
-                    ai < currentStep ? "bg-green-400" : "bg-gray-200"
+                    displayIndex < currentStep ? "bg-green-400" : "bg-gray-200"
                   }`}
                 />
               )}
@@ -514,44 +653,47 @@ interface Step3Props {
   onNext: () => void
 }
 
-function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step3Props) {
-  const currentBEYear = new Date().getFullYear() + 543
-  const academicYears = Array.from({ length: 5 }, (_, i) => String(currentBEYear - i))
+type SemesterItem = { id: number; name: string; value: number }
+type AcademicYearItem = { id: number; year: number }
+type ViolationCategoryItem = { id: number; name: string }
 
-  function update(field: keyof StatementFormData, value: string) {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step3Props) {
+  const [semesters, setSemesters] = useState<SemesterItem[]>([])
+  const [academicYears, setAcademicYears] = useState<AcademicYearItem[]>([])
+  const [violationCategories, setViolationCategories] = useState<ViolationCategoryItem[]>([])
+  const [loadingMaster, setLoadingMaster] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/master/semesters").then((r) => r.json()),
+      fetch("/api/master/academic-years").then((r) => r.json()),
+      fetch("/api/master/violation-categories").then((r) => r.json()),
+    ]).then(([sem, ay, vc]) => {
+      setSemesters(sem)
+      setAcademicYears(ay)
+      setViolationCategories(vc)
+      setLoadingMaster(false)
+    })
+  }, [])
+
+  function update(fields: Partial<StatementFormData>) {
+    setFormData((prev) => ({ ...prev, ...fields }))
   }
 
   const isValid =
-    formData.semester &&
-    formData.academicYear &&
-    formData.violationCategory &&
+    formData.semesterId &&
+    formData.academicYearId &&
+    formData.violationCategoryId &&
     formData.subject.trim() &&
     formData.detail.trim() &&
-    formData.incidentDay &&
-    formData.incidentMonth &&
-    formData.incidentYear &&
+    formData.incidentDateTime &&
     formData.location.trim() &&
     formData.recorder.trim()
 
   return (
     <div className="space-y-4">
-      {/* Student mini-card */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center shrink-0">
-          <User className="w-4 h-4 text-white" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-800">
-            {student.title.name}{student.firstName} {student.lastName}
-          </p>
-          <p className="text-xs text-gray-400">
-            รหัส {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
-          </p>
-        </div>
-      </div>
+      <StudentMiniCard student={student} />
 
-      {/* Form card */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
           <FileText className="w-4 h-4 text-[#F5A623]" />
@@ -559,135 +701,118 @@ function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step
         </div>
 
         <div className="px-6 py-5 space-y-5">
-          {/* Row 1: Semester + Category */}
-          <div className="grid grid-cols-2 gap-4">
-            <FormGroup label="ภาคเรียน" required>
-              <NativeSelect
-                value={formData.semester}
-                onChange={(v) => update("semester", v)}
-                placeholder="เลือกภาคเรียน"
-                options={[
-                  { value: "1", label: "ภาคเรียนที่ 1" },
-                  { value: "2", label: "ภาคเรียนที่ 2" },
-                ]}
-              />
-            </FormGroup>
-
-            <FormGroup label="ปีการศึกษา" required>
-              <NativeSelect
-                value={formData.academicYear}
-                onChange={(v) => update("academicYear", v)}
-                placeholder="เลือกปีการศึกษา"
-                options={academicYears.map((y) => ({ value: y, label: y }))}
-              />
-            </FormGroup>
-          </div>
-
-          {/* Violation category */}
-          <FormGroup label="ได้ประพฤติผิดระเบียบในหมวด" required>
-            <NativeSelect
-              value={formData.violationCategory}
-              onChange={(v) => update("violationCategory", v)}
-              placeholder="เลือกหมวด"
-              options={VIOLATION_CATEGORIES.map((c) => ({ value: c, label: c }))}
-            />
-          </FormGroup>
-
-          {/* Subject */}
-          <FormGroup label="เรื่อง" required>
-            <textarea
-              value={formData.subject}
-              onChange={(e) => update("subject", e.target.value)}
-              placeholder="กรอกพฤติกรรมที่กระทำความผิด"
-              rows={3}
-              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
-            />
-          </FormGroup>
-
-          {/* Detail */}
-          <FormGroup label="ซึ่งมีรายละเอียดการผิดระเบียบ คือ" required>
-            <textarea
-              value={formData.detail}
-              onChange={(e) => update("detail", e.target.value)}
-              placeholder="กรอกรายละเอียดการกระทำความผิด"
-              rows={3}
-              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
-            />
-          </FormGroup>
-
-          {/* Incident date + time */}
-          <FormGroup label="เหตุเกิดเมื่อวันที่" required>
-            <div className="flex gap-2">
-              <NativeSelect
-                value={formData.incidentDay}
-                onChange={(v) => update("incidentDay", v)}
-                placeholder="วัน"
-                className="w-[90px]"
-                options={Array.from({ length: 31 }, (_, i) => ({
-                  value: String(i + 1),
-                  label: String(i + 1),
-                }))}
-              />
-              <NativeSelect
-                value={formData.incidentMonth}
-                onChange={(v) => update("incidentMonth", v)}
-                placeholder="เดือน"
-                options={THAI_MONTHS.map((m, i) => ({ value: String(i + 1), label: m }))}
-              />
-              <NativeSelect
-                value={formData.incidentYear}
-                onChange={(v) => update("incidentYear", v)}
-                placeholder="ปี"
-                className="w-[110px]"
-                options={Array.from({ length: 5 }, (_, i) => {
-                  const y = String(currentBEYear - i)
-                  return { value: y, label: y }
-                })}
-              />
-              <div className="relative flex-1">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={formData.incidentTime}
-                  onChange={(e) => update("incidentTime", e.target.value)}
-                  placeholder="เวลา เช่น 13.00 น."
-                  className="w-full pl-8 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
-                />
-              </div>
+          {loadingMaster ? (
+            <div className="flex justify-center py-6">
+              <svg className="w-5 h-5 animate-spin text-[#F5A623]" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
             </div>
-          </FormGroup>
+          ) : (
+            <>
+              {/* Semester + Academic year */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormGroup label="ภาคเรียน" required>
+                  <NativeSelect
+                    value={formData.semesterId}
+                    onChange={(v) => {
+                      const found = semesters.find((s) => String(s.id) === v)
+                      update({ semesterId: v, semesterLabel: found?.name ?? "" })
+                    }}
+                    placeholder="เลือกภาคเรียน"
+                    options={semesters.map((s) => ({ value: String(s.id), label: s.name }))}
+                  />
+                </FormGroup>
 
-          {/* Location + Recorder */}
-          <div className="grid grid-cols-2 gap-4">
-            <FormGroup label="สถานที่เกิดเหตุ" required>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => update("location", e.target.value)}
-                placeholder="ระบุสถานที่"
-                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
-              />
-            </FormGroup>
+                <FormGroup label="ปีการศึกษา" required>
+                  <NativeSelect
+                    value={formData.academicYearId}
+                    onChange={(v) => {
+                      const found = academicYears.find((a) => String(a.id) === v)
+                      update({ academicYearId: v, academicYearLabel: found ? String(found.year) : "" })
+                    }}
+                    placeholder="เลือกปีการศึกษา"
+                    options={academicYears.map((a) => ({ value: String(a.id), label: String(a.year) }))}
+                  />
+                </FormGroup>
+              </div>
 
-            <FormGroup label="ผู้บันทึกข้อมูล" required>
-              <input
-                type="text"
-                value={formData.recorder}
-                onChange={(e) => update("recorder", e.target.value)}
-                placeholder="ชื่อผู้บันทึก"
-                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
-              />
-            </FormGroup>
-          </div>
+              {/* Violation category */}
+              <FormGroup label="ได้ประพฤติผิดระเบียบในหมวด" required>
+                <NativeSelect
+                  value={formData.violationCategoryId}
+                  onChange={(v) => {
+                    const found = violationCategories.find((c) => String(c.id) === v)
+                    update({ violationCategoryId: v, violationCategoryLabel: found?.name ?? "" })
+                  }}
+                  placeholder="เลือกหมวด"
+                  options={violationCategories.map((c) => ({ value: String(c.id), label: c.name }))}
+                />
+              </FormGroup>
 
-          {/* Auto date note */}
-          <p className="text-xs text-[#F5A623] font-medium">
-            ลงวันที่: ประทับวันอัตโนมัติเมื่อบันทึกข้อมูล
-          </p>
+              {/* Subject */}
+              <FormGroup label="เรื่อง" required>
+                <textarea
+                  value={formData.subject}
+                  onChange={(e) => update({ subject: e.target.value })}
+                  placeholder="กรอกพฤติกรรมที่กระทำความผิด"
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                />
+              </FormGroup>
+
+              {/* Detail */}
+              <FormGroup label="ซึ่งมีรายละเอียดการผิดระเบียบ คือ" required>
+                <textarea
+                  value={formData.detail}
+                  onChange={(e) => update({ detail: e.target.value })}
+                  placeholder="กรอกรายละเอียดการกระทำความผิด"
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                />
+              </FormGroup>
+
+              {/* Incident datetime */}
+              <FormGroup label="เหตุเกิดเมื่อวันที่และเวลา" required>
+                <input
+                  type="datetime-local"
+                  value={formData.incidentDateTime}
+                  onChange={(e) => update({ incidentDateTime: e.target.value })}
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800"
+                />
+              </FormGroup>
+
+              {/* Location + Recorder */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormGroup label="สถานที่เกิดเหตุ" required>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => update({ location: e.target.value })}
+                    placeholder="ระบุสถานที่"
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                  />
+                </FormGroup>
+
+                <FormGroup label="ผู้บันทึกข้อมูล" required>
+                  <input
+                    type="text"
+                    value={formData.recorder}
+                    onChange={(e) => update({ recorder: e.target.value })}
+                    placeholder="ชื่อผู้บันทึก"
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                  />
+                </FormGroup>
+              </div>
+
+              <p className="text-xs text-[#F5A623] font-medium">
+                ลงวันที่: ประทับวันอัตโนมัติเมื่อบันทึกข้อมูล
+              </p>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Navigation */}
       <div className="flex items-center justify-between pt-1">
         <button
           onClick={onBack}
@@ -710,7 +835,429 @@ function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step
   )
 }
 
-// ── Form helpers ───────────────────────────────────────────────────────────────
+// ── Step 4: Measures ───────────────────────────────────────────────────────────
+
+interface Step4Props {
+  measureData: MeasureFormData
+  setMeasureData: React.Dispatch<React.SetStateAction<MeasureFormData>>
+  onBack: () => void
+  onNext: () => void
+}
+
+function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Props) {
+  const showBond = measureData.selected.includes("probation_bond")
+
+  function toggleMeasure(id: string) {
+    setMeasureData((prev) => ({
+      ...prev,
+      selected: prev.selected.includes(id)
+        ? prev.selected.filter((m) => m !== id)
+        : [...prev.selected, id],
+    }))
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-[#F5A623]" />
+          <h2 className="text-sm font-bold text-[#2D1B00]">มาตรการ / การดำเนินการ</h2>
+        </div>
+
+        <div className="px-6 py-5 space-y-3">
+          <p className="text-xs text-gray-400">เลือกมาตรการที่จะดำเนินการ (เลือกได้หลายข้อ)</p>
+
+          <div className="space-y-2">
+            {MEASURES.map((m) => {
+              const checked = measureData.selected.includes(m.id)
+              const isBond = m.id === "probation_bond"
+              return (
+                <label
+                  key={m.id}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
+                    checked
+                      ? isBond
+                        ? "border-orange-300 bg-orange-50"
+                        : "border-amber-200 bg-amber-50"
+                      : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
+                      checked
+                        ? isBond
+                          ? "bg-orange-500 border-orange-500"
+                          : "bg-[#F5A623] border-[#F5A623]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {checked && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={checked}
+                    onChange={() => toggleMeasure(m.id)}
+                  />
+                  <span className={`text-sm font-medium ${checked ? "text-gray-800" : "text-gray-600"}`}>
+                    {m.label}
+                  </span>
+                  {isBond && (
+                    <span className="ml-auto text-[10px] font-bold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full">
+                      เพิ่มขั้นตอน
+                    </span>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+
+          {showBond && (
+            <div className="mt-2 flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3">
+              <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-orange-700">
+                เลือก <strong>ทำทัณฑ์บน</strong> — ระบบจะเพิ่มขั้นตอนกรอกสัญญาทัณฑ์บนก่อนยืนยัน
+              </p>
+            </div>
+          )}
+
+          {/* Additional notes */}
+          <div className="pt-2">
+            <FormGroup label="หมายเหตุเพิ่มเติม">
+              <textarea
+                value={measureData.notes}
+                onChange={(e) => setMeasureData((prev) => ({ ...prev, notes: e.target.value }))}
+                placeholder="บันทึกเพิ่มเติม (ถ้ามี)"
+                rows={2}
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+              />
+            </FormGroup>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-1">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          ย้อนกลับ
+        </button>
+
+        <button
+          onClick={onNext}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+        >
+          {showBond ? "ถัดไป — ทำทัณฑ์บน" : "ถัดไป — ยืนยัน"}
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 5: Probation Bond ─────────────────────────────────────────────────────
+
+interface Step5Props {
+  student: Student
+  formData: StatementFormData
+  bondData: BondFormData
+  setBondData: React.Dispatch<React.SetStateAction<BondFormData>>
+  onBack: () => void
+  onNext: () => void
+}
+
+function Step5Bond({ student, formData, bondData, setBondData, onBack, onNext }: Step5Props) {
+  function update(field: keyof BondFormData, value: string) {
+    setBondData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const isValid = bondData.studentStatement.trim() && bondData.conditions.trim() && bondData.parentName.trim()
+
+  const father = student.guardians.find((g) => g.relation.name === "พ่อ")
+  const mother = student.guardians.find((g) => g.relation.name === "แม่")
+  const defaultParent = father
+    ? `${father.firstName} ${father.lastName}`
+    : mother
+    ? `${mother.firstName} ${mother.lastName}`
+    : ""
+
+  // Pre-fill parent name if empty
+  const displayParentName = bondData.parentName || defaultParent
+
+  function formatThaiDateTime(dt: string) {
+    if (!dt) return "-"
+    const [datePart, timePart] = dt.split("T")
+    const [year, month, day] = datePart.split("-")
+    const monthName = THAI_MONTHS[Number(month) - 1]
+    const beYear = Number(year) + 543
+    return `${Number(day)} ${monthName} ${beYear}${timePart ? ` เวลา ${timePart} น.` : ""}`
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Student mini-card */}
+      <StudentMiniCard student={student} />
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
+          <ScrollText className="w-4 h-4 text-orange-500" />
+          <h2 className="text-sm font-bold text-[#2D1B00]">สัญญาทัณฑ์บน</h2>
+        </div>
+
+        <div className="px-6 py-5 space-y-5">
+          {/* Bond header preview */}
+          <div className="bg-gray-50 rounded-lg border border-gray-100 px-4 py-3 text-xs text-gray-600 leading-relaxed space-y-1">
+            <p className="font-semibold text-gray-700">ข้อมูลที่จะปรากฏในสัญญา:</p>
+            <p>
+              นักเรียน: <strong>{student.title.name}{student.firstName} {student.lastName}</strong>{" "}
+              รหัส {student.studentCode} ชั้น {student.gradeLevel}/{student.classRoom}
+            </p>
+            {formData.incidentDateTime && (
+              <p>วันที่เกิดเหตุ: {formatThaiDateTime(formData.incidentDateTime)}</p>
+            )}
+            <p>สถานที่: {formData.location || "—"}</p>
+          </div>
+
+          {/* Student statement */}
+          <FormGroup label="ถ้อยคำของนักเรียน (ที่นักเรียนให้การ)" required>
+            <textarea
+              value={bondData.studentStatement}
+              onChange={(e) => update("studentStatement", e.target.value)}
+              placeholder="บันทึกถ้อยคำที่นักเรียนให้การไว้ เช่น ข้าพเจ้าขอรับสารภาพว่า..."
+              rows={4}
+              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
+            />
+          </FormGroup>
+
+          {/* Bond conditions */}
+          <FormGroup label="เงื่อนไขทัณฑ์บน" required>
+            <textarea
+              value={bondData.conditions}
+              onChange={(e) => update("conditions", e.target.value)}
+              placeholder="ระบุเงื่อนไขที่นักเรียนต้องปฏิบัติ เช่น จะไม่กระทำผิดซ้ำอีก หากกระทำซ้ำยินยอมรับโทษตามระเบียบของโรงเรียน..."
+              rows={3}
+              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
+            />
+          </FormGroup>
+
+          {/* Signatories */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormGroup label="ผู้ปกครองลงนาม" required>
+              <input
+                type="text"
+                value={bondData.parentName || defaultParent}
+                onChange={(e) => update("parentName", e.target.value)}
+                placeholder="ชื่อผู้ปกครอง"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
+              />
+            </FormGroup>
+
+            <FormGroup label="พยาน">
+              <input
+                type="text"
+                value={bondData.witnessName}
+                onChange={(e) => update("witnessName", e.target.value)}
+                placeholder="ชื่อพยาน (ถ้ามี)"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
+              />
+            </FormGroup>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-1">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          ย้อนกลับ
+        </button>
+
+        <button
+          onClick={onNext}
+          disabled={!isValid}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+        >
+          ถัดไป — ยืนยัน
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 6: Confirm & Submit ───────────────────────────────────────────────────
+
+interface Step6Props {
+  student: Student
+  formData: StatementFormData
+  measureData: MeasureFormData
+  bondData: BondFormData
+  showBondStep: boolean
+  saving: boolean
+  saveError: string | null
+  onBack: () => void
+  onSubmit: () => void
+}
+
+function Step6Confirm({ student, formData, measureData, bondData, showBondStep, saving, saveError, onBack, onSubmit }: Step6Props) {
+  function formatThaiDateTime(dt: string) {
+    if (!dt) return "-"
+    const [datePart, timePart] = dt.split("T")
+    const [year, month, day] = datePart.split("-")
+    const monthName = THAI_MONTHS[Number(month) - 1]
+    const beYear = Number(year) + 543
+    return `${Number(day)} ${monthName} ${beYear}${timePart ? ` เวลา ${timePart} น.` : ""}`
+  }
+
+  const selectedMeasureLabels = MEASURES
+    .filter((m) => measureData.selected.includes(m.id))
+    .map((m) => m.label)
+
+  return (
+    <div className="space-y-4">
+      {/* Student mini-card */}
+      <StudentMiniCard student={student} />
+
+      {/* Summary card */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100 px-6 py-4 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-green-500" />
+          <h2 className="text-sm font-bold text-[#2D1B00]">สรุปข้อมูลก่อนบันทึก</h2>
+        </div>
+
+        <div className="divide-y divide-gray-50">
+          {/* Statement section */}
+          <section className="px-6 py-4 space-y-3">
+            <SectionTitle icon={<FileText className="w-3.5 h-3.5" />} label="ถ้อยคำ" />
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <Field label="ภาคเรียน" value={formData.semesterLabel} />
+              <Field label="ปีการศึกษา" value={formData.academicYearLabel} />
+              <Field label="หมวดการผิดระเบียบ" value={formData.violationCategoryLabel} />
+              <Field label="วันที่เกิดเหตุ" value={formatThaiDateTime(formData.incidentDateTime)} />
+              <Field label="สถานที่" value={formData.location} />
+              <Field label="ผู้บันทึก" value={formData.recorder} />
+            </div>
+            <div className="pt-1">
+              <p className="text-[11px] text-gray-400 mb-1">เรื่อง</p>
+              <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-3 py-2">{formData.subject}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-gray-400 mb-1">รายละเอียด</p>
+              <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-3 py-2">{formData.detail}</p>
+            </div>
+          </section>
+
+          {/* Measures section */}
+          <section className="px-6 py-4">
+            <SectionTitle icon={<ShieldAlert className="w-3.5 h-3.5" />} label="มาตรการ" />
+            {selectedMeasureLabels.length > 0 ? (
+              <ul className="mt-3 space-y-1.5">
+                {selectedMeasureLabels.map((label) => (
+                  <li key={label} className="flex items-center gap-2 text-sm text-gray-700">
+                    <Check className="w-3.5 h-3.5 text-[#F5A623] shrink-0" />
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-gray-400 italic">ไม่ได้เลือกมาตรการ</p>
+            )}
+            {measureData.notes && (
+              <p className="mt-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{measureData.notes}</p>
+            )}
+          </section>
+
+          {/* Bond section (if applicable) */}
+          {showBondStep && (
+            <section className="px-6 py-4">
+              <SectionTitle icon={<ScrollText className="w-3.5 h-3.5" />} label="ทัณฑ์บน" />
+              <div className="mt-3 space-y-3">
+                <div>
+                  <p className="text-[11px] text-gray-400 mb-1">ถ้อยคำของนักเรียน</p>
+                  <p className="text-sm text-gray-700 leading-relaxed bg-orange-50 rounded-lg px-3 py-2">{bondData.studentStatement || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-400 mb-1">เงื่อนไขทัณฑ์บน</p>
+                  <p className="text-sm text-gray-700 leading-relaxed bg-orange-50 rounded-lg px-3 py-2">{bondData.conditions || "-"}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="ผู้ปกครองลงนาม" value={bondData.parentName || "-"} />
+                  <Field label="พยาน" value={bondData.witnessName || "-"} />
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+
+      {/* Error message */}
+      {saveError && (
+        <div className="flex items-start gap-2.5 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
+          <svg className="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+          </svg>
+          {saveError}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-1">
+        <button
+          onClick={onBack}
+          disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          ย้อนกลับ
+        </button>
+
+        <button
+          onClick={onSubmit}
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+        >
+          {saving ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              กำลังบันทึก...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="w-4 h-4" />
+              ยืนยันและบันทึก
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Shared UI components ───────────────────────────────────────────────────────
+
+function StudentMiniCard({ student }: { student: Student }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center shrink-0">
+        <User className="w-4 h-4 text-white" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-800">
+          {student.title.name}{student.firstName} {student.lastName}
+        </p>
+        <p className="text-xs text-gray-400">
+          รหัส {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
+        </p>
+      </div>
+    </div>
+  )
+}
 
 function FormGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
@@ -762,8 +1309,6 @@ function NativeSelect({
     </select>
   )
 }
-
-// ── Shared UI atoms ────────────────────────────────────────────────────────────
 
 function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (

@@ -187,6 +187,33 @@ model StudentAdvisor {
   @@map("student_advisors")
 }
 
+// ─── Discipline Master Tables ──────────────────────────────────────────────────
+
+model Semester {
+  id               Int               @id @default(autoincrement())
+  name             String            @unique @db.VarChar(50)
+  value            Int               @unique
+  statementRecords StatementRecord[]
+
+  @@map("semesters")
+}
+
+model AcademicYear {
+  id               Int               @id @default(autoincrement())
+  year             Int               @unique
+  statementRecords StatementRecord[]
+
+  @@map("academic_years")
+}
+
+model ViolationCategory {
+  id               Int               @id @default(autoincrement())
+  name             String            @unique @db.VarChar(200)
+  statementRecords StatementRecord[]
+
+  @@map("violation_categories")
+}
+
 // ─── Disciplinary Records ──────────────────────────────────────────────────────
 
 model StatementRecord {
@@ -198,12 +225,20 @@ model StatementRecord {
   student   Student @relation(fields: [studentId], references: [id])
 
   recordDate   DateTime @map("record_date") @db.Date
-  semester     Int
-  academicYear Int      @map("academic_year")
 
-  violationCategory String @db.VarChar(200) @map("violation_category")
+  semesterId          Int               @map("semester_id")
+  semester            Semester          @relation(fields: [semesterId], references: [id])
 
-  content    String @db.Text
+  academicYearId      Int               @map("academic_year_id")
+  academicYear        AcademicYear      @relation(fields: [academicYearId], references: [id])
+
+  violationCategoryId Int               @map("violation_category_id")
+  violationCategory   ViolationCategory @relation(fields: [violationCategoryId], references: [id])
+
+  subject    String   @db.VarChar(500)
+  content    String   @db.Text
+  incidentAt DateTime? @map("incident_at")
+  location   String?   @db.VarChar(200)
 
   recordedBy String @db.VarChar(100) @map("recorded_by")
 
