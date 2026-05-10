@@ -1,30 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(Get-ChildItem -Path \"D:\\\\works\\\\ket-project\\\\.claude\\\\worktrees\\\\clever-poincare-af4b17\" -Recurse)",
-      "Bash(Select-Object FullName)",
-      "Bash(ConvertTo-Csv -NoTypeInformation)",
-      "Bash(Out-String)",
-      "Bash(Get-ChildItem -Path \"D:\\\\works\\\\ket-project\\\\.claude\\\\worktrees\\\\clever-poincare-af4b17\\\\node_modules\\\\next\\\\dist\\\\docs\\\\\" -Recurse -File | Select-Object FullName | Sort-Object FullName)",
       "Bash(npm install *)",
-      "Bash(npx shadcn@latest init --yes --base-color neutral)",
-      "Bash(npx shadcn@latest init --help)",
-      "Bash(npx shadcn@latest init --yes --defaults)",
-      "Bash(npx shadcn@latest add input card label --yes)",
-      "Bash(node -e \"const auth = require\\('next-auth/package.json'\\); console.log\\(auth.version\\)\")",
-      "Bash(mkdir -p \"D:\\\\works\\\\ket-project\\\\.claude\\\\worktrees\\\\clever-poincare-af4b17\\\\app\\\\api\\\\auth\\\\[...nextauth]\" 2>&1)",
-      "Bash(node -e \"const crypto = require\\('crypto'\\); console.log\\(crypto.randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
       "Bash(npm run *)",
-      "Bash(Start-Sleep -Seconds 8)",
-      "Bash(Get-Content \"C:\\\\Users\\\\veed_\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--works-ket-project--claude-worktrees-clever-poincare-af4b17\\\\7e07a756-f776-4cea-882f-f5152e4e35b0\\\\tasks\\\\brcas7swk.output\" -Tail 20)",
-      "mcp__Claude_in_Chrome__tabs_context_mcp",
-      "Bash(netstat -ano)",
-      "Bash(findstr \":3000\")",
-      "Bash(findstr \"LISTENING\")",
-      "PowerShell(Get-Process -Id 13876)",
-      "PowerShell($proc = Get-WmiObject Win32_Process -Filter \"ProcessId = 13876\" -ErrorAction SilentlyContinue; if \\($proc\\) { \"$\\($proc.Name\\) | $\\($proc.CommandLine\\)\" } else { \"Process not found\" })",
       "Bash(npx prisma *)",
-      "Bash(ls \"D:\\\\works\\\\ket-project\\\\prisma\" 2>&1 && echo \"---\" && ls \"D:\\\\works\\\\ket-project\\\\.claude\\\\worktrees\\\\clever-poincare-af4b17\\\\prisma\")",
+      "Bash(npx shadcn@latest *)",
+      "Bash(npx tsc *)",
       "Bash(git add *)"
     ]
   }
