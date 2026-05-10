@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
       title: { select: { name: true } },
       guardians: {
         select: {
+          id: true,
           firstName: true,
           lastName: true,
           phone: true,

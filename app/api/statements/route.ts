@@ -15,6 +15,18 @@ export async function POST(request: NextRequest) {
       incidentDateTime,
       location,
       recorder,
+      // Step 4
+      considerationMeasures,
+      resultMeasures,
+      measureNotes,
+      // Step 5 Bond
+      bond,
+      // Step 5 Signatures
+      studentSignature,
+      guardianSignature,
+      advisorSignature,
+      disciplineTeacherId,
+      gradeHeadTeacherId,
     } = body
 
     if (!studentId || !semesterId || !academicYearId || !violationCategoryId || !subject || !detail || !recorder) {
@@ -35,6 +47,29 @@ export async function POST(request: NextRequest) {
         incidentAt,
         location: location ?? null,
         recordedBy: recorder,
+        // Step 4
+        considerationMeasures: Array.isArray(considerationMeasures) ? considerationMeasures : [],
+        resultMeasures: Array.isArray(resultMeasures) ? resultMeasures : [],
+        measureNotes: measureNotes || null,
+        // Step 5 Signatures
+        studentSignature: studentSignature || null,
+        guardianSignature: guardianSignature || null,
+        advisorSignature: advisorSignature || null,
+        disciplineTeacherId: disciplineTeacherId ? Number(disciplineTeacherId) : null,
+        gradeHeadTeacherId: gradeHeadTeacherId ? Number(gradeHeadTeacherId) : null,
+        // Step 5 Bond (created inline via nested write)
+        ...(bond && bond.guardianId
+          ? {
+              bond: {
+                create: {
+                  guardianId: Number(bond.guardianId),
+                  penaltyActions: Array.isArray(bond.penaltyActions) ? bond.penaltyActions : [],
+                  deductPoints: bond.deductPoints ? Number(bond.deductPoints) : null,
+                  witnessName: bond.witnessName || null,
+                },
+              },
+            }
+          : {}),
       },
     })
 

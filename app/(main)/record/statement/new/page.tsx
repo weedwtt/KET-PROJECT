@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -21,6 +21,7 @@ import {
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Guardian = {
+  id: number
   firstName: string
   lastName: string
   phone: string
@@ -72,8 +73,9 @@ const STEPS = [
   { label: "ข้อมูลนักเรียน", desc: "ยืนยันข้อมูลที่พบ" },
   { label: "บันทึกถ้อยคำ", desc: "กรอกรายละเอียด" },
   { label: "มาตรการ", desc: "เลือกการดำเนินการ" },
-  { label: "ทำทัณฑ์บน", desc: "กรอกสัญญา" },
-  { label: "ยืนยันและบันทึก", desc: "ตรวจสอบและบันทึก" },
+  { label: "ทำทัณฑ์บน", desc: "กรอกสัญญา" },       // index 4 — conditional
+  { label: "ลงนาม", desc: "เซ็นชื่อ" },               // index 5
+  { label: "ยืนยันและบันทึก", desc: "ตรวจสอบและบันทึก" }, // index 6
 ]
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -93,12 +95,15 @@ const VIOLATION_CATEGORIES = [
   "หมวดที่ 7 อื่น ๆ",
 ]
 
-const MEASURES = [
-  { id: "verbal_warning", label: "ตักเตือนด้วยวาจา" },
-  { id: "written_warning", label: "ตักเตือนเป็นลายลักษณ์อักษร" },
-  { id: "parent_meeting", label: "เรียกพบผู้ปกครอง" },
-  { id: "community_service", label: "ทำกิจกรรมบำเพ็ญประโยชน์" },
-  { id: "suspension", label: "พักการเรียน" },
+const CONSIDERATION_MEASURES = [
+  { id: "notify_parent", label: "แจ้งผู้ปกครอง" },
+  { id: "invite_parent", label: "เชิญผู้ปกครองรับทราบพฤติกรรม" },
+]
+
+const RESULT_MEASURES = [
+  { id: "verbal_warning", label: "ตักเตือน" },
+  { id: "deduct_score", label: "ตัดคะแนนความประพฤติ" },
+  { id: "behavior_activity", label: "ทำกิจกรรมปรับเปลี่ยนพฤติกรรม" },
   { id: "probation_bond", label: "ทำทัณฑ์บน" },
 ]
 
@@ -124,10 +129,27 @@ type MeasureFormData = {
 }
 
 type BondFormData = {
-  studentStatement: string   // ถ้อยคำของนักเรียน
-  conditions: string         // เงื่อนไขทัณฑ์บน
-  parentName: string         // ชื่อผู้ปกครองลงนาม
-  witnessName: string        // ชื่อพยาน
+  selectedGuardianIndex: number | null  // index ใน student.guardians
+  penaltyActions: string[]              // ตัดคะแนน | ทำกิจกรรม | พักการเรียน | ย้ายสถานศึกษา
+  deductPoints: string                  // จำนวนคะแนนที่ตัด (เมื่อเลือก ตัดคะแนน)
+  witnessName: string
+}
+
+type TeacherOption = {
+  id: number
+  firstName: string
+  lastName: string
+  title: { name: string }
+  signatureUrl: string | null
+  role: string | null
+}
+
+type SignatureFormData = {
+  studentSignature: string        // base64 data URL
+  guardianSignature: string       // base64 data URL
+  advisorSignature: string        // base64 data URL
+  disciplineTeacherId: number | null
+  gradeHeadTeacherId: number | null
 }
 
 // ── Root page ──────────────────────────────────────────────────────────────────
@@ -163,10 +185,18 @@ export default function NewStatementPage() {
   })
 
   const [bondData, setBondData] = useState<BondFormData>({
-    studentStatement: "",
-    conditions: "",
-    parentName: "",
+    selectedGuardianIndex: null,
+    penaltyActions: [],
+    deductPoints: "",
     witnessName: "",
+  })
+
+  const [signatureData, setSignatureData] = useState<SignatureFormData>({
+    studentSignature: "",
+    guardianSignature: "",
+    advisorSignature: "",
+    disciplineTeacherId: null,
+    gradeHeadTeacherId: null,
   })
 
   const showBondStep = measureData.selected.includes("probation_bond")
@@ -211,24 +241,32 @@ export default function NewStatementPage() {
   }
 
   function handleNext() {
-    // If step 3 (measures) → skip bond step (step 4) if not selected
+    // step 3 (measures) → skip bond (4) if not selected, go to signatures (5)
     if (step === 3 && !showBondStep) {
-      setStep(5) // jump to step 5 (confirm)
+      setStep(5)
       return
     }
     setStep((s) => s + 1)
   }
 
   function handleNextFromBond() {
-    setStep(5)
+    setStep(5) // bond → signatures
+  }
+
+  function handleBackFromSignatures() {
+    if (showBondStep) {
+      setStep(4) // back to bond
+    } else {
+      setStep(3) // back to measures
+    }
+  }
+
+  function handleNextFromSignatures() {
+    setStep(6) // signatures → confirm
   }
 
   function handleBackFromConfirm() {
-    if (showBondStep) {
-      setStep(4)
-    } else {
-      setStep(3)
-    }
+    setStep(5) // confirm → signatures
   }
 
   async function handleSubmit() {
@@ -236,13 +274,49 @@ export default function NewStatementPage() {
     setSaving(true)
     setSaveError(null)
 
+    const bondGuardianId =
+      showBondStep && bondData.selectedGuardianIndex !== null
+        ? (selected.guardians[bondData.selectedGuardianIndex]?.id ?? null)
+        : null
+
     try {
       const res = await fetch("/api/statements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           studentId: selected.id,
-          ...formData,
+          // Step 3
+          semesterId: formData.semesterId,
+          academicYearId: formData.academicYearId,
+          violationCategoryId: formData.violationCategoryId,
+          subject: formData.subject,
+          detail: formData.detail,
+          incidentDateTime: formData.incidentDateTime,
+          location: formData.location,
+          recorder: formData.recorder,
+          // Step 4
+          considerationMeasures: measureData.selected.filter((id) =>
+            CONSIDERATION_MEASURES.some((m) => m.id === id)
+          ),
+          resultMeasures: measureData.selected.filter((id) =>
+            RESULT_MEASURES.some((m) => m.id === id)
+          ),
+          measureNotes: measureData.notes || null,
+          // Step 5 Bond (conditional)
+          bond: showBondStep && bondGuardianId
+            ? {
+                guardianId: bondGuardianId,
+                penaltyActions: bondData.penaltyActions,
+                deductPoints: bondData.deductPoints ? Number(bondData.deductPoints) : null,
+                witnessName: bondData.witnessName || null,
+              }
+            : null,
+          // Step 5 Signatures
+          studentSignature: signatureData.studentSignature || null,
+          guardianSignature: signatureData.guardianSignature || null,
+          advisorSignature: signatureData.advisorSignature || null,
+          disciplineTeacherId: signatureData.disciplineTeacherId,
+          gradeHeadTeacherId: signatureData.gradeHeadTeacherId,
         }),
       })
 
@@ -252,7 +326,7 @@ export default function NewStatementPage() {
         return
       }
 
-      router.push("/dashboard/record/statement")
+      router.push("/record/statement")
     } catch {
       setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่")
     } finally {
@@ -260,17 +334,15 @@ export default function NewStatementPage() {
     }
   }
 
-  // Map logical step index for the stepper display
-  // Steps 0-3 = indices 0-3; bond=4; confirm=5
-  // When bond is hidden, display steps are 0-4 (skip index 4)
-  const displayStep = step === 5 && !showBondStep ? 4 : step
+  // When bond step (4) is hidden, logical steps 5 and 6 display as 4 and 5
+  const displayStep = !showBondStep && step >= 5 ? step - 1 : step
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-5">
       {/* Page header */}
       <div className="flex items-center gap-3">
         <Link
-          href="/dashboard/record/statement"
+          href="/record/statement"
           className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -332,6 +404,16 @@ export default function NewStatementPage() {
       )}
 
       {step === 5 && selected && (
+        <Step5Signature
+          student={selected}
+          signatureData={signatureData}
+          setSignatureData={setSignatureData}
+          onBack={handleBackFromSignatures}
+          onNext={handleNextFromSignatures}
+        />
+      )}
+
+      {step === 6 && selected && (
         <Step6Confirm
           student={selected}
           formData={formData}
@@ -774,12 +856,51 @@ function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step
 
               {/* Incident datetime */}
               <FormGroup label="เหตุเกิดเมื่อวันที่และเวลา" required>
-                <input
-                  type="datetime-local"
-                  value={formData.incidentDateTime}
-                  onChange={(e) => update({ incidentDateTime: e.target.value })}
-                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800"
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="date"
+                    value={formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : ""}
+                    onChange={(e) => {
+                      const date = e.target.value
+                      const time = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 16) : "00:00"
+                      update({ incidentDateTime: date ? `${date}T${time}` : "" })
+                    }}
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : ""}
+                      onChange={(e) => {
+                        const hh = e.target.value
+                        const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
+                        const mm = formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : "00"
+                        update({ incidentDateTime: hh !== "" ? `${date}T${hh}:${mm}` : "" })
+                      }}
+                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800 bg-white"
+                    >
+                      <option value="">ชม.</option>
+                      {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                    <span className="text-gray-400 text-sm font-medium">:</span>
+                    <select
+                      value={formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : ""}
+                      onChange={(e) => {
+                        const mm = e.target.value
+                        const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
+                        const hh = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : "00"
+                        update({ incidentDateTime: mm !== "" ? `${date}T${hh}:${mm}` : "" })
+                      }}
+                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800 bg-white"
+                    >
+                      <option value="">นาที</option>
+                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </FormGroup>
 
               {/* Location + Recorder */}
@@ -856,6 +977,50 @@ function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Pro
     }))
   }
 
+  function MeasureList({ items }: { items: typeof CONSIDERATION_MEASURES }) {
+    return (
+      <div className="space-y-2">
+        {items.map((m) => {
+          const checked = measureData.selected.includes(m.id)
+          const isBond = m.id === "probation_bond"
+          return (
+            <label
+              key={m.id}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
+                checked
+                  ? isBond
+                    ? "border-orange-300 bg-orange-50"
+                    : "border-amber-200 bg-amber-50"
+                  : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
+                  checked
+                    ? isBond
+                      ? "bg-orange-500 border-orange-500"
+                      : "bg-[#F5A623] border-[#F5A623]"
+                    : "border-gray-300"
+                }`}
+              >
+                {checked && <Check className="w-3 h-3 text-white" />}
+              </div>
+              <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleMeasure(m.id)} />
+              <span className={`text-sm font-medium ${checked ? "text-gray-800" : "text-gray-600"}`}>
+                {m.label}
+              </span>
+              {isBond && (
+                <span className="ml-auto text-[10px] font-bold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full">
+                  เพิ่มขั้นตอน
+                </span>
+              )}
+            </label>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -864,56 +1029,29 @@ function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Pro
           <h2 className="text-sm font-bold text-[#2D1B00]">มาตรการ / การดำเนินการ</h2>
         </div>
 
-        <div className="px-6 py-5 space-y-3">
-          <p className="text-xs text-gray-400">เลือกมาตรการที่จะดำเนินการ (เลือกได้หลายข้อ)</p>
+        <div className="px-6 py-5 space-y-6">
+          {/* Section 3: การพิจารณา */}
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-[#F5A623]">ส่วนที่ 3: การพิจารณา</p>
+              <p className="text-xs text-gray-400 mt-0.5">เลือกได้มากกว่า 1 ข้อ</p>
+            </div>
+            <MeasureList items={CONSIDERATION_MEASURES} />
+          </div>
 
-          <div className="space-y-2">
-            {MEASURES.map((m) => {
-              const checked = measureData.selected.includes(m.id)
-              const isBond = m.id === "probation_bond"
-              return (
-                <label
-                  key={m.id}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
-                    checked
-                      ? isBond
-                        ? "border-orange-300 bg-orange-50"
-                        : "border-amber-200 bg-amber-50"
-                      : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
-                      checked
-                        ? isBond
-                          ? "bg-orange-500 border-orange-500"
-                          : "bg-[#F5A623] border-[#F5A623]"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    {checked && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={checked}
-                    onChange={() => toggleMeasure(m.id)}
-                  />
-                  <span className={`text-sm font-medium ${checked ? "text-gray-800" : "text-gray-600"}`}>
-                    {m.label}
-                  </span>
-                  {isBond && (
-                    <span className="ml-auto text-[10px] font-bold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full">
-                      เพิ่มขั้นตอน
-                    </span>
-                  )}
-                </label>
-              )
-            })}
+          <div className="border-t border-gray-100" />
+
+          {/* Section 4: ผลการพิจารณา */}
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-[#F5A623]">ส่วนที่ 4: ผลการพิจารณา</p>
+              <p className="text-xs text-gray-400 mt-0.5">เลือกได้มากกว่า 1 ข้อ</p>
+            </div>
+            <MeasureList items={RESULT_MEASURES} />
           </div>
 
           {showBond && (
-            <div className="mt-2 flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3">
+            <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3">
               <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
               <p className="text-xs text-orange-700">
                 เลือก <strong>ทำทัณฑ์บน</strong> — ระบบจะเพิ่มขั้นตอนกรอกสัญญาทัณฑ์บนก่อนยืนยัน
@@ -922,7 +1060,7 @@ function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Pro
           )}
 
           {/* Additional notes */}
-          <div className="pt-2">
+          <div>
             <FormGroup label="หมายเหตุเพิ่มเติม">
               <textarea
                 value={measureData.notes}
@@ -957,7 +1095,296 @@ function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Pro
   )
 }
 
-// ── Step 5: Probation Bond ─────────────────────────────────────────────────────
+// ── Step 5: Signatures ────────────────────────────────────────────────────────
+
+interface Step5SignatureProps {
+  student: Student
+  signatureData: SignatureFormData
+  setSignatureData: React.Dispatch<React.SetStateAction<SignatureFormData>>
+  onBack: () => void
+  onNext: () => void
+}
+
+function SignaturePad({
+  label,
+  value,
+  onChange,
+  onClear,
+}: {
+  label: string
+  value: string
+  onChange: (dataUrl: string) => void
+  onClear: () => void
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const drawing = useRef(false)
+
+  function getXY(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current!
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    if ("touches" in e) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY,
+      }
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    }
+  }
+
+  function startDraw(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
+    e.preventDefault()
+    drawing.current = true
+    const ctx = canvasRef.current!.getContext("2d")!
+    const { x, y } = getXY(e)
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+  }
+
+  function draw(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
+    e.preventDefault()
+    if (!drawing.current) return
+    const canvas = canvasRef.current!
+    const ctx = canvas.getContext("2d")!
+    ctx.lineWidth = 2.5
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.strokeStyle = "#1a1a1a"
+    const { x, y } = getXY(e)
+    ctx.lineTo(x, y)
+    ctx.stroke()
+  }
+
+  function stopDraw() {
+    drawing.current = false
+  }
+
+  function clear() {
+    const canvas = canvasRef.current!
+    canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height)
+    onClear()
+  }
+
+  function confirm() {
+    onChange(canvasRef.current!.toDataURL("image/png"))
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-gray-600">{label}</p>
+      <div className={`relative rounded-lg border-2 border-dashed overflow-hidden ${value ? "border-green-400 bg-green-50" : "border-gray-200 bg-white"}`}>
+        {value ? (
+          <img src={value} alt="signature" className="w-full h-28 object-contain" />
+        ) : (
+          <canvas
+            ref={canvasRef}
+            width={600}
+            height={112}
+            className="w-full h-28 cursor-crosshair touch-none"
+            onMouseDown={startDraw}
+            onMouseMove={draw}
+            onMouseUp={stopDraw}
+            onMouseLeave={stopDraw}
+            onTouchStart={startDraw}
+            onTouchMove={draw}
+            onTouchEnd={stopDraw}
+          />
+        )}
+        {!value && (
+          <p className="absolute inset-0 flex items-center justify-center text-xs text-gray-300 pointer-events-none select-none">
+            เซ็นชื่อในช่องนี้
+          </p>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={clear}
+          className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+        >
+          ล้าง
+        </button>
+        {!value && (
+          <button
+            type="button"
+            onClick={confirm}
+            className="px-3 py-1.5 text-xs font-semibold text-white bg-[#F5A623] hover:bg-[#e09518] rounded-lg transition-colors"
+          >
+            ยืนยัน
+          </button>
+        )}
+        {value && (
+          <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+            <Check className="w-3.5 h-3.5" />
+            บันทึกแล้ว
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TeacherSignatureSelect({
+  label,
+  role,
+  selectedId,
+  onSelect,
+}: {
+  label: string
+  role: string
+  selectedId: number | null
+  onSelect: (id: number | null, signatureUrl: string | null) => void
+}) {
+  const [teachers, setTeachers] = useState<TeacherOption[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/teachers/by-role?role=${encodeURIComponent(role)}`)
+      .then((r) => r.json())
+      .then((data) => { setTeachers(data); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [role])
+
+  const selected = teachers.find((t) => t.id === selectedId)
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-gray-600">{label}</p>
+      {loading ? (
+        <div className="h-10 rounded-lg bg-gray-100 animate-pulse" />
+      ) : teachers.length === 0 ? (
+        <p className="text-xs text-gray-400 italic py-2">ไม่พบครูที่มีบทบาทนี้ในระบบ</p>
+      ) : (
+        <select
+          value={selectedId ?? ""}
+          onChange={(e) => {
+            const id = e.target.value ? Number(e.target.value) : null
+            const teacher = teachers.find((t) => t.id === id) ?? null
+            onSelect(id, teacher?.signatureUrl ?? null)
+          }}
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] bg-white text-gray-800"
+        >
+          <option value="">เลือก{label}</option>
+          {teachers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.title.name}{t.firstName} {t.lastName}
+            </option>
+          ))}
+        </select>
+      )}
+      {selected && (
+        <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
+          {selected.signatureUrl ? (
+            <img
+              src={selected.signatureUrl}
+              alt="signature"
+              className="h-16 object-contain mx-auto"
+            />
+          ) : (
+            <p className="text-xs text-gray-400 text-center italic">ยังไม่มีลายเซ็นในระบบ</p>
+          )}
+          <p className="text-[10px] text-center text-gray-500 mt-1">
+            ลายเซ็น: {selected.title.name}{selected.firstName} {selected.lastName} (อัตโนมัติ)
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Step5Signature({ student, signatureData, setSignatureData, onBack, onNext }: Step5SignatureProps) {
+  const advisor = student.advisors.find((a) => a.slot === 1)?.teacher
+
+  function setSig(field: keyof Pick<SignatureFormData, "studentSignature" | "guardianSignature" | "advisorSignature">, val: string) {
+    setSignatureData((prev) => ({ ...prev, [field]: val }))
+  }
+
+  return (
+    <div className="space-y-4">
+      <StudentMiniCard student={student} />
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
+          <ScrollText className="w-4 h-4 text-[#F5A623]" />
+          <h2 className="text-sm font-bold text-[#2D1B00]">ส่วนที่ 5: ลงนาม</h2>
+        </div>
+
+        <div className="px-6 py-5 space-y-6">
+          {/* Row 1: นักเรียน + ผู้ปกครอง */}
+          <div className="grid grid-cols-2 gap-6">
+            <SignaturePad
+              label="นักเรียน"
+              value={signatureData.studentSignature}
+              onChange={(v) => setSig("studentSignature", v)}
+              onClear={() => setSig("studentSignature", "")}
+            />
+            <SignaturePad
+              label="ผู้ปกครอง (รับทราบจากครูที่ปรึกษา)"
+              value={signatureData.guardianSignature}
+              onChange={(v) => setSig("guardianSignature", v)}
+              onClear={() => setSig("guardianSignature", "")}
+            />
+          </div>
+
+          <div className="border-t border-gray-100" />
+
+          {/* Row 2: ครูที่ปรึกษา */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <SignaturePad
+                label={`ครูที่ปรึกษา${advisor ? ` (${advisor.title.name}${advisor.firstName} ${advisor.lastName})` : ""}`}
+                value={signatureData.advisorSignature}
+                onChange={(v) => setSig("advisorSignature", v)}
+                onClear={() => setSig("advisorSignature", "")}
+              />
+            </div>
+            <TeacherSignatureSelect
+              label="ครูฝ่ายปกครอง"
+              role="ครูฝ่ายปกครอง"
+              selectedId={signatureData.disciplineTeacherId}
+              onSelect={(id) => setSignatureData((prev) => ({ ...prev, disciplineTeacherId: id }))}
+            />
+          </div>
+
+          <div className="border-t border-gray-100" />
+
+          {/* Row 3: หัวหน้าระดับชั้น */}
+          <div className="max-w-xs">
+            <TeacherSignatureSelect
+              label="หัวหน้าระดับชั้น"
+              role="หัวหน้าระดับชั้น"
+              selectedId={signatureData.gradeHeadTeacherId}
+              onSelect={(id) => setSignatureData((prev) => ({ ...prev, gradeHeadTeacherId: id }))}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-1">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          ย้อนกลับ
+        </button>
+        <button
+          onClick={onNext}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+        >
+          ถัดไป — ยืนยัน
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 5 (Bond): Probation Bond ─────────────────────────────────────────────
 
 interface Step5Props {
   student: Student
@@ -968,98 +1395,193 @@ interface Step5Props {
   onNext: () => void
 }
 
+const BOND_PENALTY_OPTIONS = [
+  { id: "deduct_score", label: "ตัดคะแนนความประพฤติ" },
+  { id: "behavior_camp", label: "ทำกิจกรรมค่ายปรับพฤติกรรม" },
+  { id: "suspension", label: "พักการเรียน" },
+  { id: "transfer", label: "ย้ายสถานศึกษา" },
+]
+
 function Step5Bond({ student, formData, bondData, setBondData, onBack, onNext }: Step5Props) {
-  function update(field: keyof BondFormData, value: string) {
-    setBondData((prev) => ({ ...prev, [field]: value }))
+  const selectedGuardian =
+    bondData.selectedGuardianIndex !== null ? student.guardians[bondData.selectedGuardianIndex] : null
+
+  const isValid =
+    bondData.selectedGuardianIndex !== null &&
+    bondData.penaltyActions.length > 0 &&
+    (!bondData.penaltyActions.includes("deduct_score") || bondData.deductPoints.trim() !== "")
+
+  function togglePenalty(id: string) {
+    setBondData((prev) => ({
+      ...prev,
+      penaltyActions: prev.penaltyActions.includes(id)
+        ? prev.penaltyActions.filter((p) => p !== id)
+        : [...prev.penaltyActions, id],
+      deductPoints: id === "deduct_score" && prev.penaltyActions.includes(id) ? "" : prev.deductPoints,
+    }))
   }
 
-  const isValid = bondData.studentStatement.trim() && bondData.conditions.trim() && bondData.parentName.trim()
-
-  const father = student.guardians.find((g) => g.relation.name === "พ่อ")
-  const mother = student.guardians.find((g) => g.relation.name === "แม่")
-  const defaultParent = father
-    ? `${father.firstName} ${father.lastName}`
-    : mother
-    ? `${mother.firstName} ${mother.lastName}`
-    : ""
-
-  // Pre-fill parent name if empty
-  const displayParentName = bondData.parentName || defaultParent
-
-  function formatThaiDateTime(dt: string) {
-    if (!dt) return "-"
-    const [datePart, timePart] = dt.split("T")
-    const [year, month, day] = datePart.split("-")
-    const monthName = THAI_MONTHS[Number(month) - 1]
-    const beYear = Number(year) + 543
-    return `${Number(day)} ${monthName} ${beYear}${timePart ? ` เวลา ${timePart} น.` : ""}`
-  }
+  const studentFullName = `${student.title.name}${student.firstName} ${student.lastName}`
 
   return (
     <div className="space-y-4">
-      {/* Student mini-card */}
       <StudentMiniCard student={student} />
 
+      {/* ── Section 1: Guardian selection ── */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
+          <Users className="w-4 h-4 text-orange-500" />
+          <h2 className="text-sm font-bold text-[#2D1B00]">เลือกผู้ปกครองลงนาม</h2>
+          <span className="ml-auto text-xs text-red-500 font-medium">* จำเป็น</span>
+        </div>
+
+        <div className="px-6 py-5">
+          {student.guardians.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-3">ไม่มีข้อมูลผู้ปกครองในระบบ</p>
+          ) : (
+            <div className="space-y-2">
+              {student.guardians.map((g, idx) => {
+                const selected = bondData.selectedGuardianIndex === idx
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setBondData((prev) => ({ ...prev, selectedGuardianIndex: idx }))}
+                    className={`w-full flex items-start gap-3 px-4 py-3.5 rounded-lg border-2 text-left transition-all ${
+                      selected
+                        ? "border-orange-400 bg-orange-50"
+                        : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div
+                      className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                        selected ? "border-orange-400 bg-orange-400" : "border-gray-300"
+                      }`}
+                    >
+                      {selected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800">
+                        {g.firstName} {g.lastName}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {g.relation.name}
+                        {g.phone ? ` · ${g.phone}` : ""}
+                      </p>
+                    </div>
+                    {selected && (
+                      <span className="text-[10px] font-bold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full shrink-0">
+                        เลือกแล้ว
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Section 2: Bond info summary ── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
           <ScrollText className="w-4 h-4 text-orange-500" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">สัญญาทัณฑ์บน</h2>
+          <h2 className="text-sm font-bold text-[#2D1B00]">ข้อมูลในสัญญาทัณฑ์บน</h2>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
-          {/* Bond header preview */}
-          <div className="bg-gray-50 rounded-lg border border-gray-100 px-4 py-3 text-xs text-gray-600 leading-relaxed space-y-1">
-            <p className="font-semibold text-gray-700">ข้อมูลที่จะปรากฏในสัญญา:</p>
-            <p>
-              นักเรียน: <strong>{student.title.name}{student.firstName} {student.lastName}</strong>{" "}
-              รหัส {student.studentCode} ชั้น {student.gradeLevel}/{student.classRoom}
-            </p>
-            {formData.incidentDateTime && (
-              <p>วันที่เกิดเหตุ: {formatThaiDateTime(formData.incidentDateTime)}</p>
-            )}
-            <p>สถานที่: {formData.location || "—"}</p>
+        <div className="px-6 py-5 space-y-4">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <Field label="ผู้ปกครอง" value={selectedGuardian ? `${selectedGuardian.firstName} ${selectedGuardian.lastName}` : "—"} />
+            <Field label="ความสัมพันธ์" value={selectedGuardian?.relation.name ?? "—"} />
+            <Field label="เบอร์โทรผู้ปกครอง" value={selectedGuardian?.phone ?? "—"} />
+            <Field label="นักเรียน" value={studentFullName} />
+            <Field label="ชั้น" value={`${student.gradeLevel}/${student.classRoom}`} />
+            <Field label="เลขประจำตัว" value={student.studentCode} />
           </div>
 
-          {/* Student statement */}
-          <FormGroup label="ถ้อยคำของนักเรียน (ที่นักเรียนให้การ)" required>
-            <textarea
-              value={bondData.studentStatement}
-              onChange={(e) => update("studentStatement", e.target.value)}
-              placeholder="บันทึกถ้อยคำที่นักเรียนให้การไว้ เช่น ข้าพเจ้าขอรับสารภาพว่า..."
-              rows={4}
-              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
-            />
-          </FormGroup>
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-xs text-gray-400 mb-1">ที่อยู่นักเรียน</p>
+            <p className="text-sm text-gray-700">
+              {[
+                student.addressHouseNo && `เลขที่ ${student.addressHouseNo}`,
+                student.addressMoo && `หมู่ ${student.addressMoo}`,
+                student.addressVillage && `บ้าน${student.addressVillage}`,
+                student.addressSoi && `ซอย${student.addressSoi}`,
+                student.addressRoad && `ถนน${student.addressRoad}`,
+                `ต.${student.addressSubDistrict}`,
+                `อ.${student.addressDistrict}`,
+                `จ.${student.addressProvince}`,
+              ].filter(Boolean).join(" ") || "—"}
+            </p>
+          </div>
 
-          {/* Bond conditions */}
-          <FormGroup label="เงื่อนไขทัณฑ์บน" required>
-            <textarea
-              value={bondData.conditions}
-              onChange={(e) => update("conditions", e.target.value)}
-              placeholder="ระบุเงื่อนไขที่นักเรียนต้องปฏิบัติ เช่น จะไม่กระทำผิดซ้ำอีก หากกระทำซ้ำยินยอมรับโทษตามระเบียบของโรงเรียน..."
-              rows={3}
-              className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
-            />
-          </FormGroup>
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-xs text-gray-400 mb-1">รายละเอียดความผิด</p>
+            <p className="text-sm text-gray-700 bg-orange-50 rounded-lg px-3 py-2 leading-relaxed">
+              {formData.detail || "—"}
+            </p>
+          </div>
+        </div>
+      </div>
 
-          {/* Signatories */}
-          <div className="grid grid-cols-2 gap-4">
-            <FormGroup label="ผู้ปกครองลงนาม" required>
-              <input
-                type="text"
-                value={bondData.parentName || defaultParent}
-                onChange={(e) => update("parentName", e.target.value)}
-                placeholder="ชื่อผู้ปกครอง"
-                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
-              />
-            </FormGroup>
+      {/* ── Section 3: Penalty actions ── */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-orange-500" />
+          <h2 className="text-sm font-bold text-[#2D1B00]">บทลงโทษหากทำผิดซ้ำ</h2>
+          <span className="ml-auto text-xs text-red-500 font-medium">* เลือกอย่างน้อย 1 ข้อ</span>
+        </div>
 
-            <FormGroup label="พยาน">
+        <div className="px-6 py-5 space-y-4">
+          <div className="space-y-2">
+            {BOND_PENALTY_OPTIONS.map((opt) => {
+              const checked = bondData.penaltyActions.includes(opt.id)
+              return (
+                <label
+                  key={opt.id}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
+                    checked ? "border-orange-300 bg-orange-50" : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
+                      checked ? "bg-orange-500 border-orange-500" : "border-gray-300"
+                    }`}
+                  >
+                    {checked && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <input type="checkbox" className="sr-only" checked={checked} onChange={() => togglePenalty(opt.id)} />
+                  <span className={`text-sm font-medium ${checked ? "text-gray-800" : "text-gray-600"}`}>
+                    {opt.label}
+                  </span>
+                  {opt.id === "deduct_score" && checked && (
+                    <div className="ml-auto flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={bondData.deductPoints}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setBondData((prev) => ({ ...prev, deductPoints: e.target.value }))}
+                        placeholder="0"
+                        className="w-16 px-2 py-1 text-sm border border-orange-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400"
+                      />
+                      <span className="text-xs text-gray-500">คะแนน</span>
+                    </div>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+
+          {/* Witness */}
+          <div className="pt-2">
+            <FormGroup label="ชื่อพยาน">
               <input
                 type="text"
                 value={bondData.witnessName}
-                onChange={(e) => update("witnessName", e.target.value)}
-                placeholder="ชื่อพยาน (ถ้ามี)"
+                onChange={(e) => setBondData((prev) => ({ ...prev, witnessName: e.target.value }))}
+                placeholder="ชื่อ-นามสกุลพยาน (ถ้ามี)"
                 className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
               />
             </FormGroup>
@@ -1113,7 +1635,7 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
     return `${Number(day)} ${monthName} ${beYear}${timePart ? ` เวลา ${timePart} น.` : ""}`
   }
 
-  const selectedMeasureLabels = MEASURES
+  const selectedMeasureLabels = [...CONSIDERATION_MEASURES, ...RESULT_MEASURES]
     .filter((m) => measureData.selected.includes(m.id))
     .map((m) => m.label)
 
@@ -1176,18 +1698,32 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
             <section className="px-6 py-4">
               <SectionTitle icon={<ScrollText className="w-3.5 h-3.5" />} label="ทัณฑ์บน" />
               <div className="mt-3 space-y-3">
-                <div>
-                  <p className="text-[11px] text-gray-400 mb-1">ถ้อยคำของนักเรียน</p>
-                  <p className="text-sm text-gray-700 leading-relaxed bg-orange-50 rounded-lg px-3 py-2">{bondData.studentStatement || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-400 mb-1">เงื่อนไขทัณฑ์บน</p>
-                  <p className="text-sm text-gray-700 leading-relaxed bg-orange-50 rounded-lg px-3 py-2">{bondData.conditions || "-"}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="ผู้ปกครองลงนาม" value={bondData.parentName || "-"} />
-                  <Field label="พยาน" value={bondData.witnessName || "-"} />
-                </div>
+                {bondData.selectedGuardianIndex !== null && student.guardians[bondData.selectedGuardianIndex] && (() => {
+                  const g = student.guardians[bondData.selectedGuardianIndex!]
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="ผู้ปกครองลงนาม" value={`${g.firstName} ${g.lastName}`} />
+                      <Field label="ความสัมพันธ์" value={g.relation.name} />
+                    </div>
+                  )
+                })()}
+                {bondData.penaltyActions.length > 0 && (
+                  <div>
+                    <p className="text-[11px] text-gray-400 mb-1.5">บทลงโทษหากทำผิดซ้ำ</p>
+                    <ul className="space-y-1">
+                      {BOND_PENALTY_OPTIONS.filter((o) => bondData.penaltyActions.includes(o.id)).map((o) => (
+                        <li key={o.id} className="flex items-center gap-2 text-sm text-gray-700">
+                          <Check className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                          {o.label}
+                          {o.id === "deduct_score" && bondData.deductPoints && ` ${bondData.deductPoints} คะแนน`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {bondData.witnessName && (
+                  <Field label="พยาน" value={bondData.witnessName} />
+                )}
               </div>
             </section>
           )}

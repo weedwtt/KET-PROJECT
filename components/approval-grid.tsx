@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { Search, ChevronLeft, ChevronRight, Eye, Pencil, CheckCircle2, Clock } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight, ShieldCheck, Clock } from "lucide-react"
 
 type Statement = {
   id: number
@@ -22,13 +22,13 @@ type Statement = {
   }
 }
 
-interface StatementGridProps {
+interface ApprovalGridProps {
   data: Statement[]
 }
 
 const PAGE_SIZE = 15
 
-export function StatementGrid({ data }: StatementGridProps) {
+export function ApprovalGrid({ data }: ApprovalGridProps) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
 
@@ -92,14 +92,14 @@ export function StatementGrid({ data }: StatementGridProps) {
               <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ผู้บันทึก</th>
               <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ภาคเรียน</th>
               <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">สถานะ</th>
-              <th className="px-4 py-3 font-semibold text-gray-600 text-center">จัดการ</th>
+              <th className="px-4 py-3 font-semibold text-gray-600 text-center whitespace-nowrap">จัดการ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-16 text-gray-400">
-                  {search ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีรายการบันทึกถ้อยคำ"}
+                <td colSpan={10} className="text-center py-16 text-gray-400">
+                  {search ? "ไม่พบรายการที่ค้นหา" : "ไม่มีรายการที่รออนุมัติ"}
                 </td>
               </tr>
             ) : (
@@ -115,8 +115,7 @@ export function StatementGrid({ data }: StatementGridProps) {
                     {row.student.studentCode}
                   </td>
                   <td className="px-4 py-3.5 text-gray-900 font-medium">
-                    {row.student.title.name}
-                    {row.student.firstName} {row.student.lastName}
+                    {row.student.title.name}{row.student.firstName} {row.student.lastName}
                   </td>
                   <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap">
                     {row.student.gradeLevel}/{row.student.classRoom}
@@ -131,35 +130,19 @@ export function StatementGrid({ data }: StatementGridProps) {
                     {row.semester}/{row.academicYear}
                   </td>
                   <td className="px-4 py-3.5">
-                    {row.status === "approved" ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap">
-                        <CheckCircle2 className="w-3 h-3" /> อนุมัติแล้ว
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full whitespace-nowrap">
-                        <Clock className="w-3 h-3" /> รอดำเนินการ
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full whitespace-nowrap">
+                      <Clock className="w-3 h-3" /> รอดำเนินการ
+                    </span>
                   </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center justify-center gap-1">
-                      <Link
-                        href={`/record/statement/${row.id}`}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="ดูรายละเอียด"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      {row.status !== "approved" && (
-                        <Link
-                          href={`/record/statement/${row.id}/edit`}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-[#F5A623] hover:bg-amber-50 transition-colors"
-                          title="แก้ไข"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Link>
-                      )}
-                    </div>
+                  <td className="px-4 py-3.5 text-center">
+                    <Link
+                      href={`/dashboard/approve/${row.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                      title="ดูรายละเอียดและอนุมัติ"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      ดูและอนุมัติ
+                    </Link>
                   </td>
                 </tr>
               ))
@@ -191,15 +174,13 @@ export function StatementGrid({ data }: StatementGridProps) {
             }, [])
             .map((p, i) =>
               p === "…" ? (
-                <span key={`ellipsis-${i}`} className="px-1 text-gray-400 text-sm">…</span>
+                <span key={`e-${i}`} className="px-1 text-gray-400 text-sm">…</span>
               ) : (
                 <button
                   key={p}
                   onClick={() => setPage(p as number)}
                   className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                    safePage === p
-                      ? "bg-[#F5A623] text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    safePage === p ? "bg-[#F5A623] text-white" : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   {p}
