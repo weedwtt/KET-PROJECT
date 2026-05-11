@@ -4,7 +4,7 @@ expand(config({ path: ".env.local", override: false }));
 expand(config({ path: ".env", override: false }));
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../lib/generated/prisma/client";
+import { PrismaClient, TeacherRole, GradeHeadLevel } from "../lib/generated/prisma/client";
 import { hashPassword } from "../lib/password";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -112,20 +112,86 @@ async function main() {
     skipDuplicates: true,
   });
 
-  await prisma.violationCategory.createMany({
-    data: [
-      { name: "หมวดที่ 1 ความประพฤติและมารยาท" },
-      { name: "หมวดที่ 2 การแต่งกายและการไว้ทรงผม" },
-      { name: "หมวดที่ 3 ความรับผิดชอบในการเรียน" },
-      { name: "หมวดที่ 4 การใช้สิ่งเสพติดและอบายมุข" },
-      { name: "หมวดที่ 5 ทรัพย์สินและความสะอาด" },
-      { name: "หมวดที่ 6 ความปลอดภัยและการทะเลาะวิวาท" },
-      { name: "หมวดที่ 7 อื่น ๆ" },
-    ],
-    skipDuplicates: true,
-  });
+  const violationCategorySeed = [
+    {
+      name: "หมวดการเรียน",
+      subs: [
+        "มาสาย",
+        "ขาดเรียนโดยไม่มีใบลา ไม่สแกนหน้า",
+        "ไม่เข้าเรียนในแต่ละรายวิชา",
+        "ออกนอกบริเวณโรงเรียนโดยไม่ได้รับอนุญาต",
+        "ทำกิจกรรมอื่น ๆ ในเวลาเรียน เช่น ใช้โทรศัพท์ขณะครูสอน ไม่มีความพร้อมในการเรียน",
+      ],
+    },
+    {
+      name: "หมวดการแต่งกาย",
+      subs: [
+        "การแต่งกายไม่เรียบร้อยและผิดตามระเบียบของโรงเรียน",
+        "ทรงผมผิดระเบียบ ว่าด้วยการไว้ทรงผมของนักเรียน",
+      ],
+    },
+    {
+      name: "หมวดความประพฤติ",
+      subs: [
+        "ไม่เข้าแถว เคารพธงชาติ",
+        "แสดงวาจาไม่สุภาพกับเพื่อน นักเรียน ครูในที่สาธารณะ",
+        "แสดงกิริยาไม่เหมาะสมในโรงเรียน เช่น ไม่แสดงความเคารพครู ก้าวร้าวครู หรือบุคคลอื่น รบกวนการสอน",
+        "มีพฤติกรรมหรือแสดงกิริยาไม่เหมาะสมต่อการเป็นนักเรียน ตามบันทึกข้อตกลง",
+        "เสพ สูบ หรือมีในครอบครอง เช่น บุหรี่ บุหรี่ไฟฟ้า กัญชา ฝิ่น เฮโรอีน ทินเนอร์ ยาบ้า กระท่อม ยากล่อมประสาท ฯลฯ",
+        "ไม่ปฏิบัติตามระเบียบวินัยของโรงเรียน เมื่อกล่าวตักเตือนแล้ว ไม่ปฏิบัติหรือแก้ไขให้ดีขึ้น",
+        "ฝ่าฝืนพระราชบัญญัติคอมพิวเตอร์",
+        "ลักขโมยนอกโรงเรียน",
+        "พกพาอุปกรณ์หรือเล่นการพนันในโรงเรียน",
+        "ดื่มสุราหรือของมึนเมา",
+        "ทำลายทรัพย์สินในโรงเรียน",
+        "ทำลายทรัพย์สินของบุคคลอื่น",
+        "เข้าไปในสถานที่ต้องห้ามตามกฎกระทรวงศึกษาธิการ",
+        "ทะเลาะวิวาททั้งในและนอกโรงเรียน",
+        "ปลอมแปลงเอกสาร",
+        "มีพฤติกรรม หรือการแสดงออกไม่เหมาะสมเชิงชู้สาว",
+        "มั่วสุม",
+        "ยุยง ส่งเสริม ตระเตรียมกระทำการใดที่ทำให้โรงเรียนเสื่อมเสียชื่อเสียง",
+        "ทำร้ายบุคคลอื่นจนเป็นเหตุให้เกิดอันตรายแก่ร่างกายและจิตใจ",
+        "พกพาอาวุธมาในโรงเรียน",
+        "ชักชวนบุคคลภายนอกเข้ามาในโรงเรียนโดยไม่มีเหตุอันสมควร หรือก่อความไม่สงบภายในโรงเรียน",
+      ],
+    },
+    {
+      name: "หมวดความสะอาดและสิ่งแวดล้อม",
+      subs: [
+        "ก่อความสกปรกในเขตโรงเรียน",
+        "นำอาหารและเครื่องดื่มออกนอกเขตที่โรงเรียนกำหนด",
+        "สั่งซื้อหรือนำอาหาร เครื่องดื่มจากภายนอกโรงเรียน",
+        "ขีดเขียนฝาผนัง อาคารเรียน โต๊ะเรียนและอื่น ๆ",
+        "ก่อเสียงอึกทึกรบกวนในโรงเรียน เช่น จุดดอกไม้ไฟ กดสัญญาณเตือนภัย ฯลฯ",
+      ],
+    },
+    {
+      name: "อื่น ๆ",
+      subs: [],
+    },
+  ];
 
-  console.log("✓ Semester / AcademicYear / ViolationCategory");
+  for (const cat of violationCategorySeed) {
+    const created = await prisma.violationCategory.upsert({
+      where: { name: cat.name },
+      update: {},
+      create: { name: cat.name },
+    });
+    for (const subName of cat.subs) {
+      const exists = await prisma.violationSubCategory.findFirst({
+        where: { name: subName, violationCategoryId: created.id },
+      });
+      if (!exists) {
+        await prisma.violationSubCategory.create({
+          data: { name: subName, violationCategoryId: created.id },
+        });
+      }
+    }
+  }
+
+  const subCount = violationCategorySeed.reduce((s, c) => s + c.subs.length, 0);
+  console.log(`✓ Semester / AcademicYear / ViolationCategory (${violationCategorySeed.length}) / SubCategory (${subCount})`);
 
   // ── 2. Resolve ID maps ────────────────────────────────────────────────────
 
@@ -141,15 +207,18 @@ async function main() {
 
   // ── 3. Teachers ───────────────────────────────────────────────────────────
   //
-  //  Index  ชื่อ               role                    signatureUrl
-  //  [0]    ดร.ประเสริฐ        null (ผอ.)              ✓
-  //  [1]    นาง สุรีย์         null (รอง ผอ.)          ✓
-  //  [2]    นาย สมชาย          หัวหน้าระดับชั้น (ม.1)  ✓
-  //  [3]    นาง วิภา           หัวหน้าระดับชั้น (ม.2)  ✓
-  //  [4]    นางสาว มาลี        หัวหน้าระดับชั้น (ม.3)  ✓
-  //  [5]    นาย อนันต์         ครูฝ่ายปกครอง           ✓
-  //  [6]    นางสาว สุดา        ครูฝ่ายปกครอง           ✓
-  //  [7]    นาย ชาญชัย         null (ครูทั่วไป)        null (ยังไม่อัปโหลด)
+  //  Index  ชื่อ               role              gradeHeadLevel   signatureUrl
+  //  [0]    ดร.ประเสริฐ        DIRECTOR          -                ✓
+  //  [1]    นาง สุรีย์         VICE_DIRECTOR     -                ✓
+  //  [2]    นาย สมชาย          TEACHER           M1               ✓
+  //  [3]    นาง วิภา           TEACHER           M2               ✓
+  //  [4]    นางสาว มาลี        TEACHER           M3               ✓
+  //  [5]    นาย อนันต์         TEACHER           -                ✓  (ครูฝ่ายปกครอง)
+  //  [6]    นางสาว สุดา        TEACHER           -                ✓  (ครูฝ่ายปกครอง)
+  //  [7]    นาย ชาญชัย         TEACHER           -                null
+  //  [8]    นาย วิศรุต         ADMIN             -                null (admin)
+
+  const now = new Date();
 
   const schoolAddr = {
     addressSubDistrict: "บางพลีใหญ่",
@@ -159,6 +228,7 @@ async function main() {
   };
 
   const teachersRaw = [
+    // ── ผู้อำนวยการ ──
     {
       titleId: ttMap["ดร."],
       firstName: "ประเสริฐ",
@@ -166,9 +236,12 @@ async function main() {
       phone: "0891111111",
       addressHouseNo: "99",
       addressMoo: "3",
-      role: null,
+      role: TeacherRole.DIRECTOR,
+      gradeHeadLevel: null,
       signatureUrl: SIGNATURES.prasert,
+      signatureUpdatedAt: now,
     },
+    // ── รองผู้อำนวยการ ──
     {
       titleId: ttMap["นาง"],
       firstName: "สุรีย์",
@@ -177,10 +250,12 @@ async function main() {
       addressHouseNo: "55",
       addressMoo: "1",
       addressSubDistrict: "บางโฉลง",
-      role: null,
+      role: TeacherRole.VICE_DIRECTOR,
+      gradeHeadLevel: null,
       signatureUrl: SIGNATURES.suree,
+      signatureUpdatedAt: now,
     },
-    // หัวหน้าระดับชั้น
+    // ── หัวหน้าระดับชั้น ──
     {
       titleId: ttMap["นาย"],
       firstName: "สมชาย",
@@ -188,8 +263,10 @@ async function main() {
       phone: "0893333333",
       addressHouseNo: "12/3",
       addressMoo: "5",
-      role: "หัวหน้าระดับชั้น",
+      role: TeacherRole.TEACHER,
+      gradeHeadLevel: GradeHeadLevel.M1,
       signatureUrl: SIGNATURES.somchai,
+      signatureUpdatedAt: now,
     },
     {
       titleId: ttMap["นาง"],
@@ -199,8 +276,10 @@ async function main() {
       addressHouseNo: "78",
       addressMoo: "2",
       addressSubDistrict: "ราชาเทวะ",
-      role: "หัวหน้าระดับชั้น",
+      role: TeacherRole.TEACHER,
+      gradeHeadLevel: GradeHeadLevel.M2,
       signatureUrl: SIGNATURES.wipa,
+      signatureUpdatedAt: now,
     },
     {
       titleId: ttMap["นางสาว"],
@@ -210,10 +289,12 @@ async function main() {
       addressHouseNo: "34",
       addressMoo: "4",
       addressSubDistrict: "หนองปรือ",
-      role: "หัวหน้าระดับชั้น",
+      role: TeacherRole.TEACHER,
+      gradeHeadLevel: GradeHeadLevel.M3,
       signatureUrl: SIGNATURES.malee,
+      signatureUpdatedAt: now,
     },
-    // ครูฝ่ายปกครอง
+    // ── ครูฝ่ายปกครอง ──
     {
       titleId: ttMap["นาย"],
       firstName: "อนันต์",
@@ -221,8 +302,10 @@ async function main() {
       phone: "0896666666",
       addressHouseNo: "101",
       addressMoo: "6",
-      role: "ครูฝ่ายปกครอง",
+      role: TeacherRole.TEACHER,
+      gradeHeadLevel: null,
       signatureUrl: SIGNATURES.anan,
+      signatureUpdatedAt: now,
     },
     {
       titleId: ttMap["นางสาว"],
@@ -231,10 +314,12 @@ async function main() {
       phone: "0897777777",
       addressHouseNo: "22",
       addressMoo: "3",
-      role: "ครูฝ่ายปกครอง",
+      role: TeacherRole.TEACHER,
+      gradeHeadLevel: null,
       signatureUrl: SIGNATURES.suda,
+      signatureUpdatedAt: now,
     },
-    // ครูทั่วไป (ไม่มีลายเซ็น — ตัวอย่าง null)
+    // ── ครูทั่วไป ──
     {
       titleId: ttMap["นาย"],
       firstName: "ชาญชัย",
@@ -242,8 +327,23 @@ async function main() {
       phone: "0898888888",
       addressHouseNo: "67",
       addressMoo: "7",
-      role: null,
+      role: TeacherRole.TEACHER,
+      gradeHeadLevel: null,
       signatureUrl: null,
+      signatureUpdatedAt: null,
+    },
+    // ── Admin (ผู้ดูแลระบบ) ──
+    {
+      titleId: ttMap["นาย"],
+      firstName: "วิศรุต",
+      lastName: "ระบบดี",
+      phone: "0899999999",
+      addressHouseNo: "1",
+      addressMoo: "1",
+      role: TeacherRole.ADMIN,
+      gradeHeadLevel: null,
+      signatureUrl: null,
+      signatureUpdatedAt: null,
     },
   ];
 
@@ -667,27 +767,29 @@ async function main() {
 
   // ── 6. Users ───────────────────────────────────────────────────────────────
   //
-  //  username     teacher            password (initial)
-  //  admin        (no teacher)       admin123
-  //  prasert      ดร.ประเสริฐ        prasert123
-  //  suree        นาง สุรีย์         suree123
-  //  somchai      นาย สมชาย          somchai123
-  //  wipa         นาง วิภา           wipa123
-  //  malee        นางสาว มาลี        malee123
-  //  anan         นาย อนันต์         anan123
-  //  suda         นางสาว สุดา        suda123
-  //  chanchai     นาย ชาญชัย         chanchai123
+  //  username     teacher (index)    role           password
+  //  admin        (no teacher)       super admin    admin1234
+  //  prasert      [0] ดร.ประเสริฐ    DIRECTOR       prasert1234
+  //  suree        [1] นาง สุรีย์     VICE_DIRECTOR  suree1234
+  //  somchai      [2] นาย สมชาย      TEACHER/M1     somchai1234
+  //  wipa         [3] นาง วิภา       TEACHER/M2     wipa1234
+  //  malee        [4] นางสาว มาลี    TEACHER/M3     malee1234
+  //  anan         [5] นาย อนันต์     TEACHER        anan1234
+  //  suda         [6] นางสาว สุดา    TEACHER        suda1234
+  //  chanchai     [7] นาย ชาญชัย     TEACHER        chanchai1234
+  //  wisarut      [8] นาย วิศรุต     ADMIN          wisarut1234
 
   const userSeeds: { username: string; password: string; teacherIndex: number | null }[] = [
-    { username: "admin",    password: "admin123",    teacherIndex: null },
-    { username: "prasert",  password: "prasert123",  teacherIndex: 0 },
-    { username: "suree",    password: "suree123",    teacherIndex: 1 },
-    { username: "somchai",  password: "somchai123",  teacherIndex: 2 },
-    { username: "wipa",     password: "wipa123",     teacherIndex: 3 },
-    { username: "malee",    password: "malee123",    teacherIndex: 4 },
-    { username: "anan",     password: "anan123",     teacherIndex: 5 },
-    { username: "suda",     password: "suda123",     teacherIndex: 6 },
-    { username: "chanchai", password: "chanchai123", teacherIndex: 7 },
+    { username: "admin",    password: "admin1234",    teacherIndex: null },
+    { username: "prasert",  password: "prasert1234",  teacherIndex: 0 },
+    { username: "suree",    password: "suree1234",    teacherIndex: 1 },
+    { username: "somchai",  password: "somchai1234",  teacherIndex: 2 },
+    { username: "wipa",     password: "wipa1234",     teacherIndex: 3 },
+    { username: "malee",    password: "malee1234",    teacherIndex: 4 },
+    { username: "anan",     password: "anan1234",     teacherIndex: 5 },
+    { username: "suda",     password: "suda1234",     teacherIndex: 6 },
+    { username: "chanchai", password: "chanchai1234", teacherIndex: 7 },
+    { username: "wisarut",  password: "wisarut1234",  teacherIndex: 8 },
   ];
 
   for (const { username, password, teacherIndex } of userSeeds) {
@@ -706,10 +808,16 @@ async function main() {
   console.log(`✓ Users (${userSeeds.length}) — passwords hashed`);
   console.log("\n✅ Seed complete!");
   console.log("\n📋 Summary:");
-  console.log("  Teachers with role 'หัวหน้าระดับชั้น': สมชาย, วิภา, มาลี");
-  console.log("  Teachers with role 'ครูฝ่ายปกครอง': อนันต์, สุดา");
-  console.log("  Teachers with signatureUrl: ประเสริฐ, สุรีย์, สมชาย, วิภา, มาลี, อนันต์, สุดา");
-  console.log("  Teachers WITHOUT signatureUrl (null): ชาญชัย");
+  console.log("  DIRECTOR    : ดร.ประเสริฐ  (prasert / prasert1234)");
+  console.log("  VICE_DIRECTOR: นาง สุรีย์   (suree / suree1234)");
+  console.log("  TEACHER/M1  : นาย สมชาย    (somchai / somchai1234)");
+  console.log("  TEACHER/M2  : นาง วิภา     (wipa / wipa1234)");
+  console.log("  TEACHER/M3  : นางสาว มาลี  (malee / malee1234)");
+  console.log("  TEACHER     : นาย อนันต์   (anan / anan1234)");
+  console.log("  TEACHER     : นางสาว สุดา  (suda / suda1234)");
+  console.log("  TEACHER     : นาย ชาญชัย   (chanchai / chanchai1234)");
+  console.log("  ADMIN       : นาย วิศรุต   (wisarut / wisarut1234)");
+  console.log("  super admin : (no teacher)  (admin / admin1234)");
   console.log(`  Students: ${studentCount} (ม.1/1, ม.1/2, ม.2/1, ม.2/2, ม.3/1, ม.3/2)`);
 }
 
