@@ -372,7 +372,7 @@ export default function EditStatementPage() {
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-[300px]">
-        <svg className="w-6 h-6 animate-spin text-[#F5A623]" fill="none" viewBox="0 0 24 24">
+        <svg className="w-6 h-6 animate-spin text-[#465fff]" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -393,7 +393,7 @@ export default function EditStatementPage() {
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-[#2D1B00]">แก้ไขบันทึกถ้อยคำ</h1>
+          <h1 className="text-xl font-bold text-[#1c2434]">แก้ไขบันทึกถ้อยคำ</h1>
           <p className="text-sm text-gray-400 mt-0.5">#{id}</p>
         </div>
       </div>
@@ -497,7 +497,7 @@ function Stepper({
                   onClick={() => onStepClick(vi)}
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 cursor-pointer ${
                     isActive
-                      ? "bg-[#F5A623] text-white ring-4 ring-amber-100"
+                      ? "bg-[#465fff] text-white ring-4 ring-[#465fff]/20"
                       : isDone
                       ? "bg-green-500 text-white hover:bg-green-600"
                       : "bg-gray-100 text-gray-400 hover:bg-gray-200"
@@ -508,7 +508,7 @@ function Stepper({
                 <div className="mt-2 text-center w-[60px]">
                   <p
                     className={`text-[10px] font-semibold leading-tight ${
-                      isActive ? "text-[#F5A623]" : isDone ? "text-green-600" : "text-gray-400"
+                      isActive ? "text-[#465fff]" : isDone ? "text-green-600" : "text-gray-400"
                     }`}
                   >
                     {s.label}
@@ -565,14 +565,14 @@ function Step1StudentInfo({ student, onNext }: { student: Student; onNext: () =>
     <div className="space-y-4">
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#F5A623] flex items-center justify-center shrink-0">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-[#465fff] flex items-center justify-center shrink-0">
             <User className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900 text-lg truncate">{fullName}</p>
             <div className="flex flex-wrap items-center gap-2 mt-1">
-              <span className="text-xs bg-amber-100 text-[#B87800] font-semibold px-2.5 py-0.5 rounded-full">
+              <span className="text-xs bg-[#eff2ff] text-[#3a4fd4] font-semibold px-2.5 py-0.5 rounded-full">
                 รหัส {student.studentCode}
               </span>
               <span className="text-xs text-gray-500">
@@ -624,7 +624,7 @@ function Step1StudentInfo({ student, onNext }: { student: Student; onNext: () =>
       <div className="flex justify-end pt-1">
         <button
           onClick={onNext}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           ถัดไป — บันทึกถ้อยคำ
           <ChevronRight className="w-4 h-4" />
@@ -686,15 +686,15 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
       <StudentMiniCard student={student} />
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-[#F5A623]" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">บันทึกถ้อยคำ</h2>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-[#465fff]" />
+          <h2 className="text-sm font-bold text-[#1c2434]">บันทึกถ้อยคำ</h2>
         </div>
 
         <div className="px-6 py-5 space-y-5">
           {loadingMaster ? (
             <div className="flex justify-center py-6">
-              <svg className="w-5 h-5 animate-spin text-[#F5A623]" fill="none" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 animate-spin text-[#465fff]" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
@@ -744,7 +744,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                   onChange={(e) => update({ subject: e.target.value })}
                   placeholder="กรอกพฤติกรรมที่กระทำความผิด"
                   rows={3}
-                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
                 />
               </FormGroup>
 
@@ -754,7 +754,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                   onChange={(e) => update({ detail: e.target.value })}
                   placeholder="กรอกรายละเอียดการกระทำความผิด"
                   rows={3}
-                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
                 />
               </FormGroup>
 
@@ -768,7 +768,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                       const time = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 16) : "00:00"
                       update({ incidentDateTime: date ? `${date}T${time}` : "" })
                     }}
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800"
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] text-gray-800"
                   />
                   <div className="flex items-center gap-1.5">
                     <select
@@ -779,7 +779,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                         const mm = formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : "00"
                         update({ incidentDateTime: hh !== "" ? `${date}T${hh}:${mm}` : "" })
                       }}
-                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800 bg-white"
+                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] text-gray-800 bg-white"
                     >
                       <option value="">ชม.</option>
                       {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
@@ -795,7 +795,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                         const hh = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : "00"
                         update({ incidentDateTime: mm !== "" ? `${date}T${hh}:${mm}` : "" })
                       }}
-                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] text-gray-800 bg-white"
+                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] text-gray-800 bg-white"
                     >
                       <option value="">นาที</option>
                       {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
@@ -813,7 +813,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                     value={formData.location}
                     onChange={(e) => update({ location: e.target.value })}
                     placeholder="ระบุสถานที่"
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
                   />
                 </FormGroup>
                 <FormGroup label="ผู้บันทึกข้อมูล" required>
@@ -822,7 +822,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                     value={formData.recorder}
                     onChange={(e) => update({ recorder: e.target.value })}
                     placeholder="ชื่อผู้บันทึก"
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
                   />
                 </FormGroup>
               </div>
@@ -842,7 +842,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
         <button
           onClick={onNext}
           disabled={!isValid}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           ถัดไป — มาตรการ
           <ChevronRight className="w-4 h-4" />
@@ -886,7 +886,7 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
                 checked
                   ? isBond
                     ? "border-orange-300 bg-orange-50"
-                    : "border-amber-200 bg-amber-50"
+                    : "border-[#465fff]/20 bg-[#eff2ff]"
                   : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
               }`}
             >
@@ -895,7 +895,7 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
                   checked
                     ? isBond
                       ? "bg-orange-500 border-orange-500"
-                      : "bg-[#F5A623] border-[#F5A623]"
+                      : "bg-[#465fff] border-[#465fff]"
                     : "border-gray-300"
                 }`}
               >
@@ -920,14 +920,14 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-[#F5A623]" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">มาตรการ / การดำเนินการ</h2>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-[#465fff]" />
+          <h2 className="text-sm font-bold text-[#1c2434]">มาตรการ / การดำเนินการ</h2>
         </div>
         <div className="px-6 py-5 space-y-6">
           <div className="space-y-3">
             <div>
-              <p className="text-sm font-semibold text-[#F5A623]">ส่วนที่ 3: การพิจารณา</p>
+              <p className="text-sm font-semibold text-[#465fff]">ส่วนที่ 3: การพิจารณา</p>
               <p className="text-xs text-gray-400 mt-0.5">เลือกได้มากกว่า 1 ข้อ</p>
             </div>
             <MeasureList items={CONSIDERATION_MEASURES} />
@@ -937,7 +937,7 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
 
           <div className="space-y-3">
             <div>
-              <p className="text-sm font-semibold text-[#F5A623]">ส่วนที่ 4: ผลการพิจารณา</p>
+              <p className="text-sm font-semibold text-[#465fff]">ส่วนที่ 4: ผลการพิจารณา</p>
               <p className="text-xs text-gray-400 mt-0.5">เลือกได้มากกว่า 1 ข้อ</p>
             </div>
             <MeasureList items={RESULT_MEASURES} />
@@ -959,7 +959,7 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
                 onChange={(e) => setMeasureData((prev) => ({ ...prev, notes: e.target.value }))}
                 placeholder="บันทึกเพิ่มเติม (ถ้ามี)"
                 rows={2}
-                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] placeholder:text-gray-300"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
               />
             </FormGroup>
           </div>
@@ -976,7 +976,7 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
         </button>
         <button
           onClick={onNext}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           {showBond ? "ถัดไป — ทำทัณฑ์บน" : "ถัดไป — ลงนาม"}
           <ChevronRight className="w-4 h-4" />
@@ -1026,7 +1026,7 @@ function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }:
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
           <Users className="w-4 h-4 text-orange-500" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">เลือกผู้ปกครองลงนาม</h2>
+          <h2 className="text-sm font-bold text-[#1c2434]">เลือกผู้ปกครองลงนาม</h2>
           <span className="ml-auto text-xs text-red-500 font-medium">* จำเป็น</span>
         </div>
         <div className="px-6 py-5">
@@ -1075,7 +1075,7 @@ function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }:
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
           <ScrollText className="w-4 h-4 text-orange-500" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">ข้อมูลในสัญญาทัณฑ์บน</h2>
+          <h2 className="text-sm font-bold text-[#1c2434]">ข้อมูลในสัญญาทัณฑ์บน</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -1099,7 +1099,7 @@ function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }:
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-orange-500" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">บทลงโทษหากทำผิดซ้ำ</h2>
+          <h2 className="text-sm font-bold text-[#1c2434]">บทลงโทษหากทำผิดซ้ำ</h2>
           <span className="ml-auto text-xs text-red-500 font-medium">* เลือกอย่างน้อย 1 ข้อ</span>
         </div>
         <div className="px-6 py-5 space-y-4">
@@ -1169,7 +1169,7 @@ function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }:
         <button
           onClick={onNext}
           disabled={!isValid}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           ถัดไป — ลงนาม
           <ChevronRight className="w-4 h-4" />
@@ -1236,7 +1236,7 @@ function SignaturePad({
     ctx.lineWidth = 2.5
     ctx.lineCap = "round"
     ctx.lineJoin = "round"
-    ctx.strokeStyle = "#1a1a1a"
+    ctx.strokeStyle = "white"
     const { x, y } = getXY(e)
     ctx.lineTo(x, y)
     ctx.stroke()
@@ -1285,7 +1285,7 @@ function SignaturePad({
           ล้าง
         </button>
         {!value && (
-          <button type="button" onClick={confirm} className="px-3 py-1.5 text-xs font-semibold text-white bg-[#F5A623] hover:bg-[#e09518] rounded-lg transition-colors">
+          <button type="button" onClick={confirm} className="px-3 py-1.5 text-xs font-semibold text-white bg-[#465fff] hover:bg-[#3a4fd4] rounded-lg transition-colors">
             ยืนยัน
           </button>
         )}
@@ -1338,7 +1338,7 @@ function TeacherSignatureSelect({
             const teacher = teachers.find((t) => t.id === tid) ?? null
             onSelect(tid, teacher?.signatureUrl ?? null)
           }}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] bg-white text-gray-800"
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] bg-white text-gray-800"
         >
           <option value="">เลือก{label}</option>
           {teachers.map((t) => (
@@ -1349,7 +1349,7 @@ function TeacherSignatureSelect({
         </select>
       )}
       {selected && (
-        <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
+        <div className="rounded-lg border border-[#465fff]/20 bg-[#eff2ff] px-4 py-3">
           {selected.signatureUrl ? (
             <img src={selected.signatureUrl} alt="signature" className="h-16 object-contain mx-auto" />
           ) : (
@@ -1376,9 +1376,9 @@ function Step5Signature({ student, signatureData, setSignatureData, onBack, onNe
       <StudentMiniCard student={student} />
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
-          <ScrollText className="w-4 h-4 text-[#F5A623]" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">ส่วนที่ 5: ลงนาม</h2>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
+          <ScrollText className="w-4 h-4 text-[#465fff]" />
+          <h2 className="text-sm font-bold text-[#1c2434]">ส่วนที่ 5: ลงนาม</h2>
         </div>
 
         <div className="px-6 py-5 space-y-6">
@@ -1437,7 +1437,7 @@ function Step5Signature({ student, signatureData, setSignatureData, onBack, onNe
         </button>
         <button
           onClick={onNext}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#F5A623] hover:bg-[#e09518] active:bg-[#cc8610] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           ถัดไป — ยืนยัน
           <ChevronRight className="w-4 h-4" />
@@ -1482,7 +1482,7 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100 px-6 py-4 flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-green-500" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">สรุปข้อมูลก่อนบันทึก</h2>
+          <h2 className="text-sm font-bold text-[#1c2434]">สรุปข้อมูลก่อนบันทึก</h2>
         </div>
 
         <div className="divide-y divide-gray-50">
@@ -1512,7 +1512,7 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
               <ul className="mt-3 space-y-1.5">
                 {selectedMeasureLabels.map((label) => (
                   <li key={label} className="flex items-center gap-2 text-sm text-gray-700">
-                    <Check className="w-3.5 h-3.5 text-[#F5A623] shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#465fff] shrink-0" />
                     {label}
                   </li>
                 ))}
@@ -1607,7 +1607,7 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
 function StudentMiniCard({ student }: { student: Student }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center gap-3">
-      <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center shrink-0">
+      <div className="w-8 h-8 rounded-full bg-[#465fff] flex items-center justify-center shrink-0">
         <User className="w-4 h-4 text-white" />
       </div>
       <div>
@@ -1649,7 +1649,7 @@ function NativeSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] appearance-none cursor-pointer ${
+      className={`w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] appearance-none cursor-pointer ${
         value ? "text-gray-800" : "text-gray-400"
       }`}
       style={{

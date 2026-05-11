@@ -1,4 +1,4 @@
-import { db } from "@/lib/db"
+﻿import { db } from "@/lib/db"
 import Link from "next/link"
 import { UserCog, Plus } from "lucide-react"
 import { UserTable } from "@/components/master/user-table"
@@ -61,17 +61,17 @@ export default async function UsersPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
-            <UserCog className="w-4.5 h-4.5 text-[#F5A623]" />
+          <div className="w-9 h-9 rounded-lg bg-[#eff2ff] flex items-center justify-center">
+            <UserCog className="w-4.5 h-4.5 text-[#465fff]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#2D1B00]">จัดการผู้ใช้</h1>
+            <h1 className="text-xl font-bold text-[#1c2434]">จัดการผู้ใช้</h1>
             <p className="text-sm text-gray-400 mt-0.5">ตารางข้อมูลหลัก — ผู้ใช้งาน · ทั้งหมด {total} รายการ</p>
           </div>
         </div>
         <Link
           href="/dashboard/master/users/new"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#F5A623] text-[#1a1a1a] text-sm font-semibold hover:bg-[#e8951f] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#465fff] text-white text-sm font-semibold hover:bg-[#3a4fd4] transition-colors"
         >
           <Plus className="w-4 h-4" />
           เพิ่มผู้ใช้
@@ -84,11 +84,11 @@ export default async function UsersPage({
           name="search"
           defaultValue={search}
           placeholder="ค้นหาชื่อผู้ใช้หรือชื่อครู..."
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 focus:border-[#F5A623]"
+          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
         />
         <button
           type="submit"
-          className="px-4 py-2 rounded-lg bg-[#F5A623] text-[#1a1a1a] text-sm font-semibold hover:bg-[#e8951f] transition-colors"
+          className="px-4 py-2 rounded-lg bg-[#465fff] text-white text-sm font-semibold hover:bg-[#3a4fd4] transition-colors"
         >
           ค้นหา
         </button>
@@ -124,8 +124,8 @@ export default async function UsersPage({
                   href={`?page=${p}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
                   className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${
                     p === safePage
-                      ? "bg-[#F5A623] text-[#1a1a1a] font-bold"
-                      : "text-gray-600 hover:bg-amber-50"
+                      ? "bg-[#465fff] text-white font-bold"
+                      : "text-gray-600 hover:bg-[#f8f9ff]"
                   }`}
                 >
                   {p}

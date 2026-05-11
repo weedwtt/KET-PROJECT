@@ -131,7 +131,7 @@ export default function StatementDetailPage() {
 
   if (loading) return (
     <div className="p-6 flex justify-center items-center min-h-[300px]">
-      <svg className="w-6 h-6 animate-spin text-[#F5A623]" fill="none" viewBox="0 0 24 24">
+      <svg className="w-6 h-6 animate-spin text-[#465fff]" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
       </svg>
@@ -156,7 +156,7 @@ export default function StatementDetailPage() {
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-[#2D1B00]">รายละเอียดบันทึกถ้อยคำ</h1>
+          <h1 className="text-xl font-bold text-[#1c2434]">รายละเอียดบันทึกถ้อยคำ</h1>
           <p className="text-sm text-gray-400 mt-0.5">#{record.id} · บันทึกวันที่ {formatThaiDate(record.recordDate)}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -166,12 +166,12 @@ export default function StatementDetailPage() {
             </span>
           ) : (
             <>
-              <span className="px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">
+              <span className="px-3 py-1.5 bg-[#eff2ff] text-[#465fff] text-xs font-bold rounded-full">
                 รอดำเนินการ
               </span>
               <Link
                 href={`/record/statement/${id}/edit`}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:text-[#F5A623] hover:border-[#F5A623] text-xs font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 hover:text-[#465fff] hover:border-[#465fff] text-xs font-semibold rounded-lg transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" /> แก้ไข
               </Link>
@@ -182,7 +182,7 @@ export default function StatementDetailPage() {
 
       {/* Student mini card */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-[#F5A623] flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-full bg-[#465fff] flex items-center justify-center shrink-0">
           <User className="w-4 h-4 text-white" />
         </div>
         <div>
@@ -197,9 +197,9 @@ export default function StatementDetailPage() {
 
       {/* Statement info */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-[#F5A623]" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">บันทึกถ้อยคำ</h2>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-[#465fff]" />
+          <h2 className="text-sm font-bold text-[#1c2434]">บันทึกถ้อยคำ</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-2 gap-x-8 gap-y-3">
@@ -219,18 +219,18 @@ export default function StatementDetailPage() {
 
       {/* Measures */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-[#F5A623]" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">มาตรการ / การดำเนินการ</h2>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-[#465fff]" />
+          <h2 className="text-sm font-bold text-[#1c2434]">มาตรการ / การดำเนินการ</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
           {record.considerationMeasures.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-[#F5A623] mb-2">ส่วนที่ 3: การพิจารณา</p>
+              <p className="text-xs font-semibold text-[#465fff] mb-2">ส่วนที่ 3: การพิจารณา</p>
               <ul className="space-y-1">
                 {record.considerationMeasures.map((m) => (
                   <li key={m} className="flex items-center gap-2 text-sm text-gray-700">
-                    <Check className="w-3.5 h-3.5 text-[#F5A623] shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#465fff] shrink-0" />
                     {CONSIDERATION_LABELS[m] ?? m}
                   </li>
                 ))}
@@ -239,11 +239,11 @@ export default function StatementDetailPage() {
           )}
           {record.resultMeasures.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-[#F5A623] mb-2">ส่วนที่ 4: ผลการพิจารณา</p>
+              <p className="text-xs font-semibold text-[#465fff] mb-2">ส่วนที่ 4: ผลการพิจารณา</p>
               <ul className="space-y-1">
                 {record.resultMeasures.map((m) => (
                   <li key={m} className="flex items-center gap-2 text-sm text-gray-700">
-                    <Check className="w-3.5 h-3.5 text-[#F5A623] shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-[#465fff] shrink-0" />
                     {RESULT_LABELS[m] ?? m}
                   </li>
                 ))}
@@ -264,7 +264,7 @@ export default function StatementDetailPage() {
         <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
             <ScrollText className="w-4 h-4 text-orange-500" />
-            <h2 className="text-sm font-bold text-[#2D1B00]">สัญญาทัณฑ์บน</h2>
+            <h2 className="text-sm font-bold text-[#1c2434]">สัญญาทัณฑ์บน</h2>
           </div>
           <div className="px-6 py-5 space-y-3">
             {bondGuardian && (
@@ -295,9 +295,9 @@ export default function StatementDetailPage() {
 
       {/* Signatures */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
-          <Users className="w-4 h-4 text-[#F5A623]" />
-          <h2 className="text-sm font-bold text-[#2D1B00]">ลายเซ็น</h2>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
+          <Users className="w-4 h-4 text-[#465fff]" />
+          <h2 className="text-sm font-bold text-[#1c2434]">ลายเซ็น</h2>
         </div>
         <div className="px-6 py-5 grid grid-cols-2 gap-6">
           <SigBox label="นักเรียน" dataUrl={record.studentSignature} />
@@ -347,7 +347,7 @@ export default function StatementDetailPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100 px-6 py-4 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
-            <h2 className="text-sm font-bold text-[#2D1B00]">การอนุมัติ (ผอ / รองผอ)</h2>
+            <h2 className="text-sm font-bold text-[#1c2434]">การอนุมัติ (ผอ / รองผอ)</h2>
           </div>
           <div className="px-6 py-5 space-y-4">
             {approvers.length === 0 ? (

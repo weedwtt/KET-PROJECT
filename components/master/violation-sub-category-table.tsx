@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
@@ -130,7 +130,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="ค้นหาชื่อหมวดย่อย..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 focus:border-[#F5A623]"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/40 focus:border-[#465fff]"
           />
         </div>
 
@@ -139,7 +139,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
           <select
             value={filterCategoryId}
             onChange={(e) => onFilterCategory(e.target.value)}
-            className="appearance-none pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 focus:border-[#F5A623] bg-white text-gray-700 cursor-pointer"
+            className="appearance-none pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/40 focus:border-[#465fff] bg-white text-gray-700 cursor-pointer"
           >
             <option value="">ทุกหมวดหลัก</option>
             {categories.map((c) => (
@@ -151,7 +151,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
 
         <button
           onClick={() => { setShowAdd((v) => !v); setAddError("") }}
-          className="ml-auto flex items-center gap-2 px-4 py-2 bg-[#F5A623] hover:bg-[#e09518] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+          className="ml-auto flex items-center gap-2 px-4 py-2 bg-[#465fff] hover:bg-[#3a4fd4] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {showAdd ? "ยกเลิก" : "เพิ่มหมวดย่อย"}
@@ -160,8 +160,8 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
 
       {/* Add form */}
       {showAdd && (
-        <form onSubmit={handleAdd} className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-[#2D1B00]">เพิ่มหมวดย่อยใหม่</p>
+        <form onSubmit={handleAdd} className="bg-[#eff2ff] border border-[#465fff]/20 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-[#1c2434]">เพิ่มหมวดย่อยใหม่</p>
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr_auto] gap-3 items-end">
             <div>
               <label className="text-xs font-semibold text-gray-600 mb-1 block">หมวดหลัก <span className="text-red-400">*</span></label>
@@ -169,7 +169,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                 <select
                   value={addCategoryId}
                   onChange={(e) => setAddCategoryId(e.target.value)}
-                  className="w-full appearance-none pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623] bg-white"
+                  className="w-full appearance-none pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] bg-white"
                 >
                   <option value="">เลือกหมวดหลัก</option>
                   {categories.map((c) => (
@@ -185,13 +185,13 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                 value={addName}
                 onChange={(e) => setAddName(e.target.value)}
                 placeholder="เช่น มาสาย"
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623]"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
               />
             </div>
             <button
               type="submit"
               disabled={adding}
-              className="flex items-center gap-2 px-4 py-2 bg-[#F5A623] hover:bg-[#e09518] disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-[#465fff] hover:bg-[#3a4fd4] disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
             >
               {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               เพิ่ม
@@ -222,7 +222,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                 </tr>
               ) : (
                 data.map((row, idx) => (
-                  <tr key={row.id} className="hover:bg-amber-50/30 transition-colors">
+                  <tr key={row.id} className="hover:bg-[#eff2ff]/30 transition-colors">
                     <td className="px-5 py-3 text-gray-400 tabular-nums">{start + idx}</td>
                     <td className="px-4 py-3">
                       {editingId === row.id ? (
@@ -230,7 +230,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                           <select
                             value={editCategoryId}
                             onChange={(e) => setEditCategoryId(e.target.value)}
-                            className="w-full appearance-none pl-3 pr-7 py-1.5 text-sm border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30"
+                            className="w-full appearance-none pl-3 pr-7 py-1.5 text-sm border border-[#465fff]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30"
                           >
                             {categories.map((c) => (
                               <option key={c.id} value={String(c.id)}>{c.name}</option>
@@ -239,7 +239,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                         </div>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
+                        <span className="inline-flex items-center px-2 py-0.5 bg-[#eff2ff] text-[#3a4fd4] text-xs font-medium rounded-full">
                           {row.violationCategory.name}
                         </span>
                       )}
@@ -249,7 +249,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                         <input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="w-full px-3 py-1.5 text-sm border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30"
+                          className="w-full px-3 py-1.5 text-sm border border-[#465fff]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30"
                           autoFocus
                         />
                       ) : (
@@ -280,7 +280,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                           <>
                             <button
                               onClick={() => startEdit(row)}
-                              className="p-1.5 rounded-md text-gray-400 hover:text-[#F5A623] hover:bg-amber-50 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-md text-gray-400 hover:text-[#465fff] hover:bg-[#eff2ff] transition-colors cursor-pointer"
                               title="แก้ไข"
                             >
                               <Pencil className="w-4 h-4" />
@@ -334,7 +334,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                     key={p}
                     onClick={() => navigate(p as number, searchValue)}
                     className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                      page === p ? "bg-[#F5A623] text-white" : "text-gray-600 hover:bg-gray-100"
+                      page === p ? "bg-[#465fff] text-white" : "text-gray-600 hover:bg-gray-100"
                     }`}
                   >
                     {p}

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
@@ -135,12 +135,12 @@ export function MasterTable<T extends { id: number }>({
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 focus:border-[#F5A623]"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
           />
         </div>
         <button
           onClick={() => setShowAdd((v) => !v)}
-          className="ml-auto flex items-center gap-2 px-4 py-2 bg-[#F5A623] hover:bg-[#e09518] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+          className="ml-auto flex items-center gap-2 px-4 py-2 bg-[#465fff] hover:bg-[#3a4fd4] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
         >
           {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {showAdd ? "ยกเลิก" : "เพิ่มรายการ"}
@@ -149,8 +149,8 @@ export function MasterTable<T extends { id: number }>({
 
       {/* Add form */}
       {showAdd && (
-        <form onSubmit={handleAdd} className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-[#2D1B00]">เพิ่มรายการใหม่</p>
+        <form onSubmit={handleAdd} className="bg-[#eff2ff] border border-[#465fff]/20 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-[#1c2434]">เพิ่มรายการใหม่</p>
           <div className="flex flex-wrap gap-3 items-end">
             {fields.map((f) => (
               <div key={f.key} className={f.width ?? "flex-1 min-w-[140px]"}>
@@ -162,14 +162,14 @@ export function MasterTable<T extends { id: number }>({
                   value={addValues[f.key] ?? ""}
                   onChange={(e) => setAddValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
                   placeholder={f.placeholder}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30 focus:border-[#F5A623]"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
                 />
               </div>
             ))}
             <button
               type="submit"
               disabled={adding || !addValid}
-              className="flex items-center gap-2 px-4 py-2 bg-[#F5A623] hover:bg-[#e09518] disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-[#465fff] hover:bg-[#3a4fd4] disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
             >
               {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               เพิ่ม
@@ -202,7 +202,7 @@ export function MasterTable<T extends { id: number }>({
                 </tr>
               ) : (
                 data.map((row, idx) => (
-                  <tr key={row.id} className="hover:bg-amber-50/30 transition-colors">
+                  <tr key={row.id} className="hover:bg-[#eff2ff]/30 transition-colors">
                     <td className="px-5 py-3 text-gray-400 tabular-nums">{start + idx}</td>
                     {columns.map((col) => (
                       <td key={String(col.key)} className="px-4 py-3 text-gray-800">
@@ -213,7 +213,7 @@ export function MasterTable<T extends { id: number }>({
                             onChange={(e) =>
                               setEditValues((prev) => ({ ...prev, [col.key as string]: e.target.value }))
                             }
-                            className="w-full px-3 py-1.5 text-sm border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/30"
+                            className="w-full px-3 py-1.5 text-sm border border-[#465fff]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30"
                             autoFocus={fields[0].key === col.key}
                           />
                         ) : col.render ? (
@@ -247,7 +247,7 @@ export function MasterTable<T extends { id: number }>({
                           <>
                             <button
                               onClick={() => startEdit(row)}
-                              className="p-1.5 rounded-md text-gray-400 hover:text-[#F5A623] hover:bg-amber-50 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-md text-gray-400 hover:text-[#465fff] hover:bg-[#eff2ff] transition-colors cursor-pointer"
                               title="แก้ไข"
                             >
                               <Pencil className="w-4 h-4" />
@@ -301,7 +301,7 @@ export function MasterTable<T extends { id: number }>({
                     key={p}
                     onClick={() => navigate(p as number, searchValue)}
                     className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                      page === p ? "bg-[#F5A623] text-white" : "text-gray-600 hover:bg-gray-100"
+                      page === p ? "bg-[#465fff] text-white" : "text-gray-600 hover:bg-gray-100"
                     }`}
                   >
                     {p}

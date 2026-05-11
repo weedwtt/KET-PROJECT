@@ -1,4 +1,4 @@
-import { db } from "@/lib/db"
+﻿import { db } from "@/lib/db"
 import { BookOpen } from "lucide-react"
 import { MasterTable } from "@/components/master/master-table"
 
@@ -29,11 +29,11 @@ export default async function SemesterPage({
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
-          <BookOpen className="w-4.5 h-4.5 text-[#F5A623]" />
+        <div className="w-9 h-9 rounded-lg bg-[#eff2ff] flex items-center justify-center">
+          <BookOpen className="w-4.5 h-4.5 text-[#465fff]" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-[#2D1B00]">จัดการภาคเรียน</h1>
+          <h1 className="text-xl font-bold text-[#1c2434]">จัดการภาคเรียน</h1>
           <p className="text-sm text-gray-400 mt-0.5">ตารางข้อมูลหลัก — ภาคเรียน · ทั้งหมด {total} รายการ</p>
         </div>
       </div>

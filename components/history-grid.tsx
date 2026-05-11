@@ -78,7 +78,7 @@ export function HistoryGrid({ data, total, page, totalPages, search: initialSear
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="ค้นหาชื่อ, รหัส, ชั้น, หมวดความผิด..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
           />
         </div>
       </div>
@@ -108,7 +108,7 @@ export function HistoryGrid({ data, total, page, totalPages, search: initialSear
               </tr>
             ) : (
               data.map((row, idx) => (
-                <tr key={row.id} className="hover:bg-green-50/40 transition-colors">
+                <tr key={row.id} className="hover:bg-[#f8f9ff] transition-colors">
                   <td className="px-5 py-3.5 text-gray-400 tabular-nums">{start + idx}</td>
                   <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap tabular-nums">
                     {formatThaiDate(row.recordDate)}
@@ -134,7 +134,7 @@ export function HistoryGrid({ data, total, page, totalPages, search: initialSear
                   <td className="px-4 py-3.5 text-center">
                     <Link
                       href={`/record/statement/${row.id}`}
-                      className="inline-flex p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                      className="inline-flex p-1.5 rounded-md text-gray-400 hover:text-[#465fff] hover:bg-[#eff2ff] transition-colors"
                       title="ดูรายละเอียด"
                     >
                       <Eye className="w-4 h-4" />
@@ -176,7 +176,7 @@ export function HistoryGrid({ data, total, page, totalPages, search: initialSear
                   onClick={() => navigate(p as number, searchValue)}
                   className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
                     page === p
-                      ? "bg-green-600 text-white"
+                      ? "bg-[#465fff] text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >

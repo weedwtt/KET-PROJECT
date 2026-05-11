@@ -1,4 +1,4 @@
-import Link from "next/link"
+﻿import Link from "next/link"
 import { db } from "@/lib/db"
 import { StatementGrid } from "@/components/statement-grid"
 
@@ -72,14 +72,14 @@ export default async function StatementListPage({
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#2D1B00]">บันทึกถ้อยคำนักเรียน</h1>
+          <h1 className="text-xl font-bold text-[#1c2434]">บันทึกถ้อยคำนักเรียน</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             รอดำเนินการ {total} รายการ
           </p>
         </div>
         <Link
           href="/record/statement/new"
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#F5A623] hover:bg-[#e09518] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

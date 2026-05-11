@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
@@ -76,7 +76,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="ค้นหาชื่อ, รหัส, ชั้น, หมวดความผิด..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 focus:border-[#F5A623]"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
           />
         </div>
       </div>
@@ -107,7 +107,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
               </tr>
             ) : (
               data.map((row, idx) => (
-                <tr key={row.id} className="hover:bg-amber-50/40 transition-colors">
+                <tr key={row.id} className="hover:bg-[#eff2ff]/40 transition-colors">
                   <td className="px-5 py-3.5 text-gray-400 tabular-nums">
                     {start + idx}
                   </td>
@@ -139,7 +139,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                         <CheckCircle2 className="w-3 h-3" /> อนุมัติแล้ว
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#eff2ff] text-[#465fff] text-xs font-semibold rounded-full whitespace-nowrap">
                         <Clock className="w-3 h-3" /> รอดำเนินการ
                       </span>
                     )}
@@ -156,7 +156,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                       {row.status !== "approved" && (
                         <Link
                           href={`/record/statement/${row.id}/edit`}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-[#F5A623] hover:bg-amber-50 transition-colors"
+                          className="p-1.5 rounded-md text-gray-400 hover:text-[#465fff] hover:bg-[#eff2ff] transition-colors"
                           title="แก้ไข"
                         >
                           <Pencil className="w-4 h-4" />
@@ -200,7 +200,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                   onClick={() => navigate(p as number, searchValue)}
                   className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
                     page === p
-                      ? "bg-[#F5A623] text-white"
+                      ? "bg-[#465fff] text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >

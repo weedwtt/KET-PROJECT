@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -130,7 +130,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
     }
   }
 
-  const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 focus:border-[#F5A623]"
+  const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
   const labelCls = "block text-xs font-semibold text-gray-600 mb-1"
   const requiredMark = <span className="text-red-500 ml-0.5">*</span>
 
@@ -144,7 +144,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* ข้อมูลพื้นฐาน */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h2 className="text-sm font-bold text-[#2D1B00] border-b border-gray-100 pb-2">ข้อมูลพื้นฐาน</h2>
+        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">ข้อมูลพื้นฐาน</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className={labelCls}>คำนำหน้า{requiredMark}</label>
@@ -174,7 +174,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* บทบาท */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h2 className="text-sm font-bold text-[#2D1B00] border-b border-gray-100 pb-2">บทบาทและตำแหน่ง</h2>
+        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">บทบาทและตำแหน่ง</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>บทบาทในระบบ</label>
@@ -197,7 +197,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* ลายเซ็น */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <h2 className="text-sm font-bold text-[#2D1B00] border-b border-gray-100 pb-2">ลายเซ็น</h2>
+        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">ลายเซ็น</h2>
         <SignaturePad
           value={form.signatureUrl || null}
           onChange={(data) => setForm((prev) => ({ ...prev, signatureUrl: data ?? "" }))}
@@ -206,7 +206,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* ที่อยู่ */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h2 className="text-sm font-bold text-[#2D1B00] border-b border-gray-100 pb-2">ที่อยู่</h2>
+        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">ที่อยู่</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className={labelCls}>บ้านเลขที่{requiredMark}</label>
@@ -270,7 +270,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
         <button
           type="submit"
           disabled={saving}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#F5A623] text-[#1a1a1a] text-sm font-semibold hover:bg-[#e8951f] transition-colors disabled:opacity-60"
+          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#465fff] text-white text-sm font-semibold hover:bg-[#3a4fd4] transition-colors disabled:opacity-60"
         >
           <Save className="w-4 h-4" />
           {saving ? "กำลังบันทึก..." : mode === "create" ? "เพิ่มครู" : "บันทึกการแก้ไข"}

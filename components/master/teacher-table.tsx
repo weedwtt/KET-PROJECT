@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -78,13 +78,13 @@ export function TeacherTable({ teachers: initial }: Props) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {teachers.map((t) => (
-            <tr key={t.id} className="hover:bg-amber-50/30 transition-colors">
-              <td className="px-4 py-3 font-medium text-[#2D1B00]">
+            <tr key={t.id} className="hover:bg-[#eff2ff]/30 transition-colors">
+              <td className="px-4 py-3 font-medium text-[#1c2434]">
                 {t.title.name}{t.firstName} {t.lastName}
               </td>
               <td className="px-4 py-3">
                 {t.role ? (
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#eff2ff] text-[#3a4fd4]">
                     {ROLE_LABEL[t.role] ?? t.role}
                   </span>
                 ) : (
@@ -122,7 +122,7 @@ export function TeacherTable({ teachers: initial }: Props) {
                 <div className="flex items-center gap-1 justify-end">
                   <Link
                     href={`/dashboard/master/teachers/${t.id}/edit`}
-                    className="p-1.5 rounded-lg hover:bg-amber-100 text-amber-700 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-[#eff2ff] text-[#465fff] transition-colors"
                     title="แก้ไข"
                   >
                     <Pencil className="w-4 h-4" />

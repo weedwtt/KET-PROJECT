@@ -42,7 +42,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-1.5">
-        <Label htmlFor="username" className="text-[#F5A623] font-medium text-sm">
+        <Label htmlFor="username" className="text-[#1c2434] font-semibold text-sm">
           Username
         </Label>
         <div className="relative">
@@ -68,13 +68,13 @@ export function LoginForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            className="pl-9 rounded-xl border-gray-200 bg-gray-50 focus-visible:ring-[#F5A623] text-sm"
+            className="pl-9 rounded-lg border-[#e8edf2] bg-[#f2f5fa] focus-visible:ring-[#465fff]/30 focus-visible:border-[#465fff] text-sm"
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="password" className="text-gray-700 font-medium text-sm">
+        <Label htmlFor="password" className="text-[#1c2434] font-semibold text-sm">
           Password
         </Label>
         <div className="relative">
@@ -100,19 +100,19 @@ export function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="pl-9 rounded-xl border-gray-200 bg-gray-50 focus-visible:ring-[#F5A623] text-sm"
+            className="pl-9 rounded-lg border-[#e8edf2] bg-[#f2f5fa] focus-visible:ring-[#465fff]/30 focus-visible:border-[#465fff] text-sm"
           />
         </div>
       </div>
 
       {error && (
-        <p className="text-xs text-red-500 text-center">{error}</p>
+        <p className="text-xs text-red-500 text-center bg-red-50 py-2 px-3 rounded-lg">{error}</p>
       )}
 
       <Button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-[#F5A623] hover:bg-[#e09518] text-white font-semibold py-5 text-sm sm:text-base cursor-pointer"
+        className="w-full rounded-lg bg-[#465fff] hover:bg-[#3a4fd4] text-white font-semibold py-5 text-sm shadow-sm shadow-[#465fff]/20 cursor-pointer"
       >
         {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </Button>

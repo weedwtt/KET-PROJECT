@@ -1,4 +1,4 @@
-import { db } from "@/lib/db"
+﻿import { db } from "@/lib/db"
 import { CheckCircle2 } from "lucide-react"
 import { HistoryGrid } from "@/components/history-grid"
 
@@ -78,7 +78,7 @@ export default async function HistoryPage({
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#2D1B00]">ประวัติและรายการบันทึก</h1>
+          <h1 className="text-xl font-bold text-[#1c2434]">ประวัติและรายการบันทึก</h1>
           <p className="text-sm text-gray-500 mt-0.5">รายการที่อนุมัติแล้ว · ทั้งหมด {total} รายการ</p>
         </div>
         <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">

@@ -13,7 +13,7 @@ export default async function MainLayout({
   return (
     <div className="flex min-h-screen">
       <Sidebar userName={session.user?.name ?? ""} role={session.user?.role ?? null} />
-      <main className="flex-1 overflow-auto bg-[#FAF6EE]">
+      <main className="flex-1 overflow-auto bg-[#f2f5fa]">
         {children}
       </main>
     </div>

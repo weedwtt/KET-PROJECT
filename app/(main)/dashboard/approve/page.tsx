@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+﻿import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { ApprovalGrid } from "@/components/approval-grid"
@@ -51,7 +51,7 @@ export default async function ApprovePage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-[#2D1B00]">รายการบันทึกถ้อยคำที่รออนุมัติ</h1>
+        <h1 className="text-xl font-bold text-[#1c2434]">รายการบันทึกถ้อยคำที่รออนุมัติ</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           รอดำเนินการ {statements.length} รายการ
         </p>

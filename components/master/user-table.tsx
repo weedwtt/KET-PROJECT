@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -78,8 +78,8 @@ export function UserTable({ users: initial }: Props) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {users.map((u) => (
-            <tr key={u.id} className="hover:bg-amber-50/30 transition-colors">
-              <td className="px-4 py-3 font-mono font-medium text-[#2D1B00]">{u.username}</td>
+            <tr key={u.id} className="hover:bg-[#eff2ff]/30 transition-colors">
+              <td className="px-4 py-3 font-mono font-medium text-[#1c2434]">{u.username}</td>
               <td className="px-4 py-3 text-gray-700">
                 {u.teacher
                   ? `${u.teacher.title.name}${u.teacher.firstName} ${u.teacher.lastName}`
@@ -87,7 +87,7 @@ export function UserTable({ users: initial }: Props) {
               </td>
               <td className="px-4 py-3">
                 {u.teacher?.role ? (
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#eff2ff] text-[#3a4fd4]">
                     {ROLE_LABEL[u.teacher.role] ?? u.teacher.role}
                   </span>
                 ) : (
@@ -107,7 +107,7 @@ export function UserTable({ users: initial }: Props) {
                 <div className="flex items-center gap-1 justify-end">
                   <Link
                     href={`/dashboard/master/users/${u.id}/edit`}
-                    className="p-1.5 rounded-lg hover:bg-amber-100 text-amber-700 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-[#eff2ff] text-[#465fff] transition-colors"
                     title="แก้ไข"
                   >
                     <Pencil className="w-4 h-4" />
