@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Save, X } from "lucide-react"
 import { SignaturePad } from "@/components/ui/signature-pad"
 
 type TeacherTitle = { id: number; name: string }
@@ -130,150 +129,143 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
     }
   }
 
-  const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
-  const labelCls = "block text-xs font-semibold text-gray-600 mb-1"
-  const requiredMark = <span className="text-red-500 ml-0.5">*</span>
+  const lbl = (text: string, required?: boolean) => (
+    <label style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-3)", display: "block", marginBottom: 5 }}>
+      {text}{required && <span style={{ color: "var(--rose)", marginLeft: 2 }}>*</span>}
+    </label>
+  )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-          {error}
+        <div style={{ display: "flex", gap: 8, background: "color-mix(in srgb, var(--rose) 8%, white)", border: "1px solid color-mix(in srgb, var(--rose) 25%, white)", borderRadius: 8, padding: "10px 14px" }}>
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" /></svg>
+          <span style={{ fontSize: 13, color: "var(--rose)" }}>{error}</span>
         </div>
       )}
 
       {/* ข้อมูลพื้นฐาน */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">ข้อมูลพื้นฐาน</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className={labelCls}>คำนำหน้า{requiredMark}</label>
-            <select value={form.titleId} onChange={set("titleId")} className={inputCls}>
-              <option value="">— เลือก —</option>
-              {titles.map((t) => (
-                <option key={t.id} value={String(t.id)}>{t.name}</option>
-              ))}
-            </select>
+      <div className="ks-card">
+        <div className="ks-card-header"><span className="num">§1</span><span>ข้อมูลพื้นฐาน</span></div>
+        <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div>
+              {lbl("คำนำหน้า", true)}
+              <select value={form.titleId} onChange={set("titleId")} className="ks-select">
+                <option value="">— เลือก —</option>
+                {titles.map((t) => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
+              </select>
+            </div>
+            <div>
+              {lbl("ชื่อ", true)}
+              <input value={form.firstName} onChange={set("firstName")} className="ks-input" placeholder="ชื่อ" />
+            </div>
+            <div>
+              {lbl("นามสกุล", true)}
+              <input value={form.lastName} onChange={set("lastName")} className="ks-input" placeholder="นามสกุล" />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>ชื่อ{requiredMark}</label>
-            <input value={form.firstName} onChange={set("firstName")} className={inputCls} placeholder="ชื่อ" />
-          </div>
-          <div>
-            <label className={labelCls}>นามสกุล{requiredMark}</label>
-            <input value={form.lastName} onChange={set("lastName")} className={inputCls} placeholder="นามสกุล" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>เบอร์โทรศัพท์{requiredMark}</label>
-            <input value={form.phone} onChange={set("phone")} className={inputCls} placeholder="0XX-XXX-XXXX" />
+          <div style={{ maxWidth: 300 }}>
+            {lbl("เบอร์โทรศัพท์", true)}
+            <input value={form.phone} onChange={set("phone")} className="ks-input" placeholder="0XX-XXX-XXXX" />
           </div>
         </div>
       </div>
 
       {/* บทบาท */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">บทบาทและตำแหน่ง</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="ks-card">
+        <div className="ks-card-header"><span className="num">§2</span><span>บทบาทและตำแหน่ง</span></div>
+        <div className="ks-card-pad" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
-            <label className={labelCls}>บทบาทในระบบ</label>
-            <select value={form.role} onChange={set("role")} className={inputCls}>
-              {ROLE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
+            {lbl("บทบาทในระบบ")}
+            <select value={form.role} onChange={set("role")} className="ks-select">
+              {ROLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div>
-            <label className={labelCls}>หัวหน้าระดับชั้น</label>
-            <select value={form.gradeHeadLevel} onChange={set("gradeHeadLevel")} className={inputCls}>
-              {GRADE_HEAD_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
+            {lbl("หัวหน้าระดับชั้น")}
+            <select value={form.gradeHeadLevel} onChange={set("gradeHeadLevel")} className="ks-select">
+              {GRADE_HEAD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
         </div>
       </div>
 
       {/* ลายเซ็น */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">ลายเซ็น</h2>
-        <SignaturePad
-          value={form.signatureUrl || null}
-          onChange={(data) => setForm((prev) => ({ ...prev, signatureUrl: data ?? "" }))}
-        />
+      <div className="ks-card">
+        <div className="ks-card-header"><span className="num">§3</span><span>ลายเซ็น</span></div>
+        <div className="ks-card-pad">
+          <SignaturePad
+            value={form.signatureUrl || null}
+            onChange={(data) => setForm((prev) => ({ ...prev, signatureUrl: data ?? "" }))}
+          />
+        </div>
       </div>
 
       {/* ที่อยู่ */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h2 className="text-sm font-bold text-[#1c2434] border-b border-gray-100 pb-2">ที่อยู่</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className={labelCls}>บ้านเลขที่{requiredMark}</label>
-            <input value={form.addressHouseNo} onChange={set("addressHouseNo")} className={inputCls} placeholder="เช่น 123/4" />
+      <div className="ks-card">
+        <div className="ks-card-header"><span className="num">§4</span><span>ที่อยู่</span></div>
+        <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div>
+              {lbl("บ้านเลขที่", true)}
+              <input value={form.addressHouseNo} onChange={set("addressHouseNo")} className="ks-input" placeholder="เช่น 123/4" />
+            </div>
+            <div>
+              {lbl("หมู่")}
+              <input value={form.addressMoo} onChange={set("addressMoo")} className="ks-input" placeholder="เช่น 5" />
+            </div>
+            <div>
+              {lbl("หมู่บ้าน/ชุมชน")}
+              <input value={form.addressVillage} onChange={set("addressVillage")} className="ks-input" placeholder="เช่น หมู่บ้านสุขสันต์" />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>หมู่</label>
-            <input value={form.addressMoo} onChange={set("addressMoo")} className={inputCls} placeholder="เช่น 5" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              {lbl("ซอย")}
+              <input value={form.addressSoi} onChange={set("addressSoi")} className="ks-input" placeholder="เช่น ลาดพร้าว 71" />
+            </div>
+            <div>
+              {lbl("ถนน")}
+              <input value={form.addressRoad} onChange={set("addressRoad")} className="ks-input" placeholder="เช่น ลาดพร้าว" />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>หมู่บ้าน/ชุมชน</label>
-            <input value={form.addressVillage} onChange={set("addressVillage")} className={inputCls} placeholder="เช่น หมู่บ้านสุขสันต์" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>ซอย</label>
-            <input value={form.addressSoi} onChange={set("addressSoi")} className={inputCls} placeholder="เช่น ลาดพร้าว 71" />
-          </div>
-          <div>
-            <label className={labelCls}>ถนน</label>
-            <input value={form.addressRoad} onChange={set("addressRoad")} className={inputCls} placeholder="เช่น ลาดพร้าว" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label className={labelCls}>ตำบล/แขวง{requiredMark}</label>
-            <input value={form.addressSubDistrict} onChange={set("addressSubDistrict")} className={inputCls} placeholder="ตำบล" />
-          </div>
-          <div>
-            <label className={labelCls}>อำเภอ/เขต{requiredMark}</label>
-            <input value={form.addressDistrict} onChange={set("addressDistrict")} className={inputCls} placeholder="อำเภอ" />
-          </div>
-          <div>
-            <label className={labelCls}>จังหวัด{requiredMark}</label>
-            <input value={form.addressProvince} onChange={set("addressProvince")} className={inputCls} placeholder="จังหวัด" />
-          </div>
-          <div>
-            <label className={labelCls}>รหัสไปรษณีย์{requiredMark}</label>
-            <input
-              value={form.addressPostalCode}
-              onChange={set("addressPostalCode")}
-              className={inputCls}
-              placeholder="10000"
-              maxLength={5}
-            />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
+            <div>
+              {lbl("ตำบล/แขวง", true)}
+              <input value={form.addressSubDistrict} onChange={set("addressSubDistrict")} className="ks-input" placeholder="ตำบล" />
+            </div>
+            <div>
+              {lbl("อำเภอ/เขต", true)}
+              <input value={form.addressDistrict} onChange={set("addressDistrict")} className="ks-input" placeholder="อำเภอ" />
+            </div>
+            <div>
+              {lbl("จังหวัด", true)}
+              <input value={form.addressProvince} onChange={set("addressProvince")} className="ks-input" placeholder="จังหวัด" />
+            </div>
+            <div>
+              {lbl("รหัสไปรษณีย์", true)}
+              <input value={form.addressPostalCode} onChange={set("addressPostalCode")} className="ks-input" placeholder="10000" maxLength={5} />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 justify-end">
-        <button
-          type="button"
-          onClick={() => router.push(backUrl)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          <X className="w-4 h-4" />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+        <button type="button" onClick={() => router.push(backUrl)} className="btn btn-ghost">
           ยกเลิก
         </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#465fff] text-white text-sm font-semibold hover:bg-[#3a4fd4] transition-colors disabled:opacity-60"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? "กำลังบันทึก..." : mode === "create" ? "เพิ่มครู" : "บันทึกการแก้ไข"}
+        <button type="submit" disabled={saving} className="btn btn-primary">
+          {saving ? (
+            <>
+              <svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/>
+                <path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              กำลังบันทึก...
+            </>
+          ) : mode === "create" ? "เพิ่มครู" : "บันทึกการแก้ไข"}
         </button>
       </div>
     </form>

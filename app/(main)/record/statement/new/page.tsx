@@ -1,21 +1,11 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  Search,
-  ChevronRight,
-  ChevronLeft,
-  User,
-  Users,
-  MapPin,
-  Check,
-  FileText,
-  Clock,
-  ShieldAlert,
-  ScrollText,
-  CheckCircle2,
+  Search, ChevronRight, ChevronLeft, User, Users, MapPin,
+  Check, FileText, ShieldAlert, ScrollText, CheckCircle2,
 } from "lucide-react"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -66,45 +56,38 @@ type Student = {
   advisors: Advisor[]
 }
 
-// ── Step config ────────────────────────────────────────────────────────────────
-
 const STEPS = [
-  { label: "ค้นหานักเรียน", desc: "ค้นหาด้วยรหัสหรือชื่อ" },
-  { label: "ข้อมูลนักเรียน", desc: "ยืนยันข้อมูลที่พบ" },
-  { label: "บันทึกถ้อยคำ", desc: "กรอกรายละเอียด" },
-  { label: "มาตรการ", desc: "เลือกการดำเนินการ" },
-  { label: "ทำทัณฑ์บน", desc: "กรอกสัญญา" },       // index 4 — conditional
-  { label: "ลงนาม", desc: "เซ็นชื่อ" },               // index 5
-  { label: "ยืนยันและบันทึก", desc: "ตรวจสอบและบันทึก" }, // index 6
+  { label: "ค้นหานักเรียน", code: "S01" },
+  { label: "ข้อมูลนักเรียน", code: "S02" },
+  { label: "บันทึกถ้อยคำ",   code: "S03" },
+  { label: "มาตรการ",        code: "S04" },
+  { label: "ทำทัณฑ์บน",     code: "S05" },
+  { label: "ลงนาม",          code: "S06" },
+  { label: "ยืนยัน",         code: "S07" },
 ]
-
-// ── Constants ──────────────────────────────────────────────────────────────────
 
 const THAI_MONTHS = [
-  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
-]
-
-const VIOLATION_CATEGORIES = [
-  "หมวดที่ 1 ความประพฤติและมารยาท",
-  "หมวดที่ 2 การแต่งกายและการไว้ทรงผม",
-  "หมวดที่ 3 ความรับผิดชอบในการเรียน",
-  "หมวดที่ 4 การใช้สิ่งเสพติดและอบายมุข",
-  "หมวดที่ 5 ทรัพย์สินและความสะอาด",
-  "หมวดที่ 6 ความปลอดภัยและการทะเลาะวิวาท",
-  "หมวดที่ 7 อื่น ๆ",
+  "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
 ]
 
 const CONSIDERATION_MEASURES = [
-  { id: "notify_parent", label: "แจ้งผู้ปกครอง" },
-  { id: "invite_parent", label: "เชิญผู้ปกครองรับทราบพฤติกรรม" },
+  { id: "notify_parent",  label: "แจ้งผู้ปกครอง" },
+  { id: "invite_parent",  label: "เชิญผู้ปกครองรับทราบพฤติกรรม" },
 ]
 
 const RESULT_MEASURES = [
-  { id: "verbal_warning", label: "ตักเตือน" },
-  { id: "deduct_score", label: "ตัดคะแนนความประพฤติ" },
+  { id: "verbal_warning",    label: "ตักเตือน" },
+  { id: "deduct_score",      label: "ตัดคะแนนความประพฤติ" },
   { id: "behavior_activity", label: "ทำกิจกรรมปรับเปลี่ยนพฤติกรรม" },
-  { id: "probation_bond", label: "ทำทัณฑ์บน" },
+  { id: "probation_bond",    label: "ทำทัณฑ์บน" },
+]
+
+const BOND_PENALTY_OPTIONS = [
+  { id: "deduct_score",  label: "ตัดคะแนนความประพฤติ" },
+  { id: "behavior_camp", label: "ทำกิจกรรมค่ายปรับพฤติกรรม" },
+  { id: "suspension",    label: "พักการเรียน" },
+  { id: "transfer",      label: "ย้ายสถานศึกษา" },
 ]
 
 // ── Form data types ────────────────────────────────────────────────────────────
@@ -126,14 +109,14 @@ type StatementFormData = {
 }
 
 type MeasureFormData = {
-  selected: string[]         // measure IDs
-  notes: string              // additional notes for measures
+  selected: string[]
+  notes: string
 }
 
 type BondFormData = {
-  selectedGuardianIndex: number | null  // index ใน student.guardians
-  penaltyActions: string[]              // ตัดคะแนน | ทำกิจกรรม | พักการเรียน | ย้ายสถานศึกษา
-  deductPoints: string                  // จำนวนคะแนนที่ตัด (เมื่อเลือก ตัดคะแนน)
+  selectedGuardianIndex: number | null
+  penaltyActions: string[]
+  deductPoints: string
   witnessName: string
 }
 
@@ -147,9 +130,9 @@ type TeacherOption = {
 }
 
 type SignatureFormData = {
-  studentSignature: string        // base64 data URL
-  guardianSignature: string       // base64 data URL
-  advisorSignature: string        // base64 data URL
+  studentSignature: string
+  guardianSignature: string
+  advisorSignature: string
   disciplineTeacherId: number | null
   gradeHeadTeacherId: number | null
 }
@@ -168,39 +151,22 @@ export default function NewStatementPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<StatementFormData>({
-    semesterId: "",
-    semesterLabel: "",
-    academicYearId: "",
-    academicYearLabel: "",
-    violationCategoryId: "",
-    violationCategoryLabel: "",
-    violationSubCategoryId: "",
-    violationSubCategoryLabel: "",
-    subject: "",
-    detail: "",
-    incidentDateTime: "",
-    location: "",
-    recorder: "",
+    semesterId: "", semesterLabel: "",
+    academicYearId: "", academicYearLabel: "",
+    violationCategoryId: "", violationCategoryLabel: "",
+    violationSubCategoryId: "", violationSubCategoryLabel: "",
+    subject: "", detail: "", incidentDateTime: "", location: "", recorder: "",
   })
 
-  const [measureData, setMeasureData] = useState<MeasureFormData>({
-    selected: [],
-    notes: "",
-  })
+  const [measureData, setMeasureData] = useState<MeasureFormData>({ selected: [], notes: "" })
 
   const [bondData, setBondData] = useState<BondFormData>({
-    selectedGuardianIndex: null,
-    penaltyActions: [],
-    deductPoints: "",
-    witnessName: "",
+    selectedGuardianIndex: null, penaltyActions: [], deductPoints: "", witnessName: "",
   })
 
   const [signatureData, setSignatureData] = useState<SignatureFormData>({
-    studentSignature: "",
-    guardianSignature: "",
-    advisorSignature: "",
-    disciplineTeacherId: null,
-    gradeHeadTeacherId: null,
+    studentSignature: "", guardianSignature: "", advisorSignature: "",
+    disciplineTeacherId: null, gradeHeadTeacherId: null,
   })
 
   const showBondStep = measureData.selected.includes("probation_bond")
@@ -209,16 +175,13 @@ export default function NewStatementPage() {
     e.preventDefault()
     const q = query.trim()
     if (!q) return
-
     setSearching(true)
     setSearchError(null)
     setResults(null)
-
     try {
       const res = await fetch(`/api/students/search?q=${encodeURIComponent(q)}`)
       if (!res.ok) throw new Error()
       const data: Student[] = await res.json()
-
       if (data.length === 0) {
         setSearchError("ไม่พบนักเรียน กรุณาตรวจสอบรหัสหรือชื่ออีกครั้ง")
         setResults([])
@@ -245,51 +208,33 @@ export default function NewStatementPage() {
   }
 
   function handleNext() {
-    // step 3 (measures) → skip bond (4) if not selected, go to signatures (5)
-    if (step === 3 && !showBondStep) {
-      setStep(5)
-      return
-    }
+    if (step === 3 && !showBondStep) { setStep(5); return }
     setStep((s) => s + 1)
   }
 
-  function handleNextFromBond() {
-    setStep(5) // bond → signatures
-  }
+  function handleNextFromBond() { setStep(5) }
 
   function handleBackFromSignatures() {
-    if (showBondStep) {
-      setStep(4) // back to bond
-    } else {
-      setStep(3) // back to measures
-    }
+    setStep(showBondStep ? 4 : 3)
   }
 
-  function handleNextFromSignatures() {
-    setStep(6) // signatures → confirm
-  }
-
-  function handleBackFromConfirm() {
-    setStep(5) // confirm → signatures
-  }
+  function handleNextFromSignatures() { setStep(6) }
+  function handleBackFromConfirm() { setStep(5) }
 
   async function handleSubmit() {
     if (!selected) return
     setSaving(true)
     setSaveError(null)
-
     const bondGuardianId =
       showBondStep && bondData.selectedGuardianIndex !== null
         ? (selected.guardians[bondData.selectedGuardianIndex]?.id ?? null)
         : null
-
     try {
       const res = await fetch("/api/statements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           studentId: selected.id,
-          // Step 3
           semesterId: formData.semesterId,
           academicYearId: formData.academicYearId,
           violationCategoryId: formData.violationCategoryId,
@@ -299,24 +244,14 @@ export default function NewStatementPage() {
           incidentDateTime: formData.incidentDateTime,
           location: formData.location,
           recorder: formData.recorder,
-          // Step 4
-          considerationMeasures: measureData.selected.filter((id) =>
-            CONSIDERATION_MEASURES.some((m) => m.id === id)
-          ),
-          resultMeasures: measureData.selected.filter((id) =>
-            RESULT_MEASURES.some((m) => m.id === id)
-          ),
+          considerationMeasures: measureData.selected.filter((id) => CONSIDERATION_MEASURES.some((m) => m.id === id)),
+          resultMeasures: measureData.selected.filter((id) => RESULT_MEASURES.some((m) => m.id === id)),
           measureNotes: measureData.notes || null,
-          // Step 5 Bond (conditional)
           bond: showBondStep && bondGuardianId
-            ? {
-                guardianId: bondGuardianId,
-                penaltyActions: bondData.penaltyActions,
+            ? { guardianId: bondGuardianId, penaltyActions: bondData.penaltyActions,
                 deductPoints: bondData.deductPoints ? Number(bondData.deductPoints) : null,
-                witnessName: bondData.witnessName || null,
-              }
+                witnessName: bondData.witnessName || null }
             : null,
-          // Step 5 Signatures
           studentSignature: signatureData.studentSignature || null,
           guardianSignature: signatureData.guardianSignature || null,
           advisorSignature: signatureData.advisorSignature || null,
@@ -324,13 +259,11 @@ export default function NewStatementPage() {
           gradeHeadTeacherId: signatureData.gradeHeadTeacherId,
         }),
       })
-
       if (!res.ok) {
         const err = await res.json()
         setSaveError(err.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่")
         return
       }
-
       router.push("/record/statement")
     } catch {
       setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่")
@@ -339,152 +272,97 @@ export default function NewStatementPage() {
     }
   }
 
-  // When bond step (4) is hidden, logical steps 5 and 6 display as 4 and 5
   const displayStep = !showBondStep && step >= 5 ? step - 1 : step
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-5">
-      {/* Page header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/record/statement"
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-xl font-bold text-[#1c2434]">เพิ่มบันทึกถ้อยคำ</h1>
-          <p className="text-sm text-gray-400 mt-0.5">บันทึกถ้อยคำนักเรียน</p>
+    <div className="ks-page" style={{ maxWidth: 780 }}>
+      <div className="page-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/record/statement" className="btn btn-ghost btn-sm btn-icon">
+            <ChevronLeft size={16} />
+          </Link>
+          <div>
+            <div className="page-eyebrow">
+              <span className="num">§02</span>
+              <span>บันทึกถ้อยคำ · เพิ่มรายการใหม่</span>
+            </div>
+            <h1>เพิ่มบันทึกถ้อยคำ</h1>
+          </div>
         </div>
       </div>
 
-      {/* Stepper */}
-      <Stepper currentStep={displayStep} showBondStep={showBondStep} />
+      <WizardStepper currentStep={displayStep} showBondStep={showBondStep} />
 
-      {/* Step panels */}
       {step === 0 && (
         <Step1Search
-          query={query}
-          setQuery={setQuery}
-          searching={searching}
-          results={results}
-          error={searchError}
-          onSearch={handleSearch}
-          onSelect={selectStudent}
+          query={query} setQuery={setQuery} searching={searching}
+          results={results} error={searchError}
+          onSearch={handleSearch} onSelect={selectStudent}
         />
       )}
-
       {step === 1 && selected && (
         <Step2Student student={selected} onBack={handleBack} onNext={handleNext} />
       )}
-
       {step === 2 && selected && (
         <Step3Statement
-          student={selected}
-          formData={formData}
-          setFormData={setFormData}
-          onBack={handleBack}
-          onNext={handleNext}
+          student={selected} formData={formData} setFormData={setFormData}
+          onBack={handleBack} onNext={handleNext}
         />
       )}
-
       {step === 3 && (
         <Step4Measures
-          measureData={measureData}
-          setMeasureData={setMeasureData}
-          onBack={handleBack}
-          onNext={handleNext}
+          measureData={measureData} setMeasureData={setMeasureData}
+          onBack={handleBack} onNext={handleNext}
         />
       )}
-
       {step === 4 && showBondStep && selected && (
         <Step5Bond
-          student={selected}
-          formData={formData}
-          bondData={bondData}
-          setBondData={setBondData}
-          onBack={handleBack}
-          onNext={handleNextFromBond}
+          student={selected} formData={formData} bondData={bondData}
+          setBondData={setBondData} onBack={handleBack} onNext={handleNextFromBond}
         />
       )}
-
       {step === 5 && selected && (
         <Step5Signature
-          student={selected}
-          signatureData={signatureData}
+          student={selected} signatureData={signatureData}
           setSignatureData={setSignatureData}
-          onBack={handleBackFromSignatures}
-          onNext={handleNextFromSignatures}
+          onBack={handleBackFromSignatures} onNext={handleNextFromSignatures}
         />
       )}
-
       {step === 6 && selected && (
         <Step6Confirm
-          student={selected}
-          formData={formData}
-          measureData={measureData}
-          bondData={bondData}
-          showBondStep={showBondStep}
-          saving={saving}
-          saveError={saveError}
-          onBack={handleBackFromConfirm}
-          onSubmit={handleSubmit}
+          student={selected} formData={formData} measureData={measureData}
+          bondData={bondData} showBondStep={showBondStep}
+          saving={saving} saveError={saveError}
+          onBack={handleBackFromConfirm} onSubmit={handleSubmit}
         />
       )}
     </div>
   )
 }
 
-// ── Stepper indicator ──────────────────────────────────────────────────────────
+// ── Stepper ────────────────────────────────────────────────────────────────────
 
-function Stepper({ currentStep, showBondStep }: { currentStep: number; showBondStep?: boolean }) {
-  const visibleSteps = STEPS.filter((_, i) => i !== 4 || showBondStep)
-  const actualIndices = STEPS.map((_, i) => i).filter((i) => i !== 4 || showBondStep)
+function WizardStepper({ currentStep, showBondStep }: { currentStep: number; showBondStep?: boolean }) {
+  const visible = STEPS.filter((_, i) => i !== 4 || showBondStep)
+  const indices = STEPS.map((_, i) => i).filter((i) => i !== 4 || showBondStep)
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-5">
-      <div className="flex items-start">
-        {visibleSteps.map((s, vi) => {
-          const ai = actualIndices[vi]
-          // Map display index for coloring
-          const displayIndex = ai > 4 && !showBondStep ? vi : vi
+    <div className="wizard-stepper">
+      <div className="wizard-frame">
+        {visible.map((s, vi) => {
+          const ai = indices[vi]
+          const state =
+            vi < currentStep ? "complete" :
+            vi === currentStep ? "current" :
+            (ai === 4 && !showBondStep) ? "disabled" : ""
           return (
-            <div key={ai} className="flex items-start flex-1 last:flex-none">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 ${
-                    displayIndex < currentStep
-                      ? "bg-green-500 text-white"
-                      : displayIndex === currentStep
-                      ? "bg-[#465fff] text-white ring-4 ring-[#465fff]/30"
-                      : ai === 4 && !showBondStep
-                      ? "bg-gray-100 text-gray-300 ring-2 ring-dashed ring-gray-200"
-                      : "bg-gray-100 text-gray-400"
-                  }`}
-                >
-                  {displayIndex < currentStep ? <Check className="w-3.5 h-3.5" /> : vi + 1}
-                </div>
-                <div className="mt-2 text-center w-[60px]">
-                  <p
-                    className={`text-[10px] font-semibold leading-tight ${
-                      displayIndex === currentStep
-                        ? "text-[#465fff]"
-                        : displayIndex < currentStep
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {s.label}
-                  </p>
-                </div>
+            <div key={ai} className={`wizard-step ${state}`}>
+              <div className="step-tick" />
+              <div className="step-meta">
+                <span className="step-num">{vi < currentStep ? "✓" : vi + 1}</span>
+                {s.code}
               </div>
-              {vi < visibleSteps.length - 1 && (
-                <div
-                  className={`h-0.5 flex-1 mx-1.5 mt-3.5 transition-colors duration-300 ${
-                    displayIndex < currentStep ? "bg-green-400" : "bg-gray-200"
-                  }`}
-                />
-              )}
+              <span className="step-label">{s.label}</span>
             </div>
           )
         })}
@@ -507,230 +385,163 @@ interface Step1Props {
 
 function Step1Search({ query, setQuery, searching, results, error, onSearch, onSelect }: Step1Props) {
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-        <h2 className="text-sm font-bold text-gray-700 mb-1">ค้นหานักเรียน</h2>
-        <p className="text-xs text-gray-400 mb-4">พิมพ์รหัสประจำตัวนักเรียน หรือชื่อ-นามสกุล</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+      <div className="wizard-body">
+        <h2 className="step-heading">ค้นหานักเรียน</h2>
+        <p className="step-sub">พิมพ์รหัสประจำตัวนักเรียน หรือ ชื่อ-นามสกุล</p>
 
-        <form onSubmit={onSearch} className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <form onSubmit={onSearch} style={{ display: "flex", gap: 10 }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--ink-3)" }} />
             <input
+              className="ks-input"
+              style={{ paddingLeft: 42 }}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="เช่น 42344 หรือ สมชาย"
               autoFocus
               disabled={searching}
-              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] disabled:bg-gray-50 disabled:text-gray-400"
             />
           </div>
-          <button
-            type="submit"
-            disabled={!query.trim() || searching}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            {searching ? (
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
+          <button type="submit" className="btn btn-primary" disabled={!query.trim() || searching}>
+            {searching
+              ? <svg className="spin" width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              : <Search size={15} />}
             ค้นหา
           </button>
         </form>
 
         {error && (
-          <div className="mt-4 flex items-start gap-2.5 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
-            <svg className="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
-            </svg>
+          <div style={{ marginTop: 16, padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
             {error}
           </div>
         )}
-
-        {results && results.length === 0 && !error && (
-          <p className="mt-4 text-sm text-gray-400 text-center py-2">ไม่พบข้อมูล</p>
-        )}
       </div>
 
-      {/* Multiple results list */}
       {results && results.length > 1 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 bg-[#eff2ff]/60">
-            <p className="text-xs font-semibold text-[#3a4fd4]">
-              พบ {results.length} รายการ — เลือกนักเรียนที่ต้องการบันทึก
-            </p>
+        <div className="ks-card">
+          <div className="ks-card-header">
+            <div>
+              <div className="eyebrow">พบ {results.length} รายการ</div>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>เลือกนักเรียนที่ต้องการบันทึก</div>
+            </div>
           </div>
-          <ul className="divide-y divide-gray-50">
+          <div>
             {results.map((s) => (
-              <li key={s.id}>
-                <button
-                  onClick={() => onSelect(s)}
-                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-[#eff2ff]/50 transition-colors text-left group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#eff2ff] flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4 text-[#465fff]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">
-                        {s.title.name}{s.firstName} {s.lastName}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        รหัส {s.studentCode} · {s.gradeLevel}/{s.classRoom} · เลขที่ {s.classNumber}
-                      </p>
-                    </div>
+              <button
+                key={s.id}
+                className="student-result"
+                style={{ width: "100%", textAlign: "left", background: "none", border: "none", borderBottom: "1px solid var(--rule-soft)", cursor: "pointer" }}
+                onClick={() => onSelect(s)}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--indigo-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <User size={16} style={{ color: "var(--indigo)" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 500, fontSize: 14 }}>{s.title.name}{s.firstName} {s.lastName}</div>
+                  <div className="mono" style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                    {s.studentCode} · {s.gradeLevel}/{s.classRoom} · เลขที่ {s.classNumber}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#465fff] transition-colors shrink-0" />
-                </button>
-              </li>
+                </div>
+                <ChevronRight size={14} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-// ── Step 2: Confirm student info ───────────────────────────────────────────────
+// ── Step 2: Confirm student ────────────────────────────────────────────────────
 
 function Step2Student({ student, onBack, onNext }: { student: Student; onBack: () => void; onNext: () => void }) {
   const fullName = `${student.title.name}${student.firstName} ${student.lastName}`
-
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
   const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
   const father = student.guardians.find((g) => g.relation.name === "พ่อ")
   const mother = student.guardians.find((g) => g.relation.name === "แม่")
-  const otherGuardian = student.guardians.find(
-    (g) => g.relation.name !== "พ่อ" && g.relation.name !== "แม่"
-  )
-
-  const addressParts = [
+  const other = student.guardians.find((g) => g.relation.name !== "พ่อ" && g.relation.name !== "แม่")
+  const address = [
     student.addressHouseNo && `บ้านเลขที่ ${student.addressHouseNo}`,
     student.addressMoo && `หมู่ ${student.addressMoo}`,
     student.addressVillage && `บ้าน${student.addressVillage}`,
     student.addressSoi && `ซอย${student.addressSoi}`,
     student.addressRoad && `ถนน${student.addressRoad}`,
-    student.addressSubDistrict && `ต.${student.addressSubDistrict}`,
-    student.addressDistrict && `อ.${student.addressDistrict}`,
-    student.addressProvince && `จ.${student.addressProvince}`,
+    `ต.${student.addressSubDistrict}`,
+    `อ.${student.addressDistrict}`,
+    `จ.${student.addressProvince}`,
     student.addressPostalCode,
-  ].filter(Boolean)
+  ].filter(Boolean).join(" ")
 
   function formatDate(d: string) {
-    return new Date(d).toLocaleDateString("th-TH", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })
+    return new Date(d).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" })
   }
-
   function teacherName(t: { title: { name: string }; firstName: string; lastName: string }) {
     return `${t.title.name}${t.firstName} ${t.lastName}`
   }
 
   return (
-    <div className="space-y-4">
-      {/* Student card */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#465fff] flex items-center justify-center shrink-0">
-            <User className="w-6 h-6 text-white" />
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+      <StudentMiniCard student={student} />
+
+      <div className="ks-card">
+        <div className="ks-card-header">
+          <div>
+            <div className="eyebrow">§ S01 · STUDENT</div>
+            <div style={{ fontWeight: 600, fontSize: 16 }}>{fullName}</div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-gray-900 text-lg truncate">{fullName}</p>
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              <span className="text-xs bg-[#eff2ff] text-[#3a4fd4] font-semibold px-2.5 py-0.5 rounded-full">
-                รหัส {student.studentCode}
-              </span>
-              <span className="text-xs text-gray-500">
-                ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
-              </span>
-            </div>
+          <div className="mono" style={{ fontSize: 13, color: "var(--ink-3)" }}>
+            {student.studentCode} · {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
           </div>
         </div>
+        <div className="ks-card-pad">
+          <div className="divider-label" style={{ marginTop: 0 }}>ข้อมูลส่วนตัว</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+            <InfoRow label="เลขประจำตัวประชาชน" value={student.nationalId} mono />
+            <InfoRow label="วันเกิด" value={formatDate(student.birthDate)} />
+            <InfoRow label="สัญชาติ" value={student.nationality} />
+            <InfoRow label="เชื้อชาติ" value={student.ethnicity} />
+            <InfoRow label="ศาสนา" value={student.religion} />
+            <InfoRow label="หมู่เลือด" value={student.bloodType ?? "—"} />
+            {student.phone && <InfoRow label="โทรศัพท์" value={student.phone} />}
+          </div>
 
-        <div className="divide-y divide-gray-50">
-          {/* Personal info section */}
-          <section className="px-6 py-5">
-            <SectionTitle icon={<User className="w-3.5 h-3.5" />} label="ข้อมูลส่วนตัว" />
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 mt-3">
-              <Field label="เลขประจำตัวประชาชน" value={student.nationalId} mono />
-              <Field label="วันเกิด" value={formatDate(student.birthDate)} />
-              <Field label="สัญชาติ" value={student.nationality} />
-              <Field label="เชื้อชาติ" value={student.ethnicity} />
-              <Field label="ศาสนา" value={student.religion} />
-              <Field label="หมู่เลือด" value={student.bloodType ?? "-"} />
-              {student.phone && <Field label="เบอร์โทรศัพท์" value={student.phone} />}
-            </div>
-          </section>
+          <div className="divider-label">ครอบครัวและครูที่ปรึกษา</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+            <InfoRow label="บิดา" value={father ? `${father.firstName} ${father.lastName}` : "—"} />
+            <InfoRow label="มารดา" value={mother ? `${mother.firstName} ${mother.lastName}` : "—"} />
+            {other && <InfoRow label={`ผู้ปกครอง (${other.relation.name})`} value={`${other.firstName} ${other.lastName}`} />}
+            <InfoRow label="ครูที่ปรึกษา 1" value={advisor1 ? teacherName(advisor1) : "—"} />
+            <InfoRow label="ครูที่ปรึกษา 2" value={advisor2 ? teacherName(advisor2) : "—"} />
+          </div>
 
-          {/* Family & advisors section */}
-          <section className="px-6 py-5">
-            <SectionTitle icon={<Users className="w-3.5 h-3.5" />} label="ครอบครัวและครูที่ปรึกษา" />
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 mt-3">
-              <Field
-                label="บิดาชื่อ"
-                value={father ? `${father.firstName} ${father.lastName}` : "-"}
-              />
-              <Field
-                label="มารดาชื่อ"
-                value={mother ? `${mother.firstName} ${mother.lastName}` : "-"}
-              />
-              {otherGuardian && (
-                <Field
-                  label={`ผู้ปกครอง (${otherGuardian.relation.name})`}
-                  value={`${otherGuardian.firstName} ${otherGuardian.lastName}`}
-                />
-              )}
-              <Field
-                label="ครูที่ปรึกษา (1)"
-                value={advisor1 ? teacherName(advisor1) : "-"}
-              />
-              <Field
-                label="ครูที่ปรึกษา (2)"
-                value={advisor2 ? teacherName(advisor2) : "-"}
-              />
-            </div>
-          </section>
-
-          {/* Address section */}
-          <section className="px-6 py-5">
-            <SectionTitle icon={<MapPin className="w-3.5 h-3.5" />} label="ที่อยู่" />
-            <p className="mt-3 text-sm text-gray-700 leading-relaxed">
-              {addressParts.length > 0 ? addressParts.join(" ") : "-"}
-            </p>
-          </section>
+          <div className="divider-label">ที่อยู่</div>
+          <div style={{ fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6 }}>{address || "—"}</div>
         </div>
       </div>
 
-      {/* Navigation buttons */}
-      <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          ย้อนกลับ
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack}>
+          <ChevronLeft size={14} /> ย้อนกลับ
         </button>
-
-        <button
-          onClick={onNext}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-        >
-          ถัดไป — บันทึกถ้อยคำ
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        <div className="right">
+          <button className="btn btn-primary" onClick={onNext}>
+            ถัดไป — บันทึกถ้อยคำ <ChevronRight size={14} />
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
 // ── Step 3: Statement form ─────────────────────────────────────────────────────
+
+type SemesterItem = { id: number; name: string; value: number }
+type AcademicYearItem = { id: number; year: number }
+type ViolationCategoryItem = { id: number; name: string }
+type ViolationSubCategoryItem = { id: number; name: string; violationCategoryId: number }
 
 interface Step3Props {
   student: Student
@@ -739,11 +550,6 @@ interface Step3Props {
   onBack: () => void
   onNext: () => void
 }
-
-type SemesterItem = { id: number; name: string; value: number }
-type AcademicYearItem = { id: number; year: number }
-type ViolationCategoryItem = { id: number; name: string }
-type ViolationSubCategoryItem = { id: number; name: string; violationCategoryId: number }
 
 function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step3Props) {
   const [semesters, setSemesters] = useState<SemesterItem[]>([])
@@ -759,25 +565,17 @@ function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step
       fetch("/api/master/academic-years").then((r) => r.json()),
       fetch("/api/master/violation-categories").then((r) => r.json()),
     ]).then(([sem, ay, vc]) => {
-      setSemesters(sem)
-      setAcademicYears(ay)
-      setViolationCategories(vc)
+      setSemesters(sem); setAcademicYears(ay); setViolationCategories(vc)
       setLoadingMaster(false)
     })
   }, [])
 
   useEffect(() => {
-    if (!formData.violationCategoryId) {
-      setViolationSubCategories([])
-      return
-    }
+    if (!formData.violationCategoryId) { setViolationSubCategories([]); return }
     setLoadingSubCategories(true)
     fetch(`/api/master/violation-sub-categories?categoryId=${formData.violationCategoryId}`)
       .then((r) => r.json())
-      .then((data) => {
-        setViolationSubCategories(data)
-        setLoadingSubCategories(false)
-      })
+      .then((data) => { setViolationSubCategories(data); setLoadingSubCategories(false) })
       .catch(() => setLoadingSubCategories(false))
   }, [formData.violationCategoryId])
 
@@ -786,226 +584,188 @@ function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step
   }
 
   const isValid =
-    formData.semesterId &&
-    formData.academicYearId &&
-    formData.violationCategoryId &&
-    formData.subject.trim() &&
-    formData.detail.trim() &&
-    formData.incidentDateTime &&
-    formData.location.trim() &&
-    formData.recorder.trim()
+    formData.semesterId && formData.academicYearId && formData.violationCategoryId &&
+    formData.subject.trim() && formData.detail.trim() &&
+    formData.incidentDateTime && formData.location.trim() && formData.recorder.trim()
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
       <StudentMiniCard student={student} />
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-[#465fff]" />
-          <h2 className="text-sm font-bold text-[#1c2434]">บันทึกถ้อยคำ</h2>
-        </div>
+      <div className="wizard-body">
+        <h2 className="step-heading">บันทึกถ้อยคำ</h2>
+        <p className="step-sub">กรอกรายละเอียดการกระทำความผิด</p>
 
-        <div className="px-6 py-5 space-y-5">
-          {loadingMaster ? (
-            <div className="flex justify-center py-6">
-              <svg className="w-5 h-5 animate-spin text-[#465fff]" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            </div>
-          ) : (
-            <>
-              {/* Semester + Academic year */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormGroup label="ภาคเรียน" required>
-                  <NativeSelect
-                    value={formData.semesterId}
-                    onChange={(v) => {
-                      const found = semesters.find((s) => String(s.id) === v)
-                      update({ semesterId: v, semesterLabel: found?.name ?? "" })
-                    }}
-                    placeholder="เลือกภาคเรียน"
-                    options={semesters.map((s) => ({ value: String(s.id), label: s.name }))}
-                  />
-                </FormGroup>
-
-                <FormGroup label="ปีการศึกษา" required>
-                  <NativeSelect
-                    value={formData.academicYearId}
-                    onChange={(v) => {
-                      const found = academicYears.find((a) => String(a.id) === v)
-                      update({ academicYearId: v, academicYearLabel: found ? String(found.year) : "" })
-                    }}
-                    placeholder="เลือกปีการศึกษา"
-                    options={academicYears.map((a) => ({ value: String(a.id), label: String(a.year) }))}
-                  />
-                </FormGroup>
-              </div>
-
-              {/* Violation category */}
-              <FormGroup label="ได้ประพฤติผิดระเบียบในหมวด" required>
-                <NativeSelect
-                  value={formData.violationCategoryId}
-                  onChange={(v) => {
-                    const found = violationCategories.find((c) => String(c.id) === v)
-                    update({
-                      violationCategoryId: v,
-                      violationCategoryLabel: found?.name ?? "",
-                      violationSubCategoryId: "",
-                      violationSubCategoryLabel: "",
-                    })
+        {loadingMaster ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: "var(--ink-3)" }}>กำลังโหลด...</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <FieldGroup label="ภาคเรียน" required>
+                <select
+                  className="ks-select"
+                  value={formData.semesterId}
+                  onChange={(e) => {
+                    const found = semesters.find((s) => String(s.id) === e.target.value)
+                    update({ semesterId: e.target.value, semesterLabel: found?.name ?? "" })
                   }}
-                  placeholder="เลือกหมวด"
-                  options={violationCategories.map((c) => ({ value: String(c.id), label: c.name }))}
-                />
-              </FormGroup>
+                >
+                  <option value="" disabled>เลือกภาคเรียน</option>
+                  {semesters.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </FieldGroup>
+              <FieldGroup label="ปีการศึกษา" required>
+                <select
+                  className="ks-select"
+                  value={formData.academicYearId}
+                  onChange={(e) => {
+                    const found = academicYears.find((a) => String(a.id) === e.target.value)
+                    update({ academicYearId: e.target.value, academicYearLabel: found ? String(found.year) : "" })
+                  }}
+                >
+                  <option value="" disabled>เลือกปีการศึกษา</option>
+                  {academicYears.map((a) => <option key={a.id} value={a.id}>{a.year}</option>)}
+                </select>
+              </FieldGroup>
+            </div>
 
-              {/* Violation sub-category — แสดงเมื่อเลือกหมวดหลักแล้วและมีหมวดย่อย */}
-              {formData.violationCategoryId && (
-                <FormGroup label="เรื่อง (หมวดย่อย)">
-                  {loadingSubCategories ? (
-                    <div className="flex items-center gap-2 py-2 text-sm text-gray-400">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      กำลังโหลด...
-                    </div>
-                  ) : violationSubCategories.length === 0 ? (
-                    <p className="text-xs text-gray-400 py-2">ไม่มีหมวดย่อยสำหรับหมวดนี้</p>
-                  ) : (
-                    <NativeSelect
-                      value={formData.violationSubCategoryId}
-                      onChange={(v) => {
-                        const found = violationSubCategories.find((s) => String(s.id) === v)
-                        update({ violationSubCategoryId: v, violationSubCategoryLabel: found?.name ?? "" })
-                      }}
-                      placeholder="เลือกหมวดย่อย (ถ้ามี)"
-                      options={violationSubCategories.map((s) => ({ value: String(s.id), label: s.name }))}
-                    />
-                  )}
-                </FormGroup>
-              )}
+            <FieldGroup label="หมวดการผิดระเบียบ" required>
+              <select
+                className="ks-select"
+                value={formData.violationCategoryId}
+                onChange={(e) => {
+                  const found = violationCategories.find((c) => String(c.id) === e.target.value)
+                  update({ violationCategoryId: e.target.value, violationCategoryLabel: found?.name ?? "", violationSubCategoryId: "", violationSubCategoryLabel: "" })
+                }}
+              >
+                <option value="" disabled>เลือกหมวด</option>
+                {violationCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </FieldGroup>
 
-              {/* Subject */}
-              <FormGroup label="เรื่อง" required>
-                <textarea
-                  value={formData.subject}
-                  onChange={(e) => update({ subject: e.target.value })}
-                  placeholder="กรอกพฤติกรรมที่กระทำความผิด"
-                  rows={3}
-                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
-                />
-              </FormGroup>
-
-              {/* Detail */}
-              <FormGroup label="ซึ่งมีรายละเอียดการผิดระเบียบ คือ" required>
-                <textarea
-                  value={formData.detail}
-                  onChange={(e) => update({ detail: e.target.value })}
-                  placeholder="กรอกรายละเอียดการกระทำความผิด"
-                  rows={3}
-                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
-                />
-              </FormGroup>
-
-              {/* Incident datetime */}
-              <FormGroup label="เหตุเกิดเมื่อวันที่และเวลา" required>
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="date"
-                    value={formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : ""}
+            {formData.violationCategoryId && (
+              <FieldGroup label="หมวดย่อย">
+                {loadingSubCategories ? (
+                  <div style={{ fontSize: 13, color: "var(--ink-3)" }}>กำลังโหลด...</div>
+                ) : violationSubCategories.length === 0 ? (
+                  <div style={{ fontSize: 13, color: "var(--ink-4)" }}>ไม่มีหมวดย่อยสำหรับหมวดนี้</div>
+                ) : (
+                  <select
+                    className="ks-select"
+                    value={formData.violationSubCategoryId}
                     onChange={(e) => {
-                      const date = e.target.value
-                      const time = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 16) : "00:00"
-                      update({ incidentDateTime: date ? `${date}T${time}` : "" })
+                      const found = violationSubCategories.find((s) => String(s.id) === e.target.value)
+                      update({ violationSubCategoryId: e.target.value, violationSubCategoryLabel: found?.name ?? "" })
                     }}
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] text-gray-800"
-                  />
-                  <div className="flex items-center gap-1.5">
-                    <select
-                      value={formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : ""}
-                      onChange={(e) => {
-                        const hh = e.target.value
-                        const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
-                        const mm = formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : "00"
-                        update({ incidentDateTime: hh !== "" ? `${date}T${hh}:${mm}` : "" })
-                      }}
-                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] text-gray-800 bg-white"
-                    >
-                      <option value="">ชม.</option>
-                      {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
-                        <option key={h} value={h}>{h}</option>
-                      ))}
-                    </select>
-                    <span className="text-gray-400 text-sm font-medium">:</span>
-                    <select
-                      value={formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : ""}
-                      onChange={(e) => {
-                        const mm = e.target.value
-                        const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
-                        const hh = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : "00"
-                        update({ incidentDateTime: mm !== "" ? `${date}T${hh}:${mm}` : "" })
-                      }}
-                      className="flex-1 px-2 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] text-gray-800 bg-white"
-                    >
-                      <option value="">นาที</option>
-                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
+                  >
+                    <option value="">เลือกหมวดย่อย (ถ้ามี)</option>
+                    {violationSubCategories.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                )}
+              </FieldGroup>
+            )}
+
+            <FieldGroup label="เรื่อง" required>
+              <textarea
+                className="ks-textarea"
+                value={formData.subject}
+                onChange={(e) => update({ subject: e.target.value })}
+                placeholder="กรอกพฤติกรรมที่กระทำความผิด"
+                rows={3}
+              />
+            </FieldGroup>
+
+            <FieldGroup label="รายละเอียดการผิดระเบียบ" required>
+              <textarea
+                className="ks-textarea"
+                value={formData.detail}
+                onChange={(e) => update({ detail: e.target.value })}
+                placeholder="กรอกรายละเอียดการกระทำความผิด"
+                rows={3}
+              />
+            </FieldGroup>
+
+            <FieldGroup label="วันเวลาเกิดเหตุ" required>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <input
+                  className="ks-input"
+                  type="date"
+                  value={formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : ""}
+                  onChange={(e) => {
+                    const date = e.target.value
+                    const time = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 16) : "00:00"
+                    update({ incidentDateTime: date ? `${date}T${time}` : "" })
+                  }}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <select
+                    className="ks-select"
+                    value={formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : ""}
+                    onChange={(e) => {
+                      const hh = e.target.value
+                      const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
+                      const mm = formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : "00"
+                      update({ incidentDateTime: hh !== "" ? `${date}T${hh}:${mm}` : "" })
+                    }}
+                  >
+                    <option value="">ชม.</option>
+                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <span style={{ color: "var(--ink-3)" }}>:</span>
+                  <select
+                    className="ks-select"
+                    value={formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : ""}
+                    onChange={(e) => {
+                      const mm = e.target.value
+                      const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
+                      const hh = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : "00"
+                      update({ incidentDateTime: mm !== "" ? `${date}T${hh}:${mm}` : "" })
+                    }}
+                  >
+                    <option value="">นาที</option>
+                    {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
                 </div>
-              </FormGroup>
-
-              {/* Location + Recorder */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormGroup label="สถานที่เกิดเหตุ" required>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => update({ location: e.target.value })}
-                    placeholder="ระบุสถานที่"
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
-                  />
-                </FormGroup>
-
-                <FormGroup label="ผู้บันทึกข้อมูล" required>
-                  <input
-                    type="text"
-                    value={formData.recorder}
-                    onChange={(e) => update({ recorder: e.target.value })}
-                    placeholder="ชื่อผู้บันทึก"
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
-                  />
-                </FormGroup>
               </div>
+            </FieldGroup>
 
-              <p className="text-xs text-[#465fff] font-medium">
-                ลงวันที่: ประทับวันอัตโนมัติเมื่อบันทึกข้อมูล
-              </p>
-            </>
-          )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <FieldGroup label="สถานที่เกิดเหตุ" required>
+                <input
+                  className="ks-input"
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => update({ location: e.target.value })}
+                  placeholder="ระบุสถานที่"
+                />
+              </FieldGroup>
+              <FieldGroup label="ผู้บันทึกข้อมูล" required>
+                <input
+                  className="ks-input"
+                  type="text"
+                  value={formData.recorder}
+                  onChange={(e) => update({ recorder: e.target.value })}
+                  placeholder="ชื่อผู้บันทึก"
+                />
+              </FieldGroup>
+            </div>
+          </div>
+        )}
+
+        <div className="wizard-actions">
+          <button className="btn btn-secondary" onClick={onBack}>
+            <ChevronLeft size={14} /> ย้อนกลับ
+          </button>
+          <div className="right">
+            <button className="btn btn-primary" onClick={onNext} disabled={!isValid}>
+              ถัดไป — มาตรการ <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          ย้อนกลับ
-        </button>
-
-        <button
-          onClick={onNext}
-          disabled={!isValid}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-        >
-          ถัดไป — มาตรการ
-          <ChevronRight className="w-4 h-4" />
-        </button>
       </div>
     </div>
   )
@@ -1023,7 +783,7 @@ interface Step4Props {
 function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Props) {
   const showBond = measureData.selected.includes("probation_bond")
 
-  function toggleMeasure(id: string) {
+  function toggle(id: string) {
     setMeasureData((prev) => ({
       ...prev,
       selected: prev.selected.includes(id)
@@ -1032,125 +792,258 @@ function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Pro
     }))
   }
 
-  function MeasureList({ items }: { items: typeof CONSIDERATION_MEASURES }) {
-    return (
-      <div className="space-y-2">
-        {items.map((m) => {
-          const checked = measureData.selected.includes(m.id)
-          const isBond = m.id === "probation_bond"
-          return (
-            <label
-              key={m.id}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
-                checked
-                  ? isBond
-                    ? "border-orange-300 bg-orange-50"
-                    : "border-[#465fff]/20 bg-[#eff2ff]"
-                  : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
-                  checked
-                    ? isBond
-                      ? "bg-orange-500 border-orange-500"
-                      : "bg-[#465fff] border-[#465fff]"
-                    : "border-gray-300"
-                }`}
-              >
-                {checked && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleMeasure(m.id)} />
-              <span className={`text-sm font-medium ${checked ? "text-gray-800" : "text-gray-600"}`}>
-                {m.label}
-              </span>
-              {isBond && (
-                <span className="ml-auto text-[10px] font-bold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full">
-                  เพิ่มขั้นตอน
-                </span>
-              )}
-            </label>
-          )
-        })}
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-[#465fff]" />
-          <h2 className="text-sm font-bold text-[#1c2434]">มาตรการ / การดำเนินการ</h2>
+    <div className="wizard-body">
+      <h2 className="step-heading">มาตรการ / การดำเนินการ</h2>
+      <p className="step-sub">เลือกมาตรการที่จะดำเนินการกับนักเรียน</p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div>
+          <div className="divider-label" style={{ marginTop: 0 }}>ส่วนที่ 3 — การพิจารณา</div>
+          <MeasureList items={CONSIDERATION_MEASURES} selected={measureData.selected} onToggle={toggle} />
+        </div>
+        <div>
+          <div className="divider-label">ส่วนที่ 4 — ผลการพิจารณา</div>
+          <MeasureList items={RESULT_MEASURES} selected={measureData.selected} onToggle={toggle} />
         </div>
 
-        <div className="px-6 py-5 space-y-6">
-          {/* Section 3: การพิจารณา */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-semibold text-[#465fff]">ส่วนที่ 3: การพิจารณา</p>
-              <p className="text-xs text-gray-400 mt-0.5">เลือกได้มากกว่า 1 ข้อ</p>
-            </div>
-            <MeasureList items={CONSIDERATION_MEASURES} />
+        {showBond && (
+          <div style={{ padding: "12px 16px", background: "var(--amber-wash, #fffbeb)", border: "1px solid var(--amber)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--amber)" }}>
+            <ShieldAlert size={13} style={{ display: "inline", marginRight: 6 }} />
+            เลือก <strong>ทำทัณฑ์บน</strong> — ระบบจะเพิ่มขั้นตอนกรอกสัญญาก่อนยืนยัน
           </div>
+        )}
 
-          <div className="border-t border-gray-100" />
-
-          {/* Section 4: ผลการพิจารณา */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-semibold text-[#465fff]">ส่วนที่ 4: ผลการพิจารณา</p>
-              <p className="text-xs text-gray-400 mt-0.5">เลือกได้มากกว่า 1 ข้อ</p>
-            </div>
-            <MeasureList items={RESULT_MEASURES} />
-          </div>
-
-          {showBond && (
-            <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3">
-              <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-orange-700">
-                เลือก <strong>ทำทัณฑ์บน</strong> — ระบบจะเพิ่มขั้นตอนกรอกสัญญาทัณฑ์บนก่อนยืนยัน
-              </p>
-            </div>
-          )}
-
-          {/* Additional notes */}
-          <div>
-            <FormGroup label="หมายเหตุเพิ่มเติม">
-              <textarea
-                value={measureData.notes}
-                onChange={(e) => setMeasureData((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder="บันทึกเพิ่มเติม (ถ้ามี)"
-                rows={2}
-                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] placeholder:text-gray-300"
-              />
-            </FormGroup>
-          </div>
-        </div>
+        <FieldGroup label="หมายเหตุเพิ่มเติม">
+          <textarea
+            className="ks-textarea"
+            value={measureData.notes}
+            onChange={(e) => setMeasureData((prev) => ({ ...prev, notes: e.target.value }))}
+            placeholder="บันทึกเพิ่มเติม (ถ้ามี)"
+            rows={2}
+          />
+        </FieldGroup>
       </div>
 
-      <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          ย้อนกลับ
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack}>
+          <ChevronLeft size={14} /> ย้อนกลับ
         </button>
-
-        <button
-          onClick={onNext}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-        >
-          {showBond ? "ถัดไป — ทำทัณฑ์บน" : "ถัดไป — ยืนยัน"}
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        <div className="right">
+          <button className="btn btn-primary" onClick={onNext}>
+            {showBond ? "ถัดไป — ทำทัณฑ์บน" : "ถัดไป — ลงนาม"} <ChevronRight size={14} />
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-// ── Step 5: Signatures ────────────────────────────────────────────────────────
+function MeasureList({
+  items, selected, onToggle,
+}: { items: typeof CONSIDERATION_MEASURES; selected: string[]; onToggle: (id: string) => void }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {items.map((m) => {
+        const checked = selected.includes(m.id)
+        const isBond = m.id === "probation_bond"
+        return (
+          <label
+            key={m.id}
+            style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+              borderRadius: "var(--radius)",
+              border: `1px solid ${checked ? (isBond ? "var(--amber)" : "var(--periwinkle)") : "var(--rule)"}`,
+              background: checked ? (isBond ? "var(--amber-wash, #fffbeb)" : "var(--indigo-wash)") : "var(--surface)",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{
+              width: 18, height: 18, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
+              background: checked ? (isBond ? "var(--amber)" : "var(--indigo)") : "transparent",
+              border: `2px solid ${checked ? (isBond ? "var(--amber)" : "var(--indigo)") : "var(--rule-2)"}`,
+              flexShrink: 0,
+            }}>
+              {checked && <Check size={11} color="#fff" />}
+            </div>
+            <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={() => onToggle(m.id)} />
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>{m.label}</span>
+            {isBond && (
+              <span className="chip chip-pending" style={{ fontSize: 11 }}>+ขั้นตอน</span>
+            )}
+          </label>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Step 5 (Bond) ──────────────────────────────────────────────────────────────
+
+interface Step5Props {
+  student: Student
+  formData: StatementFormData
+  bondData: BondFormData
+  setBondData: React.Dispatch<React.SetStateAction<BondFormData>>
+  onBack: () => void
+  onNext: () => void
+}
+
+function Step5Bond({ student, formData, bondData, setBondData, onBack, onNext }: Step5Props) {
+  const selectedGuardian =
+    bondData.selectedGuardianIndex !== null ? student.guardians[bondData.selectedGuardianIndex] : null
+  const isValid =
+    bondData.selectedGuardianIndex !== null && bondData.penaltyActions.length > 0 &&
+    (!bondData.penaltyActions.includes("deduct_score") || bondData.deductPoints.trim() !== "")
+
+  function togglePenalty(id: string) {
+    setBondData((prev) => ({
+      ...prev,
+      penaltyActions: prev.penaltyActions.includes(id)
+        ? prev.penaltyActions.filter((p) => p !== id)
+        : [...prev.penaltyActions, id],
+      deductPoints: id === "deduct_score" && prev.penaltyActions.includes(id) ? "" : prev.deductPoints,
+    }))
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+      <StudentMiniCard student={student} />
+
+      <div className="wizard-body">
+        <h2 className="step-heading">ทำทัณฑ์บน</h2>
+        <p className="step-sub">ระบุผู้ปกครองและบทลงโทษหากทำผิดซ้ำ</p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div>
+            <div className="divider-label" style={{ marginTop: 0 }}>เลือกผู้ปกครองลงนาม <span style={{ color: "var(--rose)" }}>*</span></div>
+            {student.guardians.length === 0 ? (
+              <div style={{ fontSize: 13.5, color: "var(--ink-3)", padding: "12px 0" }}>ไม่มีข้อมูลผู้ปกครองในระบบ</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {student.guardians.map((g, idx) => {
+                  const sel = bondData.selectedGuardianIndex === idx
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setBondData((prev) => ({ ...prev, selectedGuardianIndex: idx }))}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
+                        borderRadius: "var(--radius)",
+                        border: `2px solid ${sel ? "var(--indigo)" : "var(--rule)"}`,
+                        background: sel ? "var(--indigo-wash)" : "var(--surface)",
+                        cursor: "pointer", textAlign: "left",
+                      }}
+                    >
+                      <div style={{
+                        width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+                        border: `2px solid ${sel ? "var(--indigo)" : "var(--rule-2)"}`,
+                        background: sel ? "var(--indigo)" : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        {sel && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500, fontSize: 14 }}>{g.firstName} {g.lastName}</div>
+                        <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{g.relation.name}{g.phone ? ` · ${g.phone}` : ""}</div>
+                      </div>
+                      {sel && <span className="chip chip-approved" style={{ fontSize: 11 }}>เลือกแล้ว</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {selectedGuardian && (
+            <div>
+              <div className="divider-label">ข้อมูลในสัญญา</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+                <InfoRow label="ผู้ปกครอง" value={`${selectedGuardian.firstName} ${selectedGuardian.lastName}`} />
+                <InfoRow label="ความสัมพันธ์" value={selectedGuardian.relation.name} />
+                <InfoRow label="นักเรียน" value={`${student.title.name}${student.firstName} ${student.lastName}`} />
+                <InfoRow label="ชั้น / เลขที่" value={`${student.gradeLevel}/${student.classRoom} · เลขที่ ${student.classNumber}`} />
+              </div>
+              <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--ink-2)", lineHeight: 1.6 }}>
+                {formData.detail || "—"}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="divider-label">บทลงโทษหากทำผิดซ้ำ <span style={{ color: "var(--rose)" }}>*</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {BOND_PENALTY_OPTIONS.map((opt) => {
+                const checked = bondData.penaltyActions.includes(opt.id)
+                return (
+                  <label
+                    key={opt.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                      borderRadius: "var(--radius)",
+                      border: `1px solid ${checked ? "var(--amber)" : "var(--rule)"}`,
+                      background: checked ? "var(--amber-wash, #fffbeb)" : "var(--surface)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: checked ? "var(--amber)" : "transparent",
+                      border: `2px solid ${checked ? "var(--amber)" : "var(--rule-2)"}`,
+                      flexShrink: 0,
+                    }}>
+                      {checked && <Check size={11} color="#fff" />}
+                    </div>
+                    <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={() => togglePenalty(opt.id)} />
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{opt.label}</span>
+                    {opt.id === "deduct_score" && checked && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input
+                          type="number" min={1} max={100}
+                          value={bondData.deductPoints}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => setBondData((prev) => ({ ...prev, deductPoints: e.target.value }))}
+                          placeholder="0"
+                          className="ks-input"
+                          style={{ width: 64, textAlign: "center" }}
+                        />
+                        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>คะแนน</span>
+                      </div>
+                    )}
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
+          <FieldGroup label="ชื่อพยาน">
+            <input
+              className="ks-input"
+              type="text"
+              value={bondData.witnessName}
+              onChange={(e) => setBondData((prev) => ({ ...prev, witnessName: e.target.value }))}
+              placeholder="ชื่อ-นามสกุลพยาน (ถ้ามี)"
+            />
+          </FieldGroup>
+        </div>
+
+        <div className="wizard-actions">
+          <button className="btn btn-secondary" onClick={onBack}>
+            <ChevronLeft size={14} /> ย้อนกลับ
+          </button>
+          <div className="right">
+            <button className="btn btn-primary" onClick={onNext} disabled={!isValid}>
+              ถัดไป — ลงนาม <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 5 (Signature) ─────────────────────────────────────────────────────────
 
 interface Step5SignatureProps {
   student: Student
@@ -1160,17 +1053,9 @@ interface Step5SignatureProps {
   onNext: () => void
 }
 
-function SignaturePad({
-  label,
-  value,
-  onChange,
-  onClear,
-}: {
-  label: string
-  value: string
-  onChange: (dataUrl: string) => void
-  onClear: () => void
-}) {
+function SigPad({
+  label, value, onChange, onClear,
+}: { label: string; value: string; onChange: (url: string) => void; onClear: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing = useRef(false)
 
@@ -1180,43 +1065,28 @@ function SignaturePad({
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
     if ("touches" in e) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY,
-      }
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY }
     }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-    }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY }
   }
 
   function startDraw(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
-    e.preventDefault()
-    drawing.current = true
+    e.preventDefault(); drawing.current = true
     const ctx = canvasRef.current!.getContext("2d")!
     const { x, y } = getXY(e)
-    ctx.beginPath()
-    ctx.moveTo(x, y)
+    ctx.beginPath(); ctx.moveTo(x, y)
   }
 
   function draw(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
     e.preventDefault()
     if (!drawing.current) return
-    const canvas = canvasRef.current!
-    const ctx = canvas.getContext("2d")!
-    ctx.lineWidth = 2.5
-    ctx.lineCap = "round"
-    ctx.lineJoin = "round"
-    ctx.strokeStyle = "white"
+    const ctx = canvasRef.current!.getContext("2d")!
+    ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "var(--ink)"
     const { x, y } = getXY(e)
-    ctx.lineTo(x, y)
-    ctx.stroke()
+    ctx.lineTo(x, y); ctx.stroke()
   }
 
-  function stopDraw() {
-    drawing.current = false
-  }
+  function stopDraw() { drawing.current = false }
 
   function clear() {
     const canvas = canvasRef.current!
@@ -1224,58 +1094,34 @@ function SignaturePad({
     onClear()
   }
 
-  function confirm() {
-    onChange(canvasRef.current!.toDataURL("image/png"))
-  }
-
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-gray-600">{label}</p>
-      <div className={`relative rounded-lg border-2 border-dashed overflow-hidden ${value ? "border-green-400 bg-green-50" : "border-gray-200 bg-white"}`}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+        {label}
+      </div>
+      <div className="sig-pad" style={{ height: 160, cursor: "crosshair", border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash, #f0fdf4)" : undefined }}>
         {value ? (
-          <img src={value} alt="signature" className="w-full h-28 object-contain" />
+          <img src={value} alt="signature" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
         ) : (
           <canvas
-            ref={canvasRef}
-            width={600}
-            height={112}
-            className="w-full h-28 cursor-crosshair touch-none"
-            onMouseDown={startDraw}
-            onMouseMove={draw}
-            onMouseUp={stopDraw}
-            onMouseLeave={stopDraw}
-            onTouchStart={startDraw}
-            onTouchMove={draw}
-            onTouchEnd={stopDraw}
+            ref={canvasRef} width={600} height={160}
+            style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }}
+            onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+            onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}
           />
         )}
-        {!value && (
-          <p className="absolute inset-0 flex items-center justify-center text-xs text-gray-300 pointer-events-none select-none">
-            เซ็นชื่อในช่องนี้
-          </p>
-        )}
+        <span className="sig-label">{label}</span>
       </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={clear}
-          className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        >
-          ล้าง
-        </button>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={clear}>ล้าง</button>
         {!value && (
-          <button
-            type="button"
-            onClick={confirm}
-            className="px-3 py-1.5 text-xs font-semibold text-white bg-[#465fff] hover:bg-[#3a4fd4] rounded-lg transition-colors"
-          >
-            ยืนยัน
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => onChange(canvasRef.current!.toDataURL("image/png"))}>
+            ยืนยันลายเซ็น
           </button>
         )}
         {value && (
-          <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-            <Check className="w-3.5 h-3.5" />
-            บันทึกแล้ว
+          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: "var(--sage)" }}>
+            <Check size={13} /> บันทึกแล้ว
           </span>
         )}
       </div>
@@ -1283,17 +1129,9 @@ function SignaturePad({
   )
 }
 
-function TeacherSignatureSelect({
-  label,
-  role,
-  selectedId,
-  onSelect,
-}: {
-  label: string
-  role: string
-  selectedId: number | null
-  onSelect: (id: number | null, signatureUrl: string | null) => void
-}) {
+function TeacherSigSelect({
+  label, role, selectedId, onSelect,
+}: { label: string; role: string; selectedId: number | null; onSelect: (id: number | null) => void }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -1307,44 +1145,35 @@ function TeacherSignatureSelect({
   const selected = teachers.find((t) => t.id === selectedId)
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-gray-600">{label}</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+        {label}
+      </div>
       {loading ? (
-        <div className="h-10 rounded-lg bg-gray-100 animate-pulse" />
+        <div style={{ height: 42, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
       ) : teachers.length === 0 ? (
-        <p className="text-xs text-gray-400 italic py-2">ไม่พบครูที่มีบทบาทนี้ในระบบ</p>
+        <div style={{ fontSize: 13, color: "var(--ink-4)" }}>ไม่พบครูที่มีบทบาทนี้</div>
       ) : (
         <select
+          className="ks-select"
           value={selectedId ?? ""}
           onChange={(e) => {
             const id = e.target.value ? Number(e.target.value) : null
-            const teacher = teachers.find((t) => t.id === id) ?? null
-            onSelect(id, teacher?.signatureUrl ?? null)
+            onSelect(id)
           }}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] bg-white text-gray-800"
         >
           <option value="">เลือก{label}</option>
           {teachers.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.title.name}{t.firstName} {t.lastName}
-            </option>
+            <option key={t.id} value={t.id}>{t.title.name}{t.firstName} {t.lastName}</option>
           ))}
         </select>
       )}
       {selected && (
-        <div className="rounded-lg border border-[#465fff]/20 bg-[#eff2ff] px-4 py-3">
-          {selected.signatureUrl ? (
-            <img
-              src={selected.signatureUrl}
-              alt="signature"
-              className="h-16 object-contain mx-auto"
-            />
-          ) : (
-            <p className="text-xs text-gray-400 text-center italic">ยังไม่มีลายเซ็นในระบบ</p>
-          )}
-          <p className="text-[10px] text-center text-gray-500 mt-1">
-            ลายเซ็น: {selected.title.name}{selected.firstName} {selected.lastName} (อัตโนมัติ)
-          </p>
+        <div className="sig-display" style={{ borderColor: selected.signatureUrl ? "var(--sage)" : undefined }}>
+          {selected.signatureUrl
+            ? <img src={selected.signatureUrl} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+            : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ยังไม่มีลายเซ็นในระบบ</span>}
+          <span className="sig-name">{selected.title.name}{selected.firstName} {selected.lastName}</span>
         </div>
       )}
     </div>
@@ -1359,308 +1188,59 @@ function Step5Signature({ student, signatureData, setSignatureData, onBack, onNe
   }
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
       <StudentMiniCard student={student} />
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-[#465fff]/20 px-6 py-4 flex items-center gap-2">
-          <ScrollText className="w-4 h-4 text-[#465fff]" />
-          <h2 className="text-sm font-bold text-[#1c2434]">ส่วนที่ 5: ลงนาม</h2>
+      <div className="wizard-body">
+        <h2 className="step-heading">ลงนาม</h2>
+        <p className="step-sub">เซ็นชื่อในช่องที่กำหนด แล้วกด "ยืนยันลายเซ็น"</p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <SigPad
+            label="นักเรียน"
+            value={signatureData.studentSignature}
+            onChange={(v) => setSig("studentSignature", v)}
+            onClear={() => setSig("studentSignature", "")}
+          />
+          <SigPad
+            label="ผู้ปกครอง (รับทราบ)"
+            value={signatureData.guardianSignature}
+            onChange={(v) => setSig("guardianSignature", v)}
+            onClear={() => setSig("guardianSignature", "")}
+          />
+          <SigPad
+            label={`ครูที่ปรึกษา${advisor ? ` — ${advisor.title.name}${advisor.firstName} ${advisor.lastName}` : ""}`}
+            value={signatureData.advisorSignature}
+            onChange={(v) => setSig("advisorSignature", v)}
+            onClear={() => setSig("advisorSignature", "")}
+          />
+          <TeacherSigSelect
+            label="ครูฝ่ายปกครอง"
+            role="ครูฝ่ายปกครอง"
+            selectedId={signatureData.disciplineTeacherId}
+            onSelect={(id) => setSignatureData((prev) => ({ ...prev, disciplineTeacherId: id }))}
+          />
         </div>
 
-        <div className="px-6 py-5 space-y-6">
-          {/* Row 1: นักเรียน + ผู้ปกครอง */}
-          <div className="grid grid-cols-2 gap-6">
-            <SignaturePad
-              label="นักเรียน"
-              value={signatureData.studentSignature}
-              onChange={(v) => setSig("studentSignature", v)}
-              onClear={() => setSig("studentSignature", "")}
-            />
-            <SignaturePad
-              label="ผู้ปกครอง (รับทราบจากครูที่ปรึกษา)"
-              value={signatureData.guardianSignature}
-              onChange={(v) => setSig("guardianSignature", v)}
-              onClear={() => setSig("guardianSignature", "")}
-            />
-          </div>
-
-          <div className="border-t border-gray-100" />
-
-          {/* Row 2: ครูที่ปรึกษา */}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <SignaturePad
-                label={`ครูที่ปรึกษา${advisor ? ` (${advisor.title.name}${advisor.firstName} ${advisor.lastName})` : ""}`}
-                value={signatureData.advisorSignature}
-                onChange={(v) => setSig("advisorSignature", v)}
-                onClear={() => setSig("advisorSignature", "")}
-              />
-            </div>
-            <TeacherSignatureSelect
-              label="ครูฝ่ายปกครอง"
-              role="ครูฝ่ายปกครอง"
-              selectedId={signatureData.disciplineTeacherId}
-              onSelect={(id) => setSignatureData((prev) => ({ ...prev, disciplineTeacherId: id }))}
-            />
-          </div>
-
-          <div className="border-t border-gray-100" />
-
-          {/* Row 3: หัวหน้าระดับชั้น */}
-          <div className="max-w-xs">
-            <TeacherSignatureSelect
-              label="หัวหน้าระดับชั้น"
-              role="หัวหน้าระดับชั้น"
-              selectedId={signatureData.gradeHeadTeacherId}
-              onSelect={(id) => setSignatureData((prev) => ({ ...prev, gradeHeadTeacherId: id }))}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          ย้อนกลับ
-        </button>
-        <button
-          onClick={onNext}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-        >
-          ถัดไป — ยืนยัน
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Step 5 (Bond): Probation Bond ─────────────────────────────────────────────
-
-interface Step5Props {
-  student: Student
-  formData: StatementFormData
-  bondData: BondFormData
-  setBondData: React.Dispatch<React.SetStateAction<BondFormData>>
-  onBack: () => void
-  onNext: () => void
-}
-
-const BOND_PENALTY_OPTIONS = [
-  { id: "deduct_score", label: "ตัดคะแนนความประพฤติ" },
-  { id: "behavior_camp", label: "ทำกิจกรรมค่ายปรับพฤติกรรม" },
-  { id: "suspension", label: "พักการเรียน" },
-  { id: "transfer", label: "ย้ายสถานศึกษา" },
-]
-
-function Step5Bond({ student, formData, bondData, setBondData, onBack, onNext }: Step5Props) {
-  const selectedGuardian =
-    bondData.selectedGuardianIndex !== null ? student.guardians[bondData.selectedGuardianIndex] : null
-
-  const isValid =
-    bondData.selectedGuardianIndex !== null &&
-    bondData.penaltyActions.length > 0 &&
-    (!bondData.penaltyActions.includes("deduct_score") || bondData.deductPoints.trim() !== "")
-
-  function togglePenalty(id: string) {
-    setBondData((prev) => ({
-      ...prev,
-      penaltyActions: prev.penaltyActions.includes(id)
-        ? prev.penaltyActions.filter((p) => p !== id)
-        : [...prev.penaltyActions, id],
-      deductPoints: id === "deduct_score" && prev.penaltyActions.includes(id) ? "" : prev.deductPoints,
-    }))
-  }
-
-  const studentFullName = `${student.title.name}${student.firstName} ${student.lastName}`
-
-  return (
-    <div className="space-y-4">
-      <StudentMiniCard student={student} />
-
-      {/* ── Section 1: Guardian selection ── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
-          <Users className="w-4 h-4 text-orange-500" />
-          <h2 className="text-sm font-bold text-[#1c2434]">เลือกผู้ปกครองลงนาม</h2>
-          <span className="ml-auto text-xs text-red-500 font-medium">* จำเป็น</span>
+        <div style={{ gridColumn: "1/-1", marginTop: 16 }}>
+          <TeacherSigSelect
+            label="หัวหน้าระดับชั้น"
+            role="หัวหน้าระดับชั้น"
+            selectedId={signatureData.gradeHeadTeacherId}
+            onSelect={(id) => setSignatureData((prev) => ({ ...prev, gradeHeadTeacherId: id }))}
+          />
         </div>
 
-        <div className="px-6 py-5">
-          {student.guardians.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-3">ไม่มีข้อมูลผู้ปกครองในระบบ</p>
-          ) : (
-            <div className="space-y-2">
-              {student.guardians.map((g, idx) => {
-                const selected = bondData.selectedGuardianIndex === idx
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setBondData((prev) => ({ ...prev, selectedGuardianIndex: idx }))}
-                    className={`w-full flex items-start gap-3 px-4 py-3.5 rounded-lg border-2 text-left transition-all ${
-                      selected
-                        ? "border-orange-400 bg-orange-50"
-                        : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div
-                      className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
-                        selected ? "border-orange-400 bg-orange-400" : "border-gray-300"
-                      }`}
-                    >
-                      {selected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800">
-                        {g.firstName} {g.lastName}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {g.relation.name}
-                        {g.phone ? ` · ${g.phone}` : ""}
-                      </p>
-                    </div>
-                    {selected && (
-                      <span className="text-[10px] font-bold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full shrink-0">
-                        เลือกแล้ว
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Section 2: Bond info summary ── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
-          <ScrollText className="w-4 h-4 text-orange-500" />
-          <h2 className="text-sm font-bold text-[#1c2434]">ข้อมูลในสัญญาทัณฑ์บน</h2>
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-            <Field label="ผู้ปกครอง" value={selectedGuardian ? `${selectedGuardian.firstName} ${selectedGuardian.lastName}` : "—"} />
-            <Field label="ความสัมพันธ์" value={selectedGuardian?.relation.name ?? "—"} />
-            <Field label="เบอร์โทรผู้ปกครอง" value={selectedGuardian?.phone ?? "—"} />
-            <Field label="นักเรียน" value={studentFullName} />
-            <Field label="ชั้น" value={`${student.gradeLevel}/${student.classRoom}`} />
-            <Field label="เลขประจำตัว" value={student.studentCode} />
-          </div>
-
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-xs text-gray-400 mb-1">ที่อยู่นักเรียน</p>
-            <p className="text-sm text-gray-700">
-              {[
-                student.addressHouseNo && `เลขที่ ${student.addressHouseNo}`,
-                student.addressMoo && `หมู่ ${student.addressMoo}`,
-                student.addressVillage && `บ้าน${student.addressVillage}`,
-                student.addressSoi && `ซอย${student.addressSoi}`,
-                student.addressRoad && `ถนน${student.addressRoad}`,
-                `ต.${student.addressSubDistrict}`,
-                `อ.${student.addressDistrict}`,
-                `จ.${student.addressProvince}`,
-              ].filter(Boolean).join(" ") || "—"}
-            </p>
-          </div>
-
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-xs text-gray-400 mb-1">รายละเอียดความผิด</p>
-            <p className="text-sm text-gray-700 bg-orange-50 rounded-lg px-3 py-2 leading-relaxed">
-              {formData.detail || "—"}
-            </p>
+        <div className="wizard-actions">
+          <button className="btn btn-secondary" onClick={onBack}>
+            <ChevronLeft size={14} /> ย้อนกลับ
+          </button>
+          <div className="right">
+            <button className="btn btn-primary" onClick={onNext}>
+              ถัดไป — ยืนยัน <ChevronRight size={14} />
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* ── Section 3: Penalty actions ── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-orange-100 px-6 py-4 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-orange-500" />
-          <h2 className="text-sm font-bold text-[#1c2434]">บทลงโทษหากทำผิดซ้ำ</h2>
-          <span className="ml-auto text-xs text-red-500 font-medium">* เลือกอย่างน้อย 1 ข้อ</span>
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          <div className="space-y-2">
-            {BOND_PENALTY_OPTIONS.map((opt) => {
-              const checked = bondData.penaltyActions.includes(opt.id)
-              return (
-                <label
-                  key={opt.id}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
-                    checked ? "border-orange-300 bg-orange-50" : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
-                      checked ? "bg-orange-500 border-orange-500" : "border-gray-300"
-                    }`}
-                  >
-                    {checked && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <input type="checkbox" className="sr-only" checked={checked} onChange={() => togglePenalty(opt.id)} />
-                  <span className={`text-sm font-medium ${checked ? "text-gray-800" : "text-gray-600"}`}>
-                    {opt.label}
-                  </span>
-                  {opt.id === "deduct_score" && checked && (
-                    <div className="ml-auto flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={bondData.deductPoints}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => setBondData((prev) => ({ ...prev, deductPoints: e.target.value }))}
-                        placeholder="0"
-                        className="w-16 px-2 py-1 text-sm border border-orange-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400"
-                      />
-                      <span className="text-xs text-gray-500">คะแนน</span>
-                    </div>
-                  )}
-                </label>
-              )
-            })}
-          </div>
-
-          {/* Witness */}
-          <div className="pt-2">
-            <FormGroup label="ชื่อพยาน">
-              <input
-                type="text"
-                value={bondData.witnessName}
-                onChange={(e) => setBondData((prev) => ({ ...prev, witnessName: e.target.value }))}
-                placeholder="ชื่อ-นามสกุลพยาน (ถ้ามี)"
-                className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 placeholder:text-gray-300"
-              />
-            </FormGroup>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          ย้อนกลับ
-        </button>
-
-        <button
-          onClick={onNext}
-          disabled={!isValid}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] active:bg-[#2d3fc7] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-        >
-          ถัดไป — ยืนยัน
-          <ChevronRight className="w-4 h-4" />
-        </button>
       </div>
     </div>
   )
@@ -1682,244 +1262,155 @@ interface Step6Props {
 
 function Step6Confirm({ student, formData, measureData, bondData, showBondStep, saving, saveError, onBack, onSubmit }: Step6Props) {
   function formatThaiDateTime(dt: string) {
-    if (!dt) return "-"
+    if (!dt) return "—"
     const [datePart, timePart] = dt.split("T")
     const [year, month, day] = datePart.split("-")
-    const monthName = THAI_MONTHS[Number(month) - 1]
-    const beYear = Number(year) + 543
-    return `${Number(day)} ${monthName} ${beYear}${timePart ? ` เวลา ${timePart} น.` : ""}`
+    return `${Number(day)} ${THAI_MONTHS[Number(month) - 1]} ${Number(year) + 543}${timePart ? ` เวลา ${timePart} น.` : ""}`
   }
 
-  const selectedMeasureLabels = [...CONSIDERATION_MEASURES, ...RESULT_MEASURES]
+  const selectedLabels = [...CONSIDERATION_MEASURES, ...RESULT_MEASURES]
     .filter((m) => measureData.selected.includes(m.id))
     .map((m) => m.label)
 
   return (
-    <div className="space-y-4">
-      {/* Student mini-card */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
       <StudentMiniCard student={student} />
 
-      {/* Summary card */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100 px-6 py-4 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-green-500" />
-          <h2 className="text-sm font-bold text-[#1c2434]">สรุปข้อมูลก่อนบันทึก</h2>
+      <div className="ks-card">
+        <div className="ks-card-header">
+          <div>
+            <div className="eyebrow">§ SUMMARY · สรุปข้อมูลก่อนบันทึก</div>
+          </div>
+          <span className="chip chip-pending">รออนุมัติ</span>
         </div>
+        <div className="ks-card-pad">
+          <div className="divider-label" style={{ marginTop: 0 }}>ถ้อยคำ</div>
+          <InfoRow label="ภาคเรียน" value={formData.semesterLabel} />
+          <InfoRow label="ปีการศึกษา" value={formData.academicYearLabel} />
+          <InfoRow label="หมวด" value={formData.violationCategoryLabel} />
+          {formData.violationSubCategoryLabel && <InfoRow label="หมวดย่อย" value={formData.violationSubCategoryLabel} />}
+          <InfoRow label="วันเวลาเกิดเหตุ" value={formatThaiDateTime(formData.incidentDateTime)} />
+          <InfoRow label="สถานที่" value={formData.location} />
+          <InfoRow label="ผู้บันทึก" value={formData.recorder} />
 
-        <div className="divide-y divide-gray-50">
-          {/* Statement section */}
-          <section className="px-6 py-4 space-y-3">
-            <SectionTitle icon={<FileText className="w-3.5 h-3.5" />} label="ถ้อยคำ" />
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <Field label="ภาคเรียน" value={formData.semesterLabel} />
-              <Field label="ปีการศึกษา" value={formData.academicYearLabel} />
-              <Field label="หมวดการผิดระเบียบ" value={formData.violationCategoryLabel} />
-              {formData.violationSubCategoryLabel && (
-                <Field label="เรื่อง (หมวดย่อย)" value={formData.violationSubCategoryLabel} />
-              )}
-              <Field label="วันที่เกิดเหตุ" value={formatThaiDateTime(formData.incidentDateTime)} />
-              <Field label="สถานที่" value={formData.location} />
-              <Field label="ผู้บันทึก" value={formData.recorder} />
-            </div>
-            <div className="pt-1">
-              <p className="text-[11px] text-gray-400 mb-1">เรื่อง</p>
-              <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-3 py-2">{formData.subject}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-gray-400 mb-1">รายละเอียด</p>
-              <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-3 py-2">{formData.detail}</p>
-            </div>
-          </section>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>เรื่อง</div>
+            <div style={{ fontSize: 13.5, padding: "10px 14px", background: "var(--surface-2)", borderRadius: "var(--radius)", lineHeight: 1.6 }}>{formData.subject}</div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>รายละเอียด</div>
+            <div style={{ fontSize: 13.5, padding: "10px 14px", background: "var(--surface-2)", borderRadius: "var(--radius)", lineHeight: 1.6 }}>{formData.detail}</div>
+          </div>
 
-          {/* Measures section */}
-          <section className="px-6 py-4">
-            <SectionTitle icon={<ShieldAlert className="w-3.5 h-3.5" />} label="มาตรการ" />
-            {selectedMeasureLabels.length > 0 ? (
-              <ul className="mt-3 space-y-1.5">
-                {selectedMeasureLabels.map((label) => (
-                  <li key={label} className="flex items-center gap-2 text-sm text-gray-700">
-                    <Check className="w-3.5 h-3.5 text-[#465fff] shrink-0" />
-                    {label}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-gray-400 italic">ไม่ได้เลือกมาตรการ</p>
-            )}
-            {measureData.notes && (
-              <p className="mt-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{measureData.notes}</p>
-            )}
-          </section>
+          <div className="divider-label">มาตรการ</div>
+          {selectedLabels.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {selectedLabels.map((label) => (
+                <span key={label} className="measure-tag">
+                  <span className="dot" /> {label}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 13.5, color: "var(--ink-4)" }}>ไม่ได้เลือกมาตรการ</div>
+          )}
+          {measureData.notes && (
+            <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-3)", padding: "8px 12px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>{measureData.notes}</div>
+          )}
 
-          {/* Bond section (if applicable) */}
           {showBondStep && (
-            <section className="px-6 py-4">
-              <SectionTitle icon={<ScrollText className="w-3.5 h-3.5" />} label="ทัณฑ์บน" />
-              <div className="mt-3 space-y-3">
-                {bondData.selectedGuardianIndex !== null && student.guardians[bondData.selectedGuardianIndex] && (() => {
-                  const g = student.guardians[bondData.selectedGuardianIndex!]
-                  return (
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field label="ผู้ปกครองลงนาม" value={`${g.firstName} ${g.lastName}`} />
-                      <Field label="ความสัมพันธ์" value={g.relation.name} />
-                    </div>
-                  )
-                })()}
-                {bondData.penaltyActions.length > 0 && (
-                  <div>
-                    <p className="text-[11px] text-gray-400 mb-1.5">บทลงโทษหากทำผิดซ้ำ</p>
-                    <ul className="space-y-1">
-                      {BOND_PENALTY_OPTIONS.filter((o) => bondData.penaltyActions.includes(o.id)).map((o) => (
-                        <li key={o.id} className="flex items-center gap-2 text-sm text-gray-700">
-                          <Check className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                          {o.label}
-                          {o.id === "deduct_score" && bondData.deductPoints && ` ${bondData.deductPoints} คะแนน`}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {bondData.witnessName && (
-                  <Field label="พยาน" value={bondData.witnessName} />
-                )}
-              </div>
-            </section>
+            <>
+              <div className="divider-label">ทัณฑ์บน</div>
+              {bondData.selectedGuardianIndex !== null && student.guardians[bondData.selectedGuardianIndex] && (() => {
+                const g = student.guardians[bondData.selectedGuardianIndex!]
+                return (
+                  <>
+                    <InfoRow label="ผู้ปกครองลงนาม" value={`${g.firstName} ${g.lastName} (${g.relation.name})`} />
+                  </>
+                )
+              })()}
+              {bondData.penaltyActions.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                  {BOND_PENALTY_OPTIONS.filter((o) => bondData.penaltyActions.includes(o.id)).map((o) => (
+                    <span key={o.id} className="measure-tag" style={{ background: "var(--amber-wash, #fffbeb)", color: "var(--amber)" }}>
+                      <span className="dot" style={{ background: "var(--amber)" }} /> {o.label}
+                      {o.id === "deduct_score" && bondData.deductPoints && ` ${bondData.deductPoints} คะแนน`}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Error message */}
       {saveError && (
-        <div className="flex items-start gap-2.5 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
-          <svg className="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
-          </svg>
+        <div style={{ padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
           {saveError}
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={onBack}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          ย้อนกลับ
+      <div className="wizard-actions" style={{ background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: "var(--radius-lg)", padding: "20px 24px", marginTop: 0 }}>
+        <button className="btn btn-secondary" onClick={onBack} disabled={saving}>
+          <ChevronLeft size={14} /> ย้อนกลับ
         </button>
-
-        <button
-          onClick={onSubmit}
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-        >
-          {saving ? (
-            <>
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              กำลังบันทึก...
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-4 h-4" />
-              ยืนยันและบันทึก
-            </>
-          )}
-        </button>
+        <div className="right">
+          <button className="btn btn-primary" onClick={onSubmit} disabled={saving} style={{ background: "var(--sage, #059669)" }}>
+            {saving ? (
+              <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+            ) : (
+              <><CheckCircle2 size={14} /> ยืนยันและบันทึก</>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-// ── Shared UI components ───────────────────────────────────────────────────────
+// ── Shared UI ──────────────────────────────────────────────────────────────────
 
 function StudentMiniCard({ student }: { student: Student }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center gap-3">
-      <div className="w-8 h-8 rounded-full bg-[#465fff] flex items-center justify-center shrink-0">
-        <User className="w-4 h-4 text-white" />
+    <div style={{
+      display: "flex", alignItems: "center", gap: 12,
+      padding: "12px 16px",
+      background: "var(--indigo-wash)",
+      borderRadius: "var(--radius)",
+      border: "1px solid var(--periwinkle)",
+    }}>
+      <div style={{
+        width: 34, height: 34, borderRadius: "50%",
+        background: "var(--indigo)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        <User size={15} color="#fff" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-800">
-          {student.title.name}{student.firstName} {student.lastName}
-        </p>
-        <p className="text-xs text-gray-400">
-          รหัส {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
-        </p>
+        <div style={{ fontWeight: 600, fontSize: 14 }}>{student.title.name}{student.firstName} {student.lastName}</div>
+        <div className="mono" style={{ fontSize: 12, color: "var(--indigo-ink)" }}>
+          {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
+        </div>
       </div>
     </div>
   )
 }
 
-function FormGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-gray-600">
-        {label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
+    <div className="info-row">
+      <span className="info-label">{label}</span>
+      <span className={`info-value${mono ? " mono" : ""}`}>{value || "—"}</span>
+    </div>
+  )
+}
+
+function FieldGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{ fontSize: 12.5, fontWeight: 500, color: "var(--ink-2)" }}>
+        {label}{required && <span style={{ color: "var(--rose)", marginLeft: 2 }}>*</span>}
       </label>
       {children}
-    </div>
-  )
-}
-
-function NativeSelect({
-  value,
-  onChange,
-  placeholder,
-  options,
-  className = "",
-}: {
-  value: string
-  onChange: (v: string) => void
-  placeholder: string
-  options: { value: string; label: string }[]
-  className?: string
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={`w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff] appearance-none cursor-pointer ${
-        value ? "text-gray-800" : "text-gray-400"
-      } ${className}`}
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 12px center",
-        paddingRight: "2rem",
-      }}
-    >
-      <option value="" disabled>
-        {placeholder}
-      </option>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  )
-}
-
-function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider">
-      {icon}
-      {label}
-    </div>
-  )
-}
-
-function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <p className="text-[11px] text-gray-400 mb-0.5">{label}</p>
-      <p className={`text-sm text-gray-800 font-medium ${mono ? "font-mono tracking-wide" : ""}`}>
-        {value || "-"}
-      </p>
     </div>
   )
 }

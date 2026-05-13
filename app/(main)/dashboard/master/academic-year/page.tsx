@@ -27,15 +27,13 @@ export default async function AcademicYearPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-[#eff2ff] flex items-center justify-center">
-          <Calendar className="w-4.5 h-4.5 text-[#465fff]" />
-        </div>
+    <div className="ks-page">
+      <div className="page-header">
         <div>
-          <h1 className="text-xl font-bold text-[#1c2434]">จัดการปีการศึกษา</h1>
-          <p className="text-sm text-gray-400 mt-0.5">ตารางข้อมูลหลัก — ปีการศึกษา · ทั้งหมด {total} รายการ</p>
+          <div className="page-eyebrow"><span className="num">§M1</span><span>ข้อมูลหลัก · ปีการศึกษา</span></div>
+          <h1>จัดการปีการศึกษา</h1>
         </div>
+        <div style={{ fontSize: 13, color: "var(--ink-3)" }}>ทั้งหมด <span className="mono">{total}</span> รายการ</div>
       </div>
 
       <MasterTable

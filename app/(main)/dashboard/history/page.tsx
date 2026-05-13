@@ -75,15 +75,15 @@ export default async function HistoryPage({
   const safePage = Math.min(page, totalPages)
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="ks-page">
+      <div className="page-header">
         <div>
-          <h1 className="text-xl font-bold text-[#1c2434]">ประวัติและรายการบันทึก</h1>
-          <p className="text-sm text-gray-500 mt-0.5">รายการที่อนุมัติแล้ว · ทั้งหมด {total} รายการ</p>
+          <div className="page-eyebrow">
+            <span className="num">§05</span>
+            <span>คลังประวัติ · บันทึกที่อนุมัติแล้ว</span>
+          </div>
+          <h1>ประวัติและรายการบันทึก</h1>
         </div>
-        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-          <CheckCircle2 className="w-3.5 h-3.5" /> อนุมัติแล้วทั้งหมด
-        </span>
       </div>
 
       <HistoryGrid

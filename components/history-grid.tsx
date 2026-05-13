@@ -52,92 +52,81 @@ export function HistoryGrid({ data, total, page, totalPages, search: initialSear
     const params = new URLSearchParams()
     if (newSearch) params.set("search", newSearch)
     if (newPage > 1) params.set("page", String(newPage))
-    const qs = params.toString()
-    router.push(`${pathname}${qs ? `?${qs}` : ""}`)
+    router.push(`${pathname}${params.toString() ? `?${params}` : ""}`)
   }
 
   function onSearchChange(val: string) {
     setSearchValue(val)
     clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      navigate(1, val)
-    }, 400)
+    debounceRef.current = setTimeout(() => navigate(1, val), 400)
   }
 
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1
   const end = Math.min(page * pageSize, total)
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      {/* Search bar */}
-      <div className="px-5 py-4 border-b border-gray-100">
-        <div className="relative max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <div>
+      <div className="toolbar">
+        <div className="search-wrap">
+          <Search size={15} className="search-icon" />
           <input
+            className="ks-input"
             type="text"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="ค้นหาชื่อ, รหัส, ชั้น, หมวดความผิด..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
+            placeholder="ค้นหาในประวัติ"
           />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="ks-card" style={{ overflow: "hidden" }}>
+        <table className="ks-table">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-5 py-3 font-semibold text-gray-600 w-12">ลำดับ</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">วันที่บันทึก</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">รหัสนักเรียน</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อ-นามสกุล</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ชั้น/ห้อง</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">หมวดความผิด</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ผู้อนุมัติ</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ภาคเรียน</th>
-              <th className="px-4 py-3 font-semibold text-gray-600 text-center">ดู</th>
+            <tr>
+              <th style={{ width: 120 }}>วันที่</th>
+              <th>นักเรียน</th>
+              <th>หมวดการผิดระเบียบ</th>
+              <th>อนุมัติโดย</th>
+              <th style={{ width: 130 }}>สถานะ</th>
+              <th className="col-actions">ดู</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-16 text-gray-400">
-                  {initialSearch || searchValue ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีรายการที่อนุมัติแล้ว"}
+                <td colSpan={6}>
+                  <div className="empty-state">
+                    {searchValue ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีรายการที่อนุมัติแล้ว"}
+                  </div>
                 </td>
               </tr>
             ) : (
-              data.map((row, idx) => (
-                <tr key={row.id} className="hover:bg-[#f8f9ff] transition-colors">
-                  <td className="px-5 py-3.5 text-gray-400 tabular-nums">{start + idx}</td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap tabular-nums">
-                    {formatThaiDate(row.recordDate)}
+              data.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <div className="mono" style={{ fontSize: 13 }}>{formatThaiDate(row.recordDate)}</div>
+                    <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                      {row.semester}/{row.academicYear}
+                    </div>
                   </td>
-                  <td className="px-4 py-3.5 font-mono text-gray-700">{row.student.studentCode}</td>
-                  <td className="px-4 py-3.5 text-gray-900 font-medium">
-                    {row.student.title.name}{row.student.firstName} {row.student.lastName}
+                  <td>
+                    <div style={{ fontWeight: 500 }}>
+                      {row.student.title?.name}{row.student.firstName} {row.student.lastName}
+                    </div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
+                      {row.student.studentCode} · {row.student.gradeLevel}/{row.student.classRoom}
+                    </div>
                   </td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap">
-                    {row.student.gradeLevel}/{row.student.classRoom}
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-700 max-w-[200px] truncate" title={row.violationCategory}>
-                    {row.violationCategory}
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap">
+                  <td>{row.violationCategory}</td>
+                  <td style={{ color: "var(--ink-2)" }}>
                     {row.approvedByTeacher
-                      ? `${row.approvedByTeacher.title.name}${row.approvedByTeacher.firstName} ${row.approvedByTeacher.lastName}`
-                      : "-"}
+                      ? `${row.approvedByTeacher.title?.name}${row.approvedByTeacher.firstName} ${row.approvedByTeacher.lastName}`
+                      : "—"}
                   </td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap tabular-nums">
-                    {row.semester}/{row.academicYear}
-                  </td>
-                  <td className="px-4 py-3.5 text-center">
-                    <Link
-                      href={`/record/statement/${row.id}`}
-                      className="inline-flex p-1.5 rounded-md text-gray-400 hover:text-[#465fff] hover:bg-[#eff2ff] transition-colors"
-                      title="ดูรายละเอียด"
-                    >
-                      <Eye className="w-4 h-4" />
+                  <td><span className="chip chip-approved">อนุมัติแล้ว</span></td>
+                  <td className="col-actions">
+                    <Link href={`/record/statement/${row.id}`} className="btn btn-ghost btn-sm btn-icon" title="ดูรายละเอียด">
+                      <Eye size={14} />
                     </Link>
                   </td>
                 </tr>
@@ -145,51 +134,19 @@ export function HistoryGrid({ data, total, page, totalPages, search: initialSear
             )}
           </tbody>
         </table>
-      </div>
 
-      {/* Pagination */}
-      <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          แสดง {start}–{end} จาก {total} รายการ
-        </p>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => navigate(page - 1, searchValue)}
-            disabled={page === 1}
-            className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4" />
+        <div className="pagination">
+          <span style={{ flex: 1 }}>
+            แสดง <span className="mono">{start}–{end}</span> จาก <span className="mono">{total}</span> รายการ
+          </span>
+          <button className={`page-btn ${page === 1 ? "disabled" : ""}`} onClick={() => page > 1 && navigate(page - 1, searchValue)}>
+            <ChevronLeft size={12} />
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-            .reduce<(number | "…")[]>((acc, p, i, arr) => {
-              if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…")
-              acc.push(p)
-              return acc
-            }, [])
-            .map((p, i) =>
-              p === "…" ? (
-                <span key={`ellipsis-${i}`} className="px-1 text-gray-400 text-sm">…</span>
-              ) : (
-                <button
-                  key={p}
-                  onClick={() => navigate(p as number, searchValue)}
-                  className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                    page === p
-                      ? "bg-[#465fff] text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {p}
-                </button>
-              )
-            )}
-          <button
-            onClick={() => navigate(page + 1, searchValue)}
-            disabled={page === totalPages}
-            className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4" />
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+            <button key={p} className={`page-btn ${p === page ? "active" : ""}`} onClick={() => navigate(p, searchValue)}>{p}</button>
+          ))}
+          <button className={`page-btn ${page === totalPages ? "disabled" : ""}`} onClick={() => page < totalPages && navigate(page + 1, searchValue)}>
+            <ChevronRight size={12} />
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -58,67 +58,60 @@ export function UserTable({ users: initial }: Props) {
 
   if (users.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center text-gray-400 text-sm">
-        ยังไม่มีข้อมูลผู้ใช้
+      <div className="ks-card">
+        <div className="empty-state">ยังไม่มีข้อมูลผู้ใช้</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-100">
+    <div className="ks-card" style={{ overflow: "hidden" }}>
+      <table className="ks-table">
+        <thead>
           <tr>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อผู้ใช้</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อ-นามสกุล</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">บทบาท</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">หัวหน้าระดับ</th>
-            <th className="text-right px-4 py-3 font-semibold text-gray-600">จัดการ</th>
+            <th>ชื่อผู้ใช้</th>
+            <th>ชื่อ-นามสกุล</th>
+            <th>บทบาท</th>
+            <th>หัวหน้าระดับ</th>
+            <th className="col-actions">จัดการ</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody>
           {users.map((u) => (
-            <tr key={u.id} className="hover:bg-[#eff2ff]/30 transition-colors">
-              <td className="px-4 py-3 font-mono font-medium text-[#1c2434]">{u.username}</td>
-              <td className="px-4 py-3 text-gray-700">
+            <tr key={u.id}>
+              <td className="mono" style={{ fontWeight: 500 }}>{u.username}</td>
+              <td>
                 {u.teacher
                   ? `${u.teacher.title.name}${u.teacher.firstName} ${u.teacher.lastName}`
-                  : <span className="text-gray-400 italic">super admin</span>}
+                  : <span style={{ color: "var(--ink-4)", fontStyle: "italic" }}>super admin</span>}
               </td>
-              <td className="px-4 py-3">
+              <td>
                 {u.teacher?.role ? (
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#eff2ff] text-[#3a4fd4]">
-                    {ROLE_LABEL[u.teacher.role] ?? u.teacher.role}
-                  </span>
+                  <span className="chip chip-approved">{ROLE_LABEL[u.teacher.role] ?? u.teacher.role}</span>
                 ) : (
-                  <span className="text-gray-400">—</span>
+                  <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
               </td>
-              <td className="px-4 py-3">
+              <td>
                 {u.teacher?.gradeHeadLevel ? (
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                    หัวหน้า {GRADE_LABEL[u.teacher.gradeHeadLevel] ?? u.teacher.gradeHeadLevel}
-                  </span>
+                  <span className="chip chip-pending">หัวหน้า {GRADE_LABEL[u.teacher.gradeHeadLevel] ?? u.teacher.gradeHeadLevel}</span>
                 ) : (
-                  <span className="text-gray-400">—</span>
+                  <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-right">
-                <div className="flex items-center gap-1 justify-end">
-                  <Link
-                    href={`/dashboard/master/users/${u.id}/edit`}
-                    className="p-1.5 rounded-lg hover:bg-[#eff2ff] text-[#465fff] transition-colors"
-                    title="แก้ไข"
-                  >
-                    <Pencil className="w-4 h-4" />
+              <td className="col-actions">
+                <div style={{ display: "flex", gap: 4 }}>
+                  <Link href={`/dashboard/master/users/${u.id}/edit`} className="btn btn-ghost btn-sm btn-icon" title="แก้ไข">
+                    <Pencil size={13} />
                   </Link>
                   <button
+                    className="btn btn-ghost btn-sm btn-icon"
                     onClick={() => handleDelete(u.id)}
                     disabled={deleting === u.id}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-40"
                     title="ลบ"
+                    style={{ color: "var(--rose)" }}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </td>

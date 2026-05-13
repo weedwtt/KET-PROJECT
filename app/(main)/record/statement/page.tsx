@@ -1,6 +1,7 @@
-﻿import Link from "next/link"
+import Link from "next/link"
 import { db } from "@/lib/db"
 import { StatementGrid } from "@/components/statement-grid"
+import { Plus, Filter, Download } from "lucide-react"
 
 const PAGE_SIZE = 15
 
@@ -14,7 +15,6 @@ export default async function StatementListPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
 
   const where = {
-    status: "pending",
     ...(search
       ? {
           OR: [
@@ -69,34 +69,23 @@ export default async function StatementListPage({
   const safePage = Math.min(page, totalPages)
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="ks-page">
+      <div className="page-header">
         <div>
-          <h1 className="text-xl font-bold text-[#1c2434]">บันทึกถ้อยคำนักเรียน</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            รอดำเนินการ {total} รายการ
-          </p>
+          <div className="page-eyebrow">
+            <span className="num">§02</span>
+            <span>บันทึกข้อมูล · บันทึกถ้อยคำนักเรียน</span>
+          </div>
+          <h1>บันทึกถ้อยคำนักเรียน</h1>
         </div>
-        <Link
-          href="/record/statement/new"
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#465fff] hover:bg-[#3a4fd4] text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-          </svg>
-          เพิ่มบันทึกถ้อยคำนักเรียน
-        </Link>
+        <div className="page-actions">
+          <button className="btn btn-secondary">
+            <Filter size={14} />ตัวกรอง
+          </button>
+          <Link href="/record/statement/new" className="btn btn-primary">
+            <Plus size={14} />บันทึกถ้อยคำใหม่
+          </Link>
+        </div>
       </div>
 
       <StatementGrid

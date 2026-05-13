@@ -1,8 +1,8 @@
-﻿"use client"
+"use client"
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { Search, ChevronLeft, ChevronRight, ShieldCheck, Clock } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight, ChevronRight as ArrowRight } from "lucide-react"
 
 type Statement = {
   id: number
@@ -22,13 +22,9 @@ type Statement = {
   }
 }
 
-interface ApprovalGridProps {
-  data: Statement[]
-}
-
 const PAGE_SIZE = 15
 
-export function ApprovalGrid({ data }: ApprovalGridProps) {
+export function ApprovalGrid({ data }: { data: Statement[] }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
 
@@ -40,8 +36,7 @@ export function ApprovalGrid({ data }: ApprovalGridProps) {
         r.student.studentCode.includes(q) ||
         r.student.firstName.toLowerCase().includes(q) ||
         r.student.lastName.toLowerCase().includes(q) ||
-        r.violationCategory.toLowerCase().includes(q) ||
-        `${r.student.gradeLevel}/${r.student.classRoom}`.includes(q)
+        r.violationCategory.toLowerCase().includes(q)
     )
   }, [data, search])
 
@@ -49,99 +44,69 @@ export function ApprovalGrid({ data }: ApprovalGridProps) {
   const safePage = Math.min(page, totalPages)
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
-  function handleSearch(val: string) {
-    setSearch(val)
-    setPage(1)
-  }
+  const start = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1
+  const end = Math.min(safePage * PAGE_SIZE, filtered.length)
 
   function formatDate(d: Date) {
-    return new Date(d).toLocaleDateString("th-TH", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+    return new Date(d).toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "numeric" })
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      {/* Search bar */}
-      <div className="px-5 py-4 border-b border-gray-100">
-        <div className="relative max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <div>
+      <div className="toolbar">
+        <div className="search-wrap">
+          <Search size={15} className="search-icon" />
           <input
+            className="ks-input"
             type="text"
             value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="ค้นหาชื่อ, รหัส, ชั้น, หมวดความผิด..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            placeholder="ค้นหาด้วยรหัสนักเรียน · ชื่อ-สกุล · หมวด"
           />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="ks-card" style={{ overflow: "hidden" }}>
+        <table className="ks-table">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-5 py-3 font-semibold text-gray-600 w-12">ลำดับ</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">วันที่บันทึก</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">รหัสนักเรียน</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อ-นามสกุล</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ชั้น/ห้อง</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">หมวดความผิด</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ผู้บันทึก</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">ภาคเรียน</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">สถานะ</th>
-              <th className="px-4 py-3 font-semibold text-gray-600 text-center whitespace-nowrap">จัดการ</th>
+            <tr>
+              <th style={{ width: 120 }}>ส่งเมื่อ</th>
+              <th>นักเรียน</th>
+              <th>หมวดการผิดระเบียบ</th>
+              <th>ผู้บันทึก</th>
+              <th style={{ width: 130 }}>สถานะ</th>
+              <th className="col-actions">การจัดการ</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody>
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center py-16 text-gray-400">
-                  {search ? "ไม่พบรายการที่ค้นหา" : "ไม่มีรายการที่รออนุมัติ"}
+                <td colSpan={6}>
+                  <div className="empty-state">
+                    {search ? "ไม่พบรายการที่ค้นหา" : "ไม่มีรายการที่รออนุมัติ"}
+                  </div>
                 </td>
               </tr>
             ) : (
-              paged.map((row, idx) => (
-                <tr key={row.id} className="hover:bg-[#f8f9ff] transition-colors">
-                  <td className="px-5 py-3.5 text-gray-400 tabular-nums">
-                    {(safePage - 1) * PAGE_SIZE + idx + 1}
+              paged.map((row) => (
+                <tr key={row.id} className="clickable" onClick={() => window.location.href = `/dashboard/approve/${row.id}`}>
+                  <td>
+                    <div className="mono" style={{ fontSize: 13 }}>{formatDate(row.recordDate)}</div>
                   </td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap tabular-nums">
-                    {formatDate(row.recordDate)}
+                  <td>
+                    <div style={{ fontWeight: 500 }}>
+                      {row.student.title?.name}{row.student.firstName} {row.student.lastName}
+                    </div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
+                      {row.student.studentCode} · {row.student.gradeLevel}/{row.student.classRoom}
+                    </div>
                   </td>
-                  <td className="px-4 py-3.5 font-mono text-gray-700">
-                    {row.student.studentCode}
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-900 font-medium">
-                    {row.student.title.name}{row.student.firstName} {row.student.lastName}
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap">
-                    {row.student.gradeLevel}/{row.student.classRoom}
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-700 max-w-[200px] truncate" title={row.violationCategory}>
-                    {row.violationCategory}
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap">
-                    {row.recordedBy}
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap tabular-nums">
-                    {row.semester}/{row.academicYear}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#eff2ff] text-[#465fff] text-xs font-semibold rounded-full whitespace-nowrap">
-                      <Clock className="w-3 h-3" /> รอดำเนินการ
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 text-center">
-                    <Link
-                      href={`/dashboard/approve/${row.id}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
-                      title="ดูรายละเอียดและอนุมัติ"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      ดูและอนุมัติ
+                  <td>{row.violationCategory}</td>
+                  <td style={{ color: "var(--ink-2)" }}>{row.recordedBy}</td>
+                  <td><span className="chip chip-pending">รออนุมัติ</span></td>
+                  <td className="col-actions" onClick={(e) => e.stopPropagation()}>
+                    <Link href={`/dashboard/approve/${row.id}`} className="btn btn-primary btn-sm">
+                      พิจารณา <ArrowRight size={12} />
                     </Link>
                   </td>
                 </tr>
@@ -149,50 +114,19 @@ export function ApprovalGrid({ data }: ApprovalGridProps) {
             )}
           </tbody>
         </table>
-      </div>
 
-      {/* Pagination */}
-      <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          แสดง {filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–
-          {Math.min(safePage * PAGE_SIZE, filtered.length)} จาก {filtered.length} รายการ
-        </p>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={safePage === 1}
-            className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4" />
+        <div className="pagination">
+          <span style={{ flex: 1 }}>
+            แสดง <span className="mono">{start}–{end}</span> จาก <span className="mono">{filtered.length}</span> รายการ
+          </span>
+          <button className={`page-btn ${safePage === 1 ? "disabled" : ""}`} onClick={() => safePage > 1 && setPage(safePage - 1)}>
+            <ChevronLeft size={12} />
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-            .reduce<(number | "…")[]>((acc, p, i, arr) => {
-              if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…")
-              acc.push(p)
-              return acc
-            }, [])
-            .map((p, i) =>
-              p === "…" ? (
-                <span key={`e-${i}`} className="px-1 text-gray-400 text-sm">…</span>
-              ) : (
-                <button
-                  key={p}
-                  onClick={() => setPage(p as number)}
-                  className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                    safePage === p ? "bg-[#465fff] text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {p}
-                </button>
-              )
-            )}
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={safePage === totalPages}
-            className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4" />
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+            <button key={p} className={`page-btn ${p === safePage ? "active" : ""}`} onClick={() => setPage(p)}>{p}</button>
+          ))}
+          <button className={`page-btn ${safePage === totalPages ? "disabled" : ""}`} onClick={() => safePage < totalPages && setPage(safePage + 1)}>
+            <ChevronRight size={12} />
           </button>
         </div>
       </div>

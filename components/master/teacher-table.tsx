@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -56,84 +56,80 @@ export function TeacherTable({ teachers: initial }: Props) {
 
   if (teachers.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center text-gray-400 text-sm">
-        ยังไม่มีข้อมูลครู
+      <div className="ks-card">
+        <div className="empty-state">ยังไม่มีข้อมูลครู</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-100">
+    <div className="ks-card" style={{ overflow: "hidden" }}>
+      <table className="ks-table">
+        <thead>
           <tr>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">ชื่อ-นามสกุล</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">บทบาท</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">หัวหน้าระดับ</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-600">เบอร์โทร</th>
-            <th className="text-center px-4 py-3 font-semibold text-gray-600">ลายเซ็น</th>
-            <th className="text-center px-4 py-3 font-semibold text-gray-600">บัญชีผู้ใช้</th>
-            <th className="text-right px-4 py-3 font-semibold text-gray-600">จัดการ</th>
+            <th>ชื่อ-นามสกุล</th>
+            <th>บทบาท</th>
+            <th>หัวหน้าระดับ</th>
+            <th>เบอร์โทร</th>
+            <th style={{ textAlign: "center", width: 80 }}>ลายเซ็น</th>
+            <th style={{ textAlign: "center", width: 120 }}>บัญชีผู้ใช้</th>
+            <th className="col-actions">จัดการ</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody>
           {teachers.map((t) => (
-            <tr key={t.id} className="hover:bg-[#eff2ff]/30 transition-colors">
-              <td className="px-4 py-3 font-medium text-[#1c2434]">
+            <tr key={t.id}>
+              <td style={{ fontWeight: 500 }}>
                 {t.title.name}{t.firstName} {t.lastName}
               </td>
-              <td className="px-4 py-3">
+              <td>
                 {t.role ? (
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#eff2ff] text-[#3a4fd4]">
-                    {ROLE_LABEL[t.role] ?? t.role}
-                  </span>
+                  <span className="chip chip-approved">{ROLE_LABEL[t.role] ?? t.role}</span>
                 ) : (
-                  <span className="text-gray-400">—</span>
+                  <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
               </td>
-              <td className="px-4 py-3">
+              <td>
                 {t.gradeHeadLevel ? (
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                    หัวหน้า {GRADE_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel}
-                  </span>
+                  <span className="chip chip-pending">หัวหน้า {GRADE_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel}</span>
                 ) : (
-                  <span className="text-gray-400">—</span>
+                  <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-gray-600">{t.phone}</td>
-              <td className="px-4 py-3 text-center">
+              <td className="mono" style={{ fontSize: 13, color: "var(--ink-2)" }}>{t.phone}</td>
+              <td style={{ textAlign: "center" }}>
                 {t.signatureUrl ? (
-                  <PenLine className="w-4 h-4 text-green-600 mx-auto" />
+                  <PenLine size={14} style={{ color: "var(--sage)", margin: "0 auto" }} />
                 ) : (
-                  <span className="text-gray-300 text-xs">ไม่มี</span>
+                  <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มี</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-center">
+              <td style={{ textAlign: "center" }}>
                 {t.user ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-green-700">
-                    <UserCheck className="w-3.5 h-3.5" />
-                    {t.user.username}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--sage)" }}>
+                    <UserCheck size={13} /> {t.user.username}
                   </span>
                 ) : (
-                  <span className="text-gray-300 text-xs">ไม่มี</span>
+                  <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มี</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-right">
-                <div className="flex items-center gap-1 justify-end">
+              <td className="col-actions">
+                <div style={{ display: "flex", gap: 4 }}>
                   <Link
                     href={`/dashboard/master/teachers/${t.id}/edit`}
-                    className="p-1.5 rounded-lg hover:bg-[#eff2ff] text-[#465fff] transition-colors"
+                    className="btn btn-ghost btn-sm btn-icon"
                     title="แก้ไข"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil size={13} />
                   </Link>
                   <button
+                    className="btn btn-ghost btn-sm btn-icon"
                     onClick={() => handleDelete(t.id)}
                     disabled={deleting === t.id}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-40"
                     title="ลบ"
+                    style={{ color: "var(--rose)" }}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </td>

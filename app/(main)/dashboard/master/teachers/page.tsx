@@ -43,57 +43,39 @@ export default async function TeachersPage({
   const safePage = Math.min(page, totalPages)
 
   return (
-    <div className="p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#eff2ff] flex items-center justify-center">
-            <Users className="w-4.5 h-4.5 text-[#465fff]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-[#1c2434]">จัดการครู</h1>
-            <p className="text-sm text-gray-400 mt-0.5">ตารางข้อมูลหลัก — ครู · ทั้งหมด {total} รายการ</p>
-          </div>
+    <div className="ks-page">
+      <div className="page-header">
+        <div>
+          <div className="page-eyebrow"><span className="num">§M5</span><span>ข้อมูลหลัก · บุคลากร</span></div>
+          <h1>จัดการครู</h1>
         </div>
-        <Link
-          href="/dashboard/master/teachers/new"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#465fff] text-white text-sm font-semibold hover:bg-[#3a4fd4] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          เพิ่มครู
+        <Link href="/dashboard/master/teachers/new" className="btn btn-primary">
+          <Plus size={14} /> เพิ่มครู
         </Link>
       </div>
 
-      {/* Search */}
-      <form method="get" className="flex gap-2">
-        <input
-          name="search"
-          defaultValue={search}
-          placeholder="ค้นหาชื่อครู..."
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#465fff]/30 focus:border-[#465fff]"
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-lg bg-[#465fff] text-white text-sm font-semibold hover:bg-[#3a4fd4] transition-colors"
-        >
-          ค้นหา
-        </button>
-        {search && (
-          <Link
-            href="/dashboard/master/teachers"
-            className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            ล้าง
-          </Link>
-        )}
-      </form>
+      <div className="toolbar">
+        <form method="get" style={{ display: "flex", gap: 8, flex: 1 }}>
+          <div className="search-wrap" style={{ maxWidth: 400 }}>
+            <input
+              name="search"
+              className="ks-input"
+              defaultValue={search}
+              placeholder="ค้นหาชื่อครู..."
+            />
+          </div>
+          <button type="submit" className="btn btn-secondary">ค้นหา</button>
+          {search && (
+            <Link href="/dashboard/master/teachers" className="btn btn-ghost">ล้าง</Link>
+          )}
+        </form>
+        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>ทั้งหมด <span className="mono">{total}</span> รายการ</span>
+      </div>
 
-      {/* Table */}
       <TeacherTable teachers={teachers} />
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1">
+        <div style={{ display: "flex", justifyContent: "center", gap: 4, marginTop: 16 }}>
           {Array.from({ length: totalPages }, (_, i) => i + 1)
             .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
             .reduce<(number | "...")[]>((acc, p, idx, arr) => {
@@ -103,16 +85,12 @@ export default async function TeachersPage({
             }, [])
             .map((p, i) =>
               p === "..." ? (
-                <span key={`ellipsis-${i}`} className="px-2 text-gray-400">…</span>
+                <span key={`ellipsis-${i}`} style={{ padding: "0 4px", color: "var(--ink-4)" }}>…</span>
               ) : (
                 <Link
                   key={p}
                   href={`?page=${p}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${
-                    p === safePage
-                      ? "bg-[#465fff] text-white font-bold"
-                      : "text-gray-600 hover:bg-[#f8f9ff]"
-                  }`}
+                  className={`page-btn ${p === safePage ? "active" : ""}`}
                 >
                   {p}
                 </Link>

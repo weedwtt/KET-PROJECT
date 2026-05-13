@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Noto_Sans_Thai, IBM_Plex_Mono, IBM_Plex_Serif } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
+const notoSansThai = Noto_Sans_Thai({
+  variable: "--font-sans",
+  subsets: ["thai", "latin"],
   weight: ["300", "400", "500", "600", "700"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
+const ibmPlexSerif = IBM_Plex_Serif({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -20,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th" className={`${outfit.variable} h-full antialiased`}>
+    <html lang="th" className={`${notoSansThai.variable} ${ibmPlexMono.variable} ${ibmPlexSerif.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <SessionProvider>{children}</SessionProvider>
       </body>

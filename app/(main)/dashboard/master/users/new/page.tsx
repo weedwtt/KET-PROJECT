@@ -1,30 +1,21 @@
 ﻿import Link from "next/link"
-import { ChevronLeft, UserCog } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 import { UserForm } from "@/components/master/user-form"
 
 export default function NewUserPage() {
   return (
-    <div className="p-6 space-y-5 max-w-3xl">
-      {/* Back */}
-      <Link
-        href="/dashboard/master/users"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#1c2434] transition-colors"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        กลับไปรายการผู้ใช้
-      </Link>
-
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-[#eff2ff] flex items-center justify-center">
-          <UserCog className="w-4.5 h-4.5 text-[#465fff]" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-[#1c2434]">เพิ่มผู้ใช้งาน</h1>
-          <p className="text-sm text-gray-400 mt-0.5">สร้างบัญชีผู้ใช้และข้อมูลครูพร้อมกัน</p>
+    <div className="ks-page" style={{ maxWidth: 860 }}>
+      <div className="page-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/dashboard/master/users" className="btn btn-ghost btn-sm btn-icon">
+            <ChevronLeft size={16} />
+          </Link>
+          <div>
+            <div className="page-eyebrow"><span className="num">§M6</span><span>ข้อมูลหลัก · เพิ่มผู้ใช้</span></div>
+            <h1>เพิ่มผู้ใช้งาน</h1>
+          </div>
         </div>
       </div>
-
       <UserForm mode="create" />
     </div>
   )

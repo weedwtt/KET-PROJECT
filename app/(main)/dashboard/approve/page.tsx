@@ -49,12 +49,31 @@ export default async function ApprovePage() {
   const statements = await getPendingStatements()
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-[#1c2434]">รายการบันทึกถ้อยคำที่รออนุมัติ</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          รอดำเนินการ {statements.length} รายการ
-        </p>
+    <div className="ks-page">
+      <div className="page-header">
+        <div>
+          <div className="page-eyebrow">
+            <span className="num">§04</span>
+            <span>ฝ่ายปกครอง · รายการรออนุมัติ</span>
+          </div>
+          <h1>รออนุมัติ</h1>
+        </div>
+      </div>
+
+      {/* Mini stat row */}
+      <div className="grid-4" style={{ marginBottom: "var(--gap-lg)" }}>
+        {[
+          { marker: "01", eyebrow: "QUEUE", num: statements.length, label: "ทั้งหมดที่รอ" },
+          { marker: "02", eyebrow: "TODAY", num: "—", label: "รอจากวันนี้" },
+          { marker: "03", eyebrow: "OVERDUE", num: "—", label: "เกินกำหนด (>24 ชม.)" },
+          { marker: "04", eyebrow: "MY ROLE", num: role === "DIRECTOR" ? "ผอ." : "รองผอ.", label: "ระดับการอนุมัติ" },
+        ].map((s) => (
+          <div key={s.marker} className="stat-card">
+            <div className="stat-eyebrow"><span>{s.eyebrow}</span><span style={{ color: "var(--ink-4)" }}>{s.marker}</span></div>
+            <div className="stat-num">{s.num}</div>
+            <div className="stat-label"><span>{s.label}</span></div>
+          </div>
+        ))}
       </div>
 
       <ApprovalGrid data={statements} />

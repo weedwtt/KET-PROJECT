@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
+import { Topbar } from "@/components/topbar"
 
 export default async function MainLayout({
   children,
@@ -11,11 +12,14 @@ export default async function MainLayout({
   if (!session) redirect("/")
 
   return (
-    <div className="flex min-h-screen">
+    <div className="app-shell">
       <Sidebar userName={session.user?.name ?? ""} role={session.user?.role ?? null} />
-      <main className="flex-1 overflow-auto bg-[#f2f5fa]">
-        {children}
-      </main>
+      <div className="app-main">
+        <Topbar />
+        <main style={{ flex: 1, overflowY: "auto" }}>
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
