@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Pencil, Check, Download } from "lucide-react"
+import { ChevronLeft, Pencil, Check, Download, FileText } from "lucide-react"
 
 type StatementDetail = {
   id: number
@@ -142,9 +142,9 @@ export default function StatementDetailPage() {
               <Pencil size={14} />แก้ไข
             </Link>
           )}
-          <button className="btn btn-secondary">
-            <Download size={14} />พิมพ์ / PDF
-          </button>
+          <a href={`/api/statements/${id}/export-word`} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            <FileText size={14} />ดาวน์โหลด Word
+          </a>
         </div>
       </div>
 

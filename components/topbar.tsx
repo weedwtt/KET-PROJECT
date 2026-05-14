@@ -9,6 +9,7 @@ const CRUMBS: Record<string, string[]> = {
   "/record/statement/new":               ["บันทึกข้อมูล", "บันทึกถ้อยคำนักเรียน", "สร้างใหม่"],
   "/dashboard/approve":                  ["อนุมัติ", "รายการรออนุมัติ"],
   "/dashboard/history":                  ["ประวัติและรายการบันทึก"],
+  "/dashboard/reports":                  ["รายงาน", "รายงานและสถิติ"],
   "/dashboard/master/teachers":          ["จัดการระบบ", "จัดการครู"],
   "/dashboard/master/teachers/new":      ["จัดการระบบ", "จัดการครู", "เพิ่มครู"],
   "/dashboard/master/users":             ["จัดการระบบ", "จัดการผู้ใช้"],

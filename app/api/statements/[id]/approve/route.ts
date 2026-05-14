@@ -15,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const teacher = await db.teacher.findFirst({
-    where: { id: Number(teacherId), role: { in: [TeacherRole.DIRECTOR, TeacherRole.VICE_DIRECTOR] } },
+    where: { id: Number(teacherId), role: { in: [TeacherRole.DIRECTOR, TeacherRole.VICE_DIRECTOR, TeacherRole.ADMIN] } },
   })
   if (!teacher) return Response.json({ error: "ไม่พบครูที่มีสิทธิ์อนุมัติ" }, { status: 403 })
 
