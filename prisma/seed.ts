@@ -188,7 +188,7 @@ async function main() {
       phone: "0893333333",
       addressHouseNo: "12/3",
       addressMoo: "5",
-      role: "หัวหน้าระดับชั้น",
+      role: "TEACHER",
       signatureUrl: SIGNATURES.somchai,
     },
     {
@@ -199,7 +199,7 @@ async function main() {
       addressHouseNo: "78",
       addressMoo: "2",
       addressSubDistrict: "ราชาเทวะ",
-      role: "หัวหน้าระดับชั้น",
+      role: "TEACHER",
       signatureUrl: SIGNATURES.wipa,
     },
     {
@@ -210,7 +210,7 @@ async function main() {
       addressHouseNo: "34",
       addressMoo: "4",
       addressSubDistrict: "หนองปรือ",
-      role: "หัวหน้าระดับชั้น",
+      role: "TEACHER",
       signatureUrl: SIGNATURES.malee,
     },
     // ครูฝ่ายปกครอง
@@ -221,7 +221,7 @@ async function main() {
       phone: "0896666666",
       addressHouseNo: "101",
       addressMoo: "6",
-      role: "ครูฝ่ายปกครอง",
+      role: "TEACHER",
       signatureUrl: SIGNATURES.anan,
     },
     {
@@ -231,7 +231,7 @@ async function main() {
       phone: "0897777777",
       addressHouseNo: "22",
       addressMoo: "3",
-      role: "ครูฝ่ายปกครอง",
+      role: "TEACHER",
       signatureUrl: SIGNATURES.suda,
     },
     // ครูทั่วไป (ไม่มีลายเซ็น — ตัวอย่าง null)
