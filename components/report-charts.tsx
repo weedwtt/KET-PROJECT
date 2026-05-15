@@ -1243,10 +1243,10 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
                   fontSize: 12.5,
                   fontWeight: 500,
                   cursor: "pointer",
-                  background: viewMode === b.v ? "#fff" : "transparent",
+                  background: viewMode === b.v ? "var(--surface)" : "transparent",
                   color: viewMode === b.v ? "var(--ink)" : "var(--ink-3)",
                   boxShadow:
-                    viewMode === b.v ? "0 1px 4px rgba(0,0,0,0.09)" : "none",
+                    viewMode === b.v ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
                   transition: "all 0.15s",
                 }}
               >
