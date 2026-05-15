@@ -6,9 +6,10 @@ import Link from "next/link"
 import { signOut } from "next-auth/react"
 import {
   LayoutDashboard, FileText, History, Inbox,
-  Users, UserCog, Database, ChevronDown,
-  LogOut, Menu, X, List, BarChart2,
+  Users, UserCog, ChevronDown,
+  LogOut, PanelLeft, List, BarChart2,
 } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface SidebarProps {
   userName: string
@@ -16,23 +17,21 @@ interface SidebarProps {
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  TEACHER: "ครู",
-  DIRECTOR: "ผู้อำนวยการ",
-  VICE_DIRECTOR: "รองผู้อำนวยการ",
-  ADMIN: "ผู้ดูแลระบบ",
+  TEACHER:        "ครู",
+  DIRECTOR:       "ผู้อำนวยการ",
+  VICE_DIRECTOR:  "รองผู้อำนวยการ",
+  ADMIN:          "ผู้ดูแลระบบ",
 }
 
 export function Sidebar({ userName, role }: SidebarProps) {
   const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed]   = useState(false)
   const [recordOpen, setRecordOpen] = useState(true)
   const [masterOpen, setMasterOpen] = useState(false)
 
   const isApprover = role === "DIRECTOR" || role === "VICE_DIRECTOR"
-  const isAdmin = role === "ADMIN"
-
-  const isActive = (path: string) =>
-    pathname === path || pathname.startsWith(path + "/")
+  const isAdmin    = role === "ADMIN"
+  const isActive   = (path: string) => pathname === path || pathname.startsWith(path + "/")
 
   const initials = userName
     .split(" ")
@@ -43,7 +42,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
 
   return (
     <aside className="ks-sidebar" data-collapsed={collapsed ? "true" : "false"}>
-      {/* Brand */}
+
+      {/* ── Brand ── */}
       <div className="sidebar-brand">
         <div className="sidebar-crest">บพ</div>
         <div className="min-w-0 flex-1">
@@ -53,24 +53,22 @@ export function Sidebar({ userName, role }: SidebarProps) {
         <button
           onClick={() => setCollapsed((v) => !v)}
           className="btn-ghost btn-icon btn-sm ml-auto"
-          title={collapsed ? "ขยาย" : "ย่อ"}
+          title={collapsed ? "ขยาย sidebar" : "ย่อ sidebar"}
           style={{ flexShrink: 0 }}
         >
-          {collapsed
-            ? <Menu size={16} />
-            : <X size={16} />}
+          <PanelLeft size={15} />
         </button>
       </div>
 
-      {/* Nav */}
+      {/* ── Nav ── */}
       <nav className="sidebar-nav">
-        {/* Dashboard */}
+
         <Link
           href="/dashboard"
           className={`nav-item ${pathname === "/dashboard" ? "active" : ""}`}
         >
-          <LayoutDashboard size={17} className="nav-icon" />
-          <span className="nav-label">Dashboard / รายงาน</span>
+          <LayoutDashboard size={16} className="nav-icon" />
+          <span className="nav-label">Dashboard</span>
         </Link>
 
         {/* บันทึกข้อมูล — teacher / admin */}
@@ -80,12 +78,9 @@ export function Sidebar({ userName, role }: SidebarProps) {
               className="nav-item w-full"
               onClick={() => !collapsed && setRecordOpen((v) => !v)}
             >
-              <FileText size={17} className="nav-icon" />
+              <FileText size={16} className="nav-icon" />
               <span className="nav-label">บันทึกข้อมูล</span>
-              <ChevronDown
-                size={12}
-                className={`nav-chevron ${recordOpen ? "open" : ""}`}
-              />
+              <ChevronDown size={11} className={`nav-chevron ${recordOpen ? "open" : ""}`} />
             </button>
             {recordOpen && (
               <Link
@@ -104,27 +99,25 @@ export function Sidebar({ userName, role }: SidebarProps) {
             href="/dashboard/approve"
             className={`nav-item ${isActive("/dashboard/approve") ? "active" : ""}`}
           >
-            <Inbox size={17} className="nav-icon" />
+            <Inbox size={16} className="nav-icon" />
             <span className="nav-label">รออนุมัติ</span>
             <span className="nav-badge">6</span>
           </Link>
         )}
 
-        {/* ประวัติ */}
         <Link
           href="/dashboard/history"
           className={`nav-item ${isActive("/dashboard/history") ? "active" : ""}`}
         >
-          <History size={17} className="nav-icon" />
+          <History size={16} className="nav-icon" />
           <span className="nav-label">ประวัติและรายการบันทึก</span>
         </Link>
 
-        {/* รายงานและสถิติ */}
         <Link
           href="/dashboard/reports"
           className={`nav-item ${isActive("/dashboard/reports") ? "active" : ""}`}
         >
-          <BarChart2 size={17} className="nav-icon" />
+          <BarChart2 size={16} className="nav-icon" />
           <span className="nav-label">รายงานและสถิติ</span>
         </Link>
 
@@ -136,14 +129,14 @@ export function Sidebar({ userName, role }: SidebarProps) {
               href="/dashboard/master/teachers"
               className={`nav-item ${isActive("/dashboard/master/teachers") ? "active" : ""}`}
             >
-              <Users size={17} className="nav-icon" />
+              <Users size={16} className="nav-icon" />
               <span className="nav-label">จัดการครู</span>
             </Link>
             <Link
               href="/dashboard/master/users"
               className={`nav-item ${isActive("/dashboard/master/users") ? "active" : ""}`}
             >
-              <UserCog size={17} className="nav-icon" />
+              <UserCog size={16} className="nav-icon" />
               <span className="nav-label">จัดการผู้ใช้</span>
             </Link>
           </>
@@ -152,25 +145,22 @@ export function Sidebar({ userName, role }: SidebarProps) {
         {/* Master Data — teacher / admin */}
         {!isApprover && (
           <div>
-            <div className="thin-rule" style={{ margin: "12px 0" }} />
+            <hr className="thin-rule" style={{ margin: "10px 2px" }} />
             <button
               className="nav-item w-full"
               onClick={() => !collapsed && setMasterOpen((v) => !v)}
             >
-              <List size={17} className="nav-icon" />
+              <List size={16} className="nav-icon" />
               <span className="nav-label">ตารางข้อมูลหลัก</span>
-              <ChevronDown
-                size={12}
-                className={`nav-chevron ${masterOpen ? "open" : ""}`}
-              />
+              <ChevronDown size={11} className={`nav-chevron ${masterOpen ? "open" : ""}`} />
             </button>
             {masterOpen && (
               <>
                 {[
-                  { href: "/dashboard/master/semester", label: "ภาคเรียน" },
-                  { href: "/dashboard/master/academic-year", label: "ปีการศึกษา" },
-                  { href: "/dashboard/master/violation-category", label: "หมวดการผิดระเบียบ" },
-                  { href: "/dashboard/master/violation-sub-category", label: "หมวดย่อยการผิดระเบียบ" },
+                  { href: "/dashboard/master/semester",                label: "ภาคเรียน" },
+                  { href: "/dashboard/master/academic-year",           label: "ปีการศึกษา" },
+                  { href: "/dashboard/master/violation-category",      label: "หมวดการผิดระเบียบ" },
+                  { href: "/dashboard/master/violation-sub-category",  label: "หมวดย่อยการผิดระเบียบ" },
                 ].map(({ href, label }) => (
                   <Link
                     key={href}
@@ -186,19 +176,20 @@ export function Sidebar({ userName, role }: SidebarProps) {
         )}
       </nav>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       <div className="sidebar-footer">
         <div className="sidebar-avatar">{initials}</div>
         <div className="user-meta min-w-0 flex-1">
           <div className="user-name">{userName}</div>
           <div className="user-role">{ROLE_LABEL[role ?? ""] ?? role}</div>
         </div>
+        <ThemeToggle />
         <button
           className="logout-btn"
           title="ออกจากระบบ"
           onClick={() => signOut({ callbackUrl: "/" })}
         >
-          <LogOut size={15} />
+          <LogOut size={14} />
         </button>
       </div>
     </aside>
