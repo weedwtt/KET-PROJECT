@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Pencil, Trash2 } from "lucide-react"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 
 const ROLE_LABEL: Record<string, string> = {
   DIRECTOR: "ผอ.",
@@ -58,48 +59,48 @@ export function UserTable({ users: initial }: Props) {
 
   if (users.length === 0) {
     return (
-      <div className="ks-card">
+      <div className="rounded-xl border border-[var(--rule)] bg-[var(--surface)] shadow-sm overflow-hidden">
         <div className="empty-state">ยังไม่มีข้อมูลผู้ใช้</div>
       </div>
     )
   }
 
   return (
-    <div className="ks-card" style={{ overflow: "hidden" }}>
-      <table className="ks-table">
-        <thead>
-          <tr>
-            <th>ชื่อผู้ใช้</th>
-            <th>ชื่อ-นามสกุล</th>
-            <th>บทบาท</th>
-            <th>หัวหน้าระดับ</th>
-            <th className="col-actions">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="rounded-xl border border-[var(--rule)] bg-[var(--surface)] shadow-sm overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>ชื่อผู้ใช้</TableHead>
+            <TableHead>ชื่อ-นามสกุล</TableHead>
+            <TableHead>บทบาท</TableHead>
+            <TableHead>หัวหน้าระดับ</TableHead>
+            <TableHead className="text-right w-px whitespace-nowrap">จัดการ</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {users.map((u) => (
-            <tr key={u.id}>
-              <td className="mono" style={{ fontWeight: 500 }}>{u.username}</td>
-              <td>
+            <TableRow key={u.id}>
+              <TableCell className="mono" style={{ fontWeight: 500 }}>{u.username}</TableCell>
+              <TableCell>
                 {u.teacher
                   ? `${u.teacher.title.name}${u.teacher.firstName} ${u.teacher.lastName}`
                   : <span style={{ color: "var(--ink-4)", fontStyle: "italic" }}>super admin</span>}
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 {u.teacher?.role ? (
                   <span className="chip chip-approved">{ROLE_LABEL[u.teacher.role] ?? u.teacher.role}</span>
                 ) : (
                   <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 {u.teacher?.gradeHeadLevel ? (
                   <span className="chip chip-pending">หัวหน้า {GRADE_LABEL[u.teacher.gradeHeadLevel] ?? u.teacher.gradeHeadLevel}</span>
                 ) : (
                   <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
-              </td>
-              <td className="col-actions">
+              </TableCell>
+              <TableCell className="text-right w-px whitespace-nowrap">
                 <div style={{ display: "flex", gap: 4 }}>
                   <Link href={`/dashboard/master/users/${u.id}/edit`} className="btn btn-ghost btn-sm btn-icon" title="แก้ไข">
                     <Pencil size={13} />
@@ -114,11 +115,11 @@ export function UserTable({ users: initial }: Props) {
                     <Trash2 size={13} />
                   </button>
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

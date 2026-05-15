@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Search, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X, Check } from "lucide-react"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 
 export type FieldConfig = {
   key: string
@@ -175,32 +176,32 @@ export function MasterTable<T extends { id: number }>({
       )}
 
       {/* Table */}
-      <div className="ks-card" style={{ overflow: "hidden" }}>
-        <table className="ks-table">
-          <thead>
-            <tr>
-              <th style={{ width: 50 }}>ลำดับ</th>
+      <div className="rounded-xl border border-[var(--rule)] bg-[var(--surface)] shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead style={{ width: 50 }}>ลำดับ</TableHead>
               {columns.map((col) => (
-                <th key={String(col.key)}>{col.label}</th>
+                <TableHead key={String(col.key)}>{col.label}</TableHead>
               ))}
-              <th className="col-actions">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
+              <TableHead className="text-right w-px whitespace-nowrap">จัดการ</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + 2}>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columns.length + 2}>
                   <div className="empty-state">
                     {initialSearch || searchValue ? "ไม่พบรายการที่ค้นหา" : emptyText}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               data.map((row, idx) => (
-                <tr key={row.id}>
-                  <td className="mono" style={{ color: "var(--ink-3)", fontSize: 12 }}>{start + idx}</td>
+                <TableRow key={row.id}>
+                  <TableCell className="mono text-[var(--ink-3)] text-[12px]">{start + idx}</TableCell>
                   {columns.map((col) => (
-                    <td key={String(col.key)}>
+                    <TableCell key={String(col.key)}>
                       {editingId === row.id && fields.some((f) => f.key === col.key) ? (
                         <input
                           className="ks-input"
@@ -215,9 +216,9 @@ export function MasterTable<T extends { id: number }>({
                       ) : (
                         <span style={{ fontWeight: 500 }}>{String((row as Record<string, unknown>)[col.key as string] ?? "")}</span>
                       )}
-                    </td>
+                    </TableCell>
                   ))}
-                  <td className="col-actions">
+                  <TableCell className="text-right w-px whitespace-nowrap">
                     <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
                       {editingId === row.id ? (
                         <>
@@ -255,12 +256,12 @@ export function MasterTable<T extends { id: number }>({
                         </>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         <div className="pagination">
           <span style={{ flex: 1 }}>

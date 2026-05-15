@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Pencil, Trash2, UserCheck, PenLine } from "lucide-react"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 
 const ROLE_LABEL: Record<string, string> = {
   DIRECTOR: "ผอ.",
@@ -56,55 +57,55 @@ export function TeacherTable({ teachers: initial }: Props) {
 
   if (teachers.length === 0) {
     return (
-      <div className="ks-card">
+      <div className="rounded-xl border border-[var(--rule)] bg-[var(--surface)] shadow-sm overflow-hidden">
         <div className="empty-state">ยังไม่มีข้อมูลครู</div>
       </div>
     )
   }
 
   return (
-    <div className="ks-card" style={{ overflow: "hidden" }}>
-      <table className="ks-table">
-        <thead>
-          <tr>
-            <th>ชื่อ-นามสกุล</th>
-            <th>บทบาท</th>
-            <th>หัวหน้าระดับ</th>
-            <th>เบอร์โทร</th>
-            <th style={{ textAlign: "center", width: 80 }}>ลายเซ็น</th>
-            <th style={{ textAlign: "center", width: 120 }}>บัญชีผู้ใช้</th>
-            <th className="col-actions">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="rounded-xl border border-[var(--rule)] bg-[var(--surface)] shadow-sm overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>ชื่อ-นามสกุล</TableHead>
+            <TableHead>บทบาท</TableHead>
+            <TableHead>หัวหน้าระดับ</TableHead>
+            <TableHead>เบอร์โทร</TableHead>
+            <TableHead className="text-center" style={{ width: 80 }}>ลายเซ็น</TableHead>
+            <TableHead className="text-center" style={{ width: 120 }}>บัญชีผู้ใช้</TableHead>
+            <TableHead className="text-right w-px whitespace-nowrap">จัดการ</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {teachers.map((t) => (
-            <tr key={t.id}>
-              <td style={{ fontWeight: 500 }}>
+            <TableRow key={t.id}>
+              <TableCell style={{ fontWeight: 500 }}>
                 {t.title.name}{t.firstName} {t.lastName}
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 {t.role ? (
                   <span className="chip chip-approved">{ROLE_LABEL[t.role] ?? t.role}</span>
                 ) : (
                   <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 {t.gradeHeadLevel ? (
                   <span className="chip chip-pending">หัวหน้า {GRADE_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel}</span>
                 ) : (
                   <span style={{ color: "var(--ink-4)" }}>—</span>
                 )}
-              </td>
-              <td className="mono" style={{ fontSize: 13, color: "var(--ink-2)" }}>{t.phone}</td>
-              <td style={{ textAlign: "center" }}>
+              </TableCell>
+              <TableCell className="mono" style={{ fontSize: 13, color: "var(--ink-2)" }}>{t.phone}</TableCell>
+              <TableCell className="text-center">
                 {t.signatureUrl ? (
                   <PenLine size={14} style={{ color: "var(--sage)", margin: "0 auto" }} />
                 ) : (
                   <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มี</span>
                 )}
-              </td>
-              <td style={{ textAlign: "center" }}>
+              </TableCell>
+              <TableCell className="text-center">
                 {t.user ? (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--sage)" }}>
                     <UserCheck size={13} /> {t.user.username}
@@ -112,8 +113,8 @@ export function TeacherTable({ teachers: initial }: Props) {
                 ) : (
                   <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มี</span>
                 )}
-              </td>
-              <td className="col-actions">
+              </TableCell>
+              <TableCell className="text-right w-px whitespace-nowrap">
                 <div style={{ display: "flex", gap: 4 }}>
                   <Link
                     href={`/dashboard/master/teachers/${t.id}/edit`}
@@ -132,11 +133,11 @@ export function TeacherTable({ teachers: initial }: Props) {
                     <Trash2 size={13} />
                   </button>
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

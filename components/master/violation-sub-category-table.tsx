@@ -1,8 +1,9 @@
-﻿"use client"
+"use client"
 
 import { useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Search, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X, Check } from "lucide-react"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 
 type Category = { id: number; name: string }
 type SubCategory = {
@@ -193,30 +194,30 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
         </form>
       )}
 
-      <div className="ks-card" style={{ overflow: "hidden" }}>
-        <table className="ks-table">
-          <thead>
-            <tr>
-              <th style={{ width: 50 }}>ลำดับ</th>
-              <th>หมวดหลัก</th>
-              <th>ชื่อหมวดย่อย</th>
-              <th className="col-actions">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="rounded-xl border border-[var(--rule)] bg-[var(--surface)] shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead style={{ width: 50 }}>ลำดับ</TableHead>
+              <TableHead>หมวดหลัก</TableHead>
+              <TableHead>ชื่อหมวดย่อย</TableHead>
+              <TableHead className="text-right w-px whitespace-nowrap">จัดการ</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data.length === 0 ? (
-              <tr>
-                <td colSpan={4}>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={4}>
                   <div className="empty-state">
                     {initialSearch || searchValue || filterCategoryId ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีข้อมูลหมวดย่อย"}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               data.map((row, idx) => (
-                <tr key={row.id}>
-                  <td className="mono" style={{ color: "var(--ink-3)", fontSize: 12 }}>{start + idx}</td>
-                  <td>
+                <TableRow key={row.id}>
+                  <TableCell className="mono text-[var(--ink-3)] text-[12px]">{start + idx}</TableCell>
+                  <TableCell>
                     {editingId === row.id ? (
                       <select
                         className="ks-select"
@@ -231,8 +232,8 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                     ) : (
                       <span className="chip chip-approved" style={{ fontSize: 11 }}>{row.violationCategory.name}</span>
                     )}
-                  </td>
-                  <td>
+                  </TableCell>
+                  <TableCell>
                     {editingId === row.id ? (
                       <input
                         className="ks-input"
@@ -244,8 +245,8 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                     ) : (
                       <span style={{ fontWeight: 500 }}>{row.name}</span>
                     )}
-                  </td>
-                  <td className="col-actions">
+                  </TableCell>
+                  <TableCell className="text-right w-px whitespace-nowrap">
                     <div style={{ display: "flex", gap: 4 }}>
                       {editingId === row.id ? (
                         <>
@@ -283,12 +284,12 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
                         </>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         <div className="pagination">
           <span style={{ flex: 1 }}>
