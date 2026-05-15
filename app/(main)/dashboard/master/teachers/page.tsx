@@ -46,7 +46,7 @@ export default async function TeachersPage({
     <div className="ks-page">
       <div className="page-header">
         <div>
-          <div className="page-eyebrow"><span className="num">§M5</span><span>ข้อมูลหลัก · บุคลากร</span></div>
+          <div className="page-eyebrow"><span>ข้อมูลหลัก · บุคลากร</span></div>
           <h1>จัดการครู</h1>
         </div>
         <Link href="/dashboard/master/teachers/new" className="btn btn-primary">

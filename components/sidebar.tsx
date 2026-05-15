@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
@@ -32,6 +32,16 @@ export function Sidebar({ userName, role }: SidebarProps) {
   const isApprover = role === "DIRECTOR" || role === "VICE_DIRECTOR"
   const isAdmin    = role === "ADMIN"
   const isActive   = (path: string) => pathname === path || pathname.startsWith(path + "/")
+
+  const [pendingCount, setPendingCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!isApprover && !isAdmin) return
+    fetch("/api/statements/pending-count")
+      .then((r) => r.json())
+      .then((data) => setPendingCount(data.count ?? 0))
+      .catch(() => setPendingCount(null))
+  }, [isApprover, isAdmin, pathname])
 
   const initials = userName
     .split(" ")
@@ -101,7 +111,9 @@ export function Sidebar({ userName, role }: SidebarProps) {
           >
             <Inbox size={16} className="nav-icon" />
             <span className="nav-label">รออนุมัติ</span>
-            <span className="nav-badge">6</span>
+            {pendingCount !== null && pendingCount > 0 && (
+              <span className="nav-badge">{pendingCount}</span>
+            )}
           </Link>
         )}
 

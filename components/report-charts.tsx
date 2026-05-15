@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback } from "react"
 import { Download } from "lucide-react"
@@ -18,6 +18,14 @@ export interface StatsData {
     count: number
   }[]
   monthlyTrend: { month: string; count: number }[]
+  byGradeLevel: { gradeLevel: string; count: number }[]
+  categoryMomentum: {
+    categoryId: number
+    categoryName: string
+    first: number
+    second: number
+    delta: number
+  }[]
   topStudents: {
     id: number
     studentCode: string
@@ -181,7 +189,7 @@ function SemDonut({
           marginBottom: 20,
         }}
       >
-        § 01 · ภาคเรียน
+        01 · ภาคเรียน
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
         {/* Donut SVG */}
@@ -357,7 +365,7 @@ function CatColChart({
             marginBottom: 5,
           }}
         >
-          § 02 · หมวดการผิดระเบียบ
+          02 · หมวดการผิดระเบียบ
         </div>
         <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>
           จำนวนบันทึกตามหมวด
@@ -469,130 +477,228 @@ function CatColChart({
   )
 }
 
-// ─── Monthly trend ───────────────────────────────────────────────
-function TrendLine({
-  data,
+// ─── Trend section: grade level + category momentum ─────────────
+function TrendSection({
+  byGradeLevel,
+  categoryMomentum,
+  totalRecords,
   mounted,
 }: {
-  data: StatsData["monthlyTrend"]
+  byGradeLevel: StatsData["byGradeLevel"]
+  categoryMomentum: StatsData["categoryMomentum"]
+  totalRecords: number
   mounted: boolean
 }) {
-  const W = 600,
-    H = 80
-  const max = Math.max(...data.map((d) => d.count), 1)
-  const step = data.length > 1 ? W / (data.length - 1) : W
-  const pts = data.map((d, i) => `${i * step},${H - (d.count / max) * H}`).join(" ")
-  const lastX = data.length > 1 ? (data.length - 1) * step : W
-  const area = `0,${H} ${pts} ${lastX},${H}`
+  const maxGrade = Math.max(...byGradeLevel.map((g) => g.count), 1)
 
   return (
     <div className="ks-card" style={{ padding: "22px 24px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
+      <div style={{ marginBottom: 22 }}>
+        <div
+          style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            color: "var(--ink-3)",
+            textTransform: "uppercase",
+            marginBottom: 3,
+          }}
+        >
+          03 · แนวโน้มและรูปแบบ
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>
+          วิเคราะห์ตามระดับชั้นและประเภท
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+        {/* ── Left: Grade level ── */}
         <div>
           <div
             style={{
               fontSize: 10.5,
               fontWeight: 600,
-              letterSpacing: "0.1em",
+              letterSpacing: "0.08em",
               color: "var(--ink-3)",
               textTransform: "uppercase",
-              marginBottom: 3,
+              marginBottom: 16,
             }}
           >
-            § 03 · แนวโน้ม
+            บันทึกตามระดับชั้น
           </div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>
-            บันทึกรายเดือน
-          </div>
-        </div>
-        {data.length > 0 && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
-            {formatMonthLabel(data[0].month)} – {formatMonthLabel(data[data.length - 1].month)}
-          </div>
-        )}
-      </div>
 
-      {data.length === 0 ? (
-        <div style={{ color: "var(--ink-4)", fontSize: 13 }}>ไม่มีข้อมูล</div>
-      ) : (
-        <div style={{ position: "relative" }}>
-          <svg
-            width="100%"
-            height={H + 24}
-            viewBox={`0 0 ${W} ${H + 24}`}
-            preserveAspectRatio="none"
-            style={{ display: "block" }}
-          >
-            {[0.25, 0.5, 0.75, 1].map((t) => (
-              <line
-                key={t}
-                x1={0}
-                y1={H * (1 - t)}
-                x2={W}
-                y2={H * (1 - t)}
-                stroke="var(--surface-2)"
-                strokeWidth={0.8}
-              />
-            ))}
-            <defs>
-              <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2563eb" stopOpacity={0.14} />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity={0.01} />
-              </linearGradient>
-            </defs>
-            <polygon
-              points={area}
-              fill="url(#trendFill)"
-              opacity={mounted ? 1 : 0}
-              style={{ transition: "opacity 0.5s" }}
-            />
-            <polyline
-              points={pts}
-              fill="none"
-              stroke="#2563eb"
-              strokeWidth={2}
-              opacity={mounted ? 1 : 0}
-              style={{ transition: "opacity 0.6s 0.1s" }}
-            />
-            {data.map((d, i) => (
-              <circle
-                key={i}
-                cx={i * step}
-                cy={H - (d.count / max) * H}
-                r={i === data.length - 1 ? 4 : 3}
-                fill={i === data.length - 1 ? "#2563eb" : "#fff"}
-                stroke="#2563eb"
-                strokeWidth={1.5}
-                opacity={mounted ? 1 : 0}
-                style={{ transition: `opacity 0.4s ${0.3 + i * 0.04}s` }}
-              />
-            ))}
-          </svg>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-            {data.map((d, i) => (
-              <div
-                key={i}
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9.5,
-                  color: "var(--ink-4)",
-                  textAlign: "center",
-                  flex: 1,
-                }}
-              >
-                {THAI_MONTHS[d.month.slice(5, 7)] ?? d.month.slice(5, 7)}
-              </div>
-            ))}
-          </div>
+          {byGradeLevel.length === 0 ? (
+            <div style={{ color: "var(--ink-4)", fontSize: 13 }}>ไม่มีข้อมูล</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              {byGradeLevel.map((g, i) => {
+                const pct = totalRecords > 0 ? (g.count / totalRecords) * 100 : 0
+                return (
+                  <div key={g.gradeLevel} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div
+                      style={{
+                        width: 32,
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        color: "var(--ink-2)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {g.gradeLevel}
+                    </div>
+                    <div
+                      style={{
+                        flex: 1,
+                        height: 22,
+                        background: "var(--surface-2)",
+                        borderRadius: 4,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: mounted ? `${(g.count / maxGrade) * 100}%` : "0%",
+                          height: "100%",
+                          background: CAT_COLORS[i % CAT_COLORS.length]!,
+                          borderRadius: 4,
+                          opacity: 0.85,
+                          transition: `width 0.6s cubic-bezier(0.4,0,0.2,1) ${i * 0.08}s`,
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        width: 26,
+                        textAlign: "right",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--ink-2)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {g.count}
+                    </div>
+                    <div
+                      style={{
+                        width: 36,
+                        textAlign: "right",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10.5,
+                        color: "var(--ink-4)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {pct.toFixed(0)}%
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* ── Right: Category momentum ── */}
+        <div>
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: "var(--ink-3)",
+              textTransform: "uppercase",
+              marginBottom: 4,
+            }}
+          >
+            ประเภทที่กำลังเปลี่ยนแปลง
+          </div>
+          <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 16 }}>
+            ครึ่งแรก → ครึ่งหลัง ของช่วงเวลาที่เลือก
+          </div>
+
+          {categoryMomentum.length === 0 ? (
+            <div style={{ color: "var(--ink-4)", fontSize: 13 }}>
+              ต้องการข้อมูลอย่างน้อย 3 เดือนเพื่อเปรียบเทียบ
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              {categoryMomentum.map((cat) => {
+                const rising = cat.delta > 0
+                const flat = cat.delta === 0
+                const arrowColor = flat ? "var(--ink-4)" : rising ? "#d97706" : "#059669"
+                const bgColor = flat
+                  ? "var(--surface-2)"
+                  : rising
+                  ? "rgba(217,119,6,0.12)"
+                  : "rgba(5,150,105,0.10)"
+                const arrow = flat ? "—" : rising ? "↑" : "↓"
+                const deltaLabel = cat.delta > 0 ? `+${cat.delta}` : String(cat.delta)
+
+                return (
+                  <div
+                    key={cat.categoryId}
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <div
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 5,
+                        flexShrink: 0,
+                        background: bgColor,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: arrowColor,
+                      }}
+                    >
+                      {arrow}
+                    </div>
+                    <div
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        color: "var(--ink-2)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cat.categoryName}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        color: "var(--ink-4)",
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cat.first} → {cat.second}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: arrowColor,
+                        flexShrink: 0,
+                        width: 30,
+                        textAlign: "right",
+                      }}
+                    >
+                      {flat ? "" : deltaLabel}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -897,7 +1003,7 @@ function TopStudents({ data }: { data: StatsData["topStudents"] }) {
               marginBottom: 4,
             }}
           >
-            § TOP · นักเรียนที่มีบันทึกมากที่สุด
+            TOP · นักเรียนที่มีบันทึกมากที่สุด
           </div>
           <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>
             อันดับนักเรียนบันทึกพฤติกรรม
@@ -1174,7 +1280,12 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
 
       {/* Trend */}
       <div style={{ marginBottom: 24 }}>
-        <TrendLine data={data.monthlyTrend} mounted={mounted} />
+        <TrendSection
+          byGradeLevel={data.byGradeLevel ?? []}
+          categoryMomentum={data.categoryMomentum ?? []}
+          totalRecords={data.totalRecords}
+          mounted={mounted}
+        />
       </div>
 
       {/* Sub-category breakdown */}
@@ -1201,7 +1312,7 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
                 marginBottom: 4,
               }}
             >
-              § เรื่อง · รายละเอียดการผิดระเบียบ
+              เรื่อง · รายละเอียดการผิดระเบียบ
             </div>
             <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>
               การผิดระเบียบรายหัวข้อ

@@ -375,7 +375,7 @@ export default function EditStatementPage() {
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <div className="page-eyebrow"><span className="num">§02</span><span>บันทึกถ้อยคำ · แก้ไข #{id}</span></div>
+            <div className="page-eyebrow"><span>บันทึกถ้อยคำ · แก้ไข #{id}</span></div>
             <h1>แก้ไขบันทึกถ้อยคำ</h1>
           </div>
         </div>
@@ -555,7 +555,7 @@ function Step1StudentInfo({ student, onNext }: { student: Student; onNext: () =>
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§01</span>
+          
           <span>ข้อมูลนักเรียน</span>
           <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--indigo)", fontWeight: 700 }}>
             {student.studentCode}
@@ -655,7 +655,7 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
 
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§02</span>
+          
           <span>บันทึกถ้อยคำ</span>
         </div>
         <div className="wizard-body">
@@ -891,7 +891,7 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§03</span>
+          
           <span>มาตรการ / การดำเนินการ</span>
         </div>
         <div className="wizard-body" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -983,7 +983,7 @@ function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }:
       {/* Guardian selection */}
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§05a</span>
+          
           <span>เลือกผู้ปกครองลงนาม</span>
           <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--rose)", fontWeight: 600 }}>* จำเป็น</span>
         </div>
@@ -1037,7 +1037,7 @@ function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }:
       {/* Bond info summary */}
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§05b</span>
+          
           <span>ข้อมูลในสัญญาทัณฑ์บน</span>
         </div>
         <div className="ks-card-pad">
@@ -1058,7 +1058,7 @@ function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }:
       {/* Penalty actions */}
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§05c</span>
+          
           <span>บทลงโทษหากทำผิดซ้ำ</span>
           <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--rose)", fontWeight: 600 }}>* เลือกอย่างน้อย 1 ข้อ</span>
         </div>
@@ -1337,7 +1337,7 @@ function Step5Signature({ student, signatureData, setSignatureData, onBack, onNe
 
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§04</span>
+          
           <span>ส่วนที่ 5: ลงนาม</span>
         </div>
         <div className="wizard-body" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1437,7 +1437,7 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
 
       <div className="ks-card">
         <div className="ks-card-header">
-          <span className="num">§06</span>
+          
           <span>สรุปข้อมูลก่อนบันทึก</span>
         </div>
         <div className="ks-card-pad">

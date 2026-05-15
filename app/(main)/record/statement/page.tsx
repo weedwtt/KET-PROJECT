@@ -1,4 +1,4 @@
-import Link from "next/link"
+﻿import Link from "next/link"
 import { db } from "@/lib/db"
 import { StatementGrid } from "@/components/statement-grid"
 import { Plus, Filter, Download } from "lucide-react"
@@ -73,7 +73,7 @@ export default async function StatementListPage({
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            <span className="num">§02</span>
+            
             <span>บันทึกข้อมูล · บันทึกถ้อยคำนักเรียน</span>
           </div>
           <h1>บันทึกถ้อยคำนักเรียน</h1>

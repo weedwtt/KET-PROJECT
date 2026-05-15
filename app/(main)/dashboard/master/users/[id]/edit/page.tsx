@@ -51,7 +51,7 @@ export default async function EditUserPage({
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <div className="page-eyebrow"><span className="num">§M6</span><span>ข้อมูลหลัก · แก้ไขผู้ใช้</span></div>
+            <div className="page-eyebrow"><span>ข้อมูลหลัก · แก้ไขผู้ใช้</span></div>
             <h1>แก้ไขผู้ใช้ — {user.username}</h1>
           </div>
         </div>

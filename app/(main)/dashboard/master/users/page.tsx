@@ -60,7 +60,7 @@ export default async function UsersPage({
     <div className="ks-page">
       <div className="page-header">
         <div>
-          <div className="page-eyebrow"><span className="num">§M6</span><span>ข้อมูลหลัก · ผู้ใช้งาน</span></div>
+          <div className="page-eyebrow"><span>ข้อมูลหลัก · ผู้ใช้งาน</span></div>
           <h1>จัดการผู้ใช้</h1>
         </div>
         <Link href="/dashboard/master/users/new" className="btn btn-primary">

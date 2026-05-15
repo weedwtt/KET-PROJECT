@@ -30,7 +30,7 @@ export default async function ViolationCategoryPage({
     <div className="ks-page">
       <div className="page-header">
         <div>
-          <div className="page-eyebrow"><span className="num">§M3</span><span>ข้อมูลหลัก · หมวดการผิดระเบียบ</span></div>
+          <div className="page-eyebrow"><span>ข้อมูลหลัก · หมวดการผิดระเบียบ</span></div>
           <h1>จัดการหมวดการผิดระเบียบ</h1>
         </div>
         <div style={{ fontSize: 13, color: "var(--ink-3)" }}>ทั้งหมด <span className="mono">{total}</span> รายการ</div>

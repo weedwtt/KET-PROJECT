@@ -1,4 +1,4 @@
-import { db } from "@/lib/db"
+﻿import { db } from "@/lib/db"
 import { ReportCharts, type StatsData } from "@/components/report-charts"
 import { BarChart2 } from "lucide-react"
 
@@ -37,7 +37,10 @@ async function getInitialStats(): Promise<StatsData> {
       orderBy: { _count: { id: "desc" } },
       take: 6,
     }),
-    db.statementRecord.findMany({ where, select: { recordDate: true } }),
+    db.statementRecord.findMany({
+      where,
+      select: { recordDate: true, violationCategoryId: true, studentId: true },
+    }),
     db.academicYear.findMany({ orderBy: { year: "desc" } }),
     db.semester.findMany({ orderBy: { value: "asc" } }),
   ])
@@ -78,14 +81,65 @@ async function getInitialStats(): Promise<StatsData> {
     })
     .then((rows) => new Map(rows.map((r) => [r.id, r])))
 
+  // Monthly trend
   const monthCounts: Record<string, number> = {}
   allRecords.forEach((r) => {
     const key = r.recordDate.toISOString().slice(0, 7)
-    monthCounts[key] = (monthCounts[key] || 0) + 1
+    monthCounts[key] = (monthCounts[key] ?? 0) + 1
   })
   const monthlyTrend = Object.entries(monthCounts)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, count]) => ({ month, count }))
+
+  // Grade level breakdown
+  const allStudentIds = [...new Set(allRecords.map((r) => r.studentId))]
+  const studentGradeMap = await db.student
+    .findMany({ where: { id: { in: allStudentIds } }, select: { id: true, gradeLevel: true } })
+    .then((rows) => new Map(rows.map((r) => [r.id, r.gradeLevel])))
+
+  const gradeCountMap: Record<string, number> = {}
+  allRecords.forEach((r) => {
+    const g = studentGradeMap.get(r.studentId) ?? "ไม่ระบุ"
+    gradeCountMap[g] = (gradeCountMap[g] ?? 0) + 1
+  })
+  const byGradeLevel = Object.entries(gradeCountMap)
+    .map(([gradeLevel, count]) => ({ gradeLevel, count }))
+    .sort((a, b) => {
+      const na = parseInt(a.gradeLevel.replace(/\D/g, "")) || 999
+      const nb = parseInt(b.gradeLevel.replace(/\D/g, "")) || 999
+      return na - nb
+    })
+
+  // Category momentum: first-half months vs second-half months
+  const allMonths = [
+    ...new Set(allRecords.map((r) => r.recordDate.toISOString().slice(0, 7))),
+  ].sort()
+  const mid = Math.ceil(allMonths.length / 2)
+  const firstHalf = new Set(allMonths.slice(0, mid))
+
+  const catHalves: Record<number, { first: number; second: number }> = {}
+  if (allMonths.length >= 3) {
+    allRecords.forEach((r) => {
+      const catId = r.violationCategoryId
+      if (catId == null) return
+      if (!catHalves[catId]) catHalves[catId] = { first: 0, second: 0 }
+      const month = r.recordDate.toISOString().slice(0, 7)
+      if (firstHalf.has(month)) catHalves[catId].first++
+      else catHalves[catId].second++
+    })
+  }
+  const categoryMomentum = Object.entries(catHalves)
+    .map(([catIdStr, counts]) => {
+      const catId = parseInt(catIdStr)
+      return {
+        categoryId: catId,
+        categoryName: catMap.get(catId)?.name ?? "",
+        first: counts.first,
+        second: counts.second,
+        delta: counts.second - counts.first,
+      }
+    })
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
 
   return {
     totalRecords,
@@ -114,6 +168,8 @@ async function getInitialStats(): Promise<StatsData> {
       }))
       .sort((a, b) => b.count - a.count),
     monthlyTrend,
+    byGradeLevel,
+    categoryMomentum,
     topStudents: topStudentsRaw.map((r) => ({
       ...studentsMap.get(r.studentId),
       count: r._count.id,
@@ -128,11 +184,10 @@ export default async function ReportsPage() {
 
   return (
     <div className="ks-page">
-      {/* Page header */}
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            <span className="num">§06</span>
+            
             <span>รายงาน · วิเคราะห์และสถิติ</span>
           </div>
           <h1 style={{ display: "flex", alignItems: "center", gap: 10 }}>

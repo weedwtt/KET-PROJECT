@@ -53,7 +53,7 @@ export default async function ApprovePage() {
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            <span className="num">§04</span>
+            
             <span>ฝ่ายปกครอง · รายการรออนุมัติ</span>
           </div>
           <h1>รออนุมัติ</h1>

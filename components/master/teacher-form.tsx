@@ -146,7 +146,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* ข้อมูลพื้นฐาน */}
       <div className="ks-card">
-        <div className="ks-card-header"><span className="num">§1</span><span>ข้อมูลพื้นฐาน</span></div>
+        <div className="ks-card-header"><span>ข้อมูลพื้นฐาน</span></div>
         <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>
@@ -174,7 +174,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* บทบาท */}
       <div className="ks-card">
-        <div className="ks-card-header"><span className="num">§2</span><span>บทบาทและตำแหน่ง</span></div>
+        <div className="ks-card-header"><span>บทบาทและตำแหน่ง</span></div>
         <div className="ks-card-pad" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             {lbl("บทบาทในระบบ")}
@@ -193,7 +193,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* ลายเซ็น */}
       <div className="ks-card">
-        <div className="ks-card-header"><span className="num">§3</span><span>ลายเซ็น</span></div>
+        <div className="ks-card-header"><span>ลายเซ็น</span></div>
         <div className="ks-card-pad">
           <SignaturePad
             value={form.signatureUrl || null}
@@ -204,7 +204,7 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
 
       {/* ที่อยู่ */}
       <div className="ks-card">
-        <div className="ks-card-header"><span className="num">§4</span><span>ที่อยู่</span></div>
+        <div className="ks-card-header"><span>ที่อยู่</span></div>
         <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>

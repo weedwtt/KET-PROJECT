@@ -42,7 +42,7 @@ export default async function ViolationSubCategoryPage({
     <div className="ks-page">
       <div className="page-header">
         <div>
-          <div className="page-eyebrow"><span className="num">§M4</span><span>ข้อมูลหลัก · หมวดย่อยการผิดระเบียบ</span></div>
+          <div className="page-eyebrow"><span>ข้อมูลหลัก · หมวดย่อยการผิดระเบียบ</span></div>
           <h1>จัดการหมวดย่อยการผิดระเบียบ</h1>
         </div>
         <div style={{ fontSize: 13, color: "var(--ink-3)" }}>ทั้งหมด <span className="mono">{total}</span> รายการ</div>
