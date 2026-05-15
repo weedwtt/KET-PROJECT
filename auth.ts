@@ -29,26 +29,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null
 
-        const user = await db.user.findUnique({
-          where: { username: credentials.username as string },
-          include: { teacher: { include: { title: true } } },
-        })
+        try {
+          const user = await db.user.findUnique({
+            where: { username: credentials.username as string },
+            include: { teacher: { include: { title: true } } },
+          })
 
-        if (!user) return null
+          if (!user) return null
 
-        const valid = verifyPassword(credentials.password as string, user.passwordHash)
-        if (!valid) return null
+          const valid = verifyPassword(credentials.password as string, user.passwordHash)
+          if (!valid) return null
 
-        const fullName = user.teacher
-          ? `${user.teacher.title.name}${user.teacher.firstName} ${user.teacher.lastName}`
-          : user.username
+          const fullName = user.teacher
+            ? `${user.teacher.title.name}${user.teacher.firstName} ${user.teacher.lastName}`
+            : user.username
 
-        return {
-          id: String(user.id),
-          name: fullName,
-          email: `${user.username}@school.ac.th`,
-          teacherId: user.teacherId,
-          role: user.teacher?.role ?? null,
+          return {
+            id: String(user.id),
+            name: fullName,
+            email: `${user.username}@school.ac.th`,
+            teacherId: user.teacherId,
+            role: user.teacher?.role ?? null,
+          }
+        } catch (err) {
+          console.error("[auth] authorize error:", err)
+          return null
         }
       },
     }),

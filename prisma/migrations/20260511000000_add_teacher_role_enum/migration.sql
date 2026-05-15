@@ -1,5 +1,5 @@
 -- CreateEnum: TeacherRole
-CREATE TYPE "TeacherRole" AS ENUM ('ผอ', 'รองผอ', 'ครู', 'admin');
+CREATE TYPE "TeacherRole" AS ENUM ('DIRECTOR', 'VICE_DIRECTOR', 'TEACHER', 'ADMIN');
 
 -- CreateEnum: GradeHeadLevel
 CREATE TYPE "GradeHeadLevel" AS ENUM ('ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6');
@@ -8,7 +8,7 @@ CREATE TYPE "GradeHeadLevel" AS ENUM ('ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5
 -- Nullify any values that don't match valid enum entries before casting
 UPDATE "teachers" SET "role" = NULL
   WHERE "role" IS NOT NULL
-    AND "role" NOT IN ('ผอ', 'รองผอ', 'ครู', 'admin');
+    AND "role" NOT IN ('DIRECTOR', 'VICE_DIRECTOR', 'TEACHER', 'ADMIN');
 
 ALTER TABLE "teachers"
   ALTER COLUMN "role" TYPE "TeacherRole"

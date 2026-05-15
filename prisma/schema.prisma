@@ -105,10 +105,10 @@ model TeacherTitle {
 
 /// บทบาทของครู
 enum TeacherRole {
-  DIRECTOR      @map("ผอ")
-  VICE_DIRECTOR @map("รองผอ")
-  TEACHER       @map("ครู")
-  ADMIN         @map("admin")
+  DIRECTOR      @map("DIRECTOR")
+  VICE_DIRECTOR @map("VICE_DIRECTOR")
+  TEACHER       @map("TEACHER")
+  ADMIN         @map("ADMIN")
 }
 
 /// ระดับชั้นที่ครูดูแล (ใช้สำหรับหัวหน้าระดับชั้น)
@@ -150,7 +150,7 @@ model Teacher {
   addressPostalCode  String  @db.Char(5)      @map("address_postal_code")
 
   // ────── บทบาท ──────
-  /// บทบาทของครู: DIRECTOR=ผอ, VICE_DIRECTOR=รองผอ, TEACHER=ครู, ADMIN=admin
+  /// บทบาทของครู: DIRECTOR, VICE_DIRECTOR, TEACHER, ADMIN
   role           TeacherRole?
 
   /// ระดับชั้นที่ดูแลในฐานะหัวหน้าระดับชั้น (M1–M6) null = ไม่ได้เป็นหัวหน้าระดับชั้น
