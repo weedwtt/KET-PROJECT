@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react"
 import {
   LayoutDashboard, FileText, History, Inbox,
   Users, UserCog, Database, ChevronDown,
-  LogOut, Menu, X, List,
+  LogOut, Menu, X, List, BarChart2,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -98,8 +98,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
           </div>
         )}
 
-        {/* รออนุมัติ — approver only */}
-        {isApprover && (
+        {/* รออนุมัติ — approver + admin */}
+        {(isApprover || isAdmin) && (
           <Link
             href="/dashboard/approve"
             className={`nav-item ${isActive("/dashboard/approve") ? "active" : ""}`}
@@ -117,6 +117,15 @@ export function Sidebar({ userName, role }: SidebarProps) {
         >
           <History size={17} className="nav-icon" />
           <span className="nav-label">ประวัติและรายการบันทึก</span>
+        </Link>
+
+        {/* รายงานและสถิติ */}
+        <Link
+          href="/dashboard/reports"
+          className={`nav-item ${isActive("/dashboard/reports") ? "active" : ""}`}
+        >
+          <BarChart2 size={17} className="nav-icon" />
+          <span className="nav-label">รายงานและสถิติ</span>
         </Link>
 
         {/* จัดการระบบ — admin */}

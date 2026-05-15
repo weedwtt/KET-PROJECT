@@ -6,7 +6,16 @@
       "Bash(npx prisma *)",
       "Bash(npx shadcn@latest *)",
       "Bash(npx tsc *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(cd /d \"D:\\\\works\\\\ket-github\\\\KET-PROJECT\")",
+      "Bash(Get-ChildItem -Path . -Name)",
+      "Bash(dir /b lib)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(python3 -c ' *)",
+      "Bash(mv \"D:/works/ket-github/KET-PROJECT/app/api/statements/[id]/export/route.ts\" \"D:/works/ket-github/KET-PROJECT/app/api/statements/[id]/export/route.tsx\")",
+      "Bash(pip install *)",
+      "Bash(python \"C:\\\\Users\\\\veed_\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\0622c325-be00-4d69-9445-68fdb887fa6b\\\\49fd984e-22ee-40cc-9b6d-12a16e6d9b02\\\\skills\\\\docx\\\\scripts\\\\office\\\\unpack.py\" \"C:\\\\Users\\\\veed_\\\\Downloads\\\\บันทึกถ้อยคำ.docx\" \"C:\\\\Users\\\\veed_\\\\Downloads\\\\docx_unpacked\")",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\" -o /dev/null http://localhost:3000/api/statements/4/export-word)"
     ]
   }
 }
