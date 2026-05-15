@@ -45,7 +45,7 @@ export default async function EditTeacherPage({
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <div className="page-eyebrow"><span className="num">§M5</span><span>ข้อมูลหลัก · แก้ไขครู</span></div>
+            <div className="page-eyebrow"><span>ข้อมูลหลัก · แก้ไขครู</span></div>
             <h1>แก้ไขข้อมูลครู — {teacher.title.name}{teacher.firstName} {teacher.lastName}</h1>
           </div>
         </div>

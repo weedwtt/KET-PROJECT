@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+﻿import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            <span className="num">§01</span>
+            
             <span>ภาพรวม · ระบบบันทึกความประพฤตินักเรียน</span>
           </div>
           <h1>Dashboard</h1>
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
         <div className="ks-card">
           <div className="ks-card-header">
             <div>
-              <div className="eyebrow" style={{ marginBottom: 4 }}>§ บันทึกล่าสุด</div>
+              <div className="eyebrow" style={{ marginBottom: 4 }}>บันทึกล่าสุด</div>
               <div className="ks-card-title">บันทึกถ้อยคำล่าสุด</div>
             </div>
             <Link href="/record/statement" className="btn btn-ghost btn-sm">
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
           {/* Reminders */}
           <div className="ks-card ks-card-pad">
-            <div className="eyebrow" style={{ marginBottom: 14 }}>§ เตือนความจำ</div>
+            <div className="eyebrow" style={{ marginBottom: 14 }}>เตือนความจำ</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <div style={{ width: 4, alignSelf: "stretch", background: "var(--amber)", borderRadius: 2 }} />
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
 
           {/* Quick stats */}
           <div className="ks-card ks-card-pad">
-            <div className="eyebrow" style={{ marginBottom: 14 }}>§ สรุปสถานะ</div>
+            <div className="eyebrow" style={{ marginBottom: 14 }}>สรุปสถานะ</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
                 { label: "รออนุมัติ", value: statementCount - approvedCount, color: "var(--amber)" },

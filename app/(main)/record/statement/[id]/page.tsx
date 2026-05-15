@@ -128,7 +128,7 @@ export default function StatementDetailPage() {
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            <span className="num">§03</span>
+            
             <span>#{record.id} · {formatThaiDate(record.recordDate)}</span>
           </div>
           <h1>บันทึกถ้อยคำ — {record.student.title?.name}{record.student.firstName} {record.student.lastName}</h1>
@@ -152,11 +152,11 @@ export default function StatementDetailPage() {
         {/* Main column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
 
-          {/* § 01 Student */}
+          {/* 01 Student */}
           <div className="ks-card">
             <div className="ks-card-header">
               <div>
-                <div className="eyebrow" style={{ marginBottom: 4 }}>§ 01 · STUDENT</div>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>01 · STUDENT</div>
                 <div className="ks-card-title">ข้อมูลนักเรียน</div>
               </div>
               <span className={`chip chip-${isApproved ? "approved" : "pending"}`}>
@@ -188,11 +188,11 @@ export default function StatementDetailPage() {
             </div>
           </div>
 
-          {/* § 02 Incident */}
+          {/* 02 Incident */}
           <div className="ks-card">
             <div className="ks-card-header">
               <div>
-                <div className="eyebrow" style={{ marginBottom: 4 }}>§ 02 · INCIDENT</div>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>02 · INCIDENT</div>
                 <div className="ks-card-title">รายละเอียดการกระทำผิด</div>
               </div>
             </div>
@@ -211,11 +211,11 @@ export default function StatementDetailPage() {
             </div>
           </div>
 
-          {/* § 03 Measures */}
+          {/* 03 Measures */}
           <div className="ks-card">
             <div className="ks-card-header">
               <div>
-                <div className="eyebrow" style={{ marginBottom: 4 }}>§ 03 · MEASURES</div>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>03 · MEASURES</div>
                 <div className="ks-card-title">มาตรการที่กำหนด</div>
               </div>
             </div>
@@ -259,11 +259,11 @@ export default function StatementDetailPage() {
             </div>
           </div>
 
-          {/* § 04 Signatures */}
+          {/* 04 Signatures */}
           <div className="ks-card">
             <div className="ks-card-header">
               <div>
-                <div className="eyebrow" style={{ marginBottom: 4 }}>§ 04 · SIGNATURES</div>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>04 · SIGNATURES</div>
                 <div className="ks-card-title">ลายเซ็น</div>
               </div>
             </div>
@@ -288,12 +288,12 @@ export default function StatementDetailPage() {
             </div>
           </div>
 
-          {/* § 05 Bond (conditional) */}
+          {/* 05 Bond (conditional) */}
           {record.bond && (
             <div className="ks-card">
               <div className="ks-card-header">
                 <div>
-                  <div className="eyebrow" style={{ marginBottom: 4 }}>§ 05 · BOND</div>
+                  <div className="eyebrow" style={{ marginBottom: 4 }}>05 · BOND</div>
                   <div className="ks-card-title">สัญญาทัณฑ์บน</div>
                 </div>
               </div>
@@ -310,7 +310,7 @@ export default function StatementDetailPage() {
           {/* Send for approval */}
           {!isApproved && (
             <div className="ks-card ks-card-pad" style={{ background: "var(--surface-2)" }}>
-              <div className="eyebrow" style={{ marginBottom: 12 }}>§ ส่งอนุมัติ</div>
+              <div className="eyebrow" style={{ marginBottom: 12 }}>ส่งอนุมัติ</div>
               <label className="field-label">เลือกผู้พิจารณาอนุมัติ</label>
               <select
                 className="ks-select"
@@ -344,7 +344,7 @@ export default function StatementDetailPage() {
           {/* Approved info */}
           {isApproved && (
             <div className="ks-card ks-card-pad" style={{ background: "var(--sage-soft)" }}>
-              <div className="eyebrow" style={{ marginBottom: 12, color: "var(--sage)" }}>§ อนุมัติแล้ว</div>
+              <div className="eyebrow" style={{ marginBottom: 12, color: "var(--sage)" }}>อนุมัติแล้ว</div>
               <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>
                 {record.approvedByTeacher?.title?.name}{record.approvedByTeacher?.firstName} {record.approvedByTeacher?.lastName}
               </div>
@@ -356,7 +356,7 @@ export default function StatementDetailPage() {
 
           {/* Audit */}
           <div className="ks-card ks-card-pad">
-            <div className="eyebrow" style={{ marginBottom: 12 }}>§ AUDIT</div>
+            <div className="eyebrow" style={{ marginBottom: 12 }}>AUDIT</div>
             <InfoRow label="ID" value={String(record.id)} mono />
             <InfoRow label="สร้างเมื่อ" value={formatThaiDate(record.recordDate)} mono />
           </div>

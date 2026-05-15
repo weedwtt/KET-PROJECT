@@ -161,7 +161,7 @@ export default function ApproveDetailPage() {
           </Link>
           <div>
             <div className="page-eyebrow">
-              <span className="num">§04</span>
+              
               <span>ฝ่ายปกครอง · รายละเอียดรายการ #{record.id}</span>
             </div>
             <h1>รายละเอียดบันทึกถ้อยคำ</h1>
@@ -182,7 +182,7 @@ export default function ApproveDetailPage() {
           <div className="ks-card">
             <div className="ks-card-header">
               <div>
-                <div className="eyebrow">§ 01 · STUDENT</div>
+                <div className="eyebrow">01 · STUDENT</div>
                 <div style={{ fontWeight: 600, fontSize: 16 }}>
                   {record.student.title.name}{record.student.firstName} {record.student.lastName}
                 </div>
@@ -199,7 +199,7 @@ export default function ApproveDetailPage() {
           {/* Incident */}
           <div className="ks-card">
             <div className="ks-card-header">
-              <div className="eyebrow">§ 02 · INCIDENT</div>
+              <div className="eyebrow">02 · INCIDENT</div>
             </div>
             <div className="ks-card-pad">
               <div className="info-row">
@@ -249,7 +249,7 @@ export default function ApproveDetailPage() {
           {/* Measures */}
           <div className="ks-card">
             <div className="ks-card-header">
-              <div className="eyebrow">§ 03 · MEASURES</div>
+              <div className="eyebrow">03 · MEASURES</div>
             </div>
             <div className="ks-card-pad">
               {allMeasures.length > 0 ? (
@@ -275,7 +275,7 @@ export default function ApproveDetailPage() {
           {record.bond && (
             <div className="ks-card">
               <div className="ks-card-header">
-                <div className="eyebrow">§ 05 · BOND</div>
+                <div className="eyebrow">05 · BOND</div>
               </div>
               <div className="ks-card-pad">
                 {bondGuardian && (
@@ -323,7 +323,7 @@ export default function ApproveDetailPage() {
           {/* Signatures */}
           <div className="ks-card">
             <div className="ks-card-header">
-              <div className="eyebrow">§ 04 · SIGNATURES</div>
+              <div className="eyebrow">04 · SIGNATURES</div>
             </div>
             <div className="ks-card-pad">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
@@ -359,7 +359,7 @@ export default function ApproveDetailPage() {
           {isApproved ? (
             <div className="ks-card">
               <div className="ks-card-header">
-                <div className="eyebrow">§ STATUS</div>
+                <div className="eyebrow">STATUS</div>
               </div>
               <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -384,7 +384,7 @@ export default function ApproveDetailPage() {
           ) : (
             <div className="ks-card">
               <div className="ks-card-header">
-                <div className="eyebrow">§ APPROVE</div>
+                <div className="eyebrow">APPROVE</div>
               </div>
               <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {!showConfirm ? (
@@ -467,7 +467,7 @@ export default function ApproveDetailPage() {
           {/* Audit */}
           <div className="ks-card">
             <div className="ks-card-header">
-              <div className="eyebrow">§ AUDIT</div>
+              <div className="eyebrow">AUDIT</div>
             </div>
             <div className="ks-card-pad" style={{ fontSize: 13 }}>
               <div className="info-row">

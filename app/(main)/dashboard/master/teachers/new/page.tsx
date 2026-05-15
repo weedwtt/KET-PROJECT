@@ -11,7 +11,7 @@ export default function NewTeacherPage() {
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <div className="page-eyebrow"><span className="num">§M5</span><span>ข้อมูลหลัก · เพิ่มครู</span></div>
+            <div className="page-eyebrow"><span>ข้อมูลหลัก · เพิ่มครู</span></div>
             <h1>เพิ่มครู</h1>
           </div>
         </div>

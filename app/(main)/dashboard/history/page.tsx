@@ -79,7 +79,7 @@ export default async function HistoryPage({
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            <span className="num">§05</span>
+            
             <span>คลังประวัติ · บันทึกที่อนุมัติแล้ว</span>
           </div>
           <h1>ประวัติและรายการบันทึก</h1>

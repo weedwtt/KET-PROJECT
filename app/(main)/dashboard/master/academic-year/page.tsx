@@ -30,7 +30,7 @@ export default async function AcademicYearPage({
     <div className="ks-page">
       <div className="page-header">
         <div>
-          <div className="page-eyebrow"><span className="num">§M1</span><span>ข้อมูลหลัก · ปีการศึกษา</span></div>
+          <div className="page-eyebrow"><span>ข้อมูลหลัก · ปีการศึกษา</span></div>
           <h1>จัดการปีการศึกษา</h1>
         </div>
         <div style={{ fontSize: 13, color: "var(--ink-3)" }}>ทั้งหมด <span className="mono">{total}</span> รายการ</div>

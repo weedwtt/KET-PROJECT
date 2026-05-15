@@ -1,4 +1,4 @@
-import { Suspense } from "react"
+﻿import { Suspense } from "react"
 import { LoginForm } from "@/components/login-form"
 import { ThemeToggle } from "@/components/theme-toggle"
 
@@ -39,7 +39,7 @@ export default function LoginPage() {
             border: "1px solid rgba(255,255,255,0.12)",
             padding: "3px 10px", borderRadius: 99,
           }}>
-            § ระบบบันทึกความประพฤตินักเรียน
+            ระบบบันทึกความประพฤตินักเรียน
           </div>
           <h1 style={{ fontSize: 38, fontWeight: 500, lineHeight: 1.24, letterSpacing: "-0.018em", margin: "0 0 20px", maxWidth: 500 }}>
             บันทึกอย่างเป็นระเบียบ<br />
@@ -83,7 +83,7 @@ export default function LoginPage() {
 
           {/* Header */}
           <div style={{ marginBottom: 32 }}>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>§ เข้าสู่ระบบ</div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>เข้าสู่ระบบ</div>
             <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.015em", margin: "0 0 6px", color: "var(--ink)" }}>
               ยินดีต้อนรับกลับ
             </h2>

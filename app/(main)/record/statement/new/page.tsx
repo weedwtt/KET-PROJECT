@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -283,7 +283,7 @@ export default function NewStatementPage() {
           </Link>
           <div>
             <div className="page-eyebrow">
-              <span className="num">§02</span>
+              
               <span>บันทึกถ้อยคำ · เพิ่มรายการใหม่</span>
             </div>
             <h1>เพิ่มบันทึกถ้อยคำ</h1>
@@ -489,7 +489,7 @@ function Step2Student({ student, onBack, onNext }: { student: Student; onBack: (
       <div className="ks-card">
         <div className="ks-card-header">
           <div>
-            <div className="eyebrow">§ S01 · STUDENT</div>
+            <div className="eyebrow">S01 · STUDENT</div>
             <div style={{ fontWeight: 600, fontSize: 16 }}>{fullName}</div>
           </div>
           <div className="mono" style={{ fontSize: 13, color: "var(--ink-3)" }}>
@@ -1279,7 +1279,7 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
       <div className="ks-card">
         <div className="ks-card-header">
           <div>
-            <div className="eyebrow">§ SUMMARY · สรุปข้อมูลก่อนบันทึก</div>
+            <div className="eyebrow">SUMMARY · สรุปข้อมูลก่อนบันทึก</div>
           </div>
           <span className="chip chip-pending">รออนุมัติ</span>
         </div>

@@ -11,7 +11,7 @@ export default function NewUserPage() {
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <div className="page-eyebrow"><span className="num">§M6</span><span>ข้อมูลหลัก · เพิ่มผู้ใช้</span></div>
+            <div className="page-eyebrow"><span>ข้อมูลหลัก · เพิ่มผู้ใช้</span></div>
             <h1>เพิ่มผู้ใช้งาน</h1>
           </div>
         </div>
