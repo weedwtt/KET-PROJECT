@@ -1,12 +1,10 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import {
-  Search, ChevronRight, ChevronLeft, User, Users, MapPin,
-  Check, FileText, ShieldAlert, ScrollText, CheckCircle2,
-} from "lucide-react"
+import { Search, ChevronRight, ChevronLeft, User, Check } from "lucide-react"
+import { DatePicker } from "@/components/ui/date-picker"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -56,43 +54,31 @@ type Student = {
   advisors: Advisor[]
 }
 
+type SemesterItem = { id: number; name: string; value: number }
+type AcademicYearItem = { id: number; year: number }
+type ViolationCategoryItem = { id: number; name: string }
+type ViolationSubCategoryItem = { id: number; name: string; violationCategoryId: number }
+type TeacherOption = {
+  id: number
+  firstName: string
+  lastName: string
+  title: { name: string }
+  signatureUrl: string | null
+  role: string | null
+}
+
+// ── Steps ──────────────────────────────────────────────────────────────────────
+
 const STEPS = [
-  { label: "ค้นหานักเรียน", code: "S01" },
-  { label: "ข้อมูลนักเรียน", code: "S02" },
-  { label: "บันทึกถ้อยคำ",   code: "S03" },
-  { label: "มาตรการ",        code: "S04" },
-  { label: "ทำทัณฑ์บน",     code: "S05" },
-  { label: "ลงนาม",          code: "S06" },
-  { label: "ยืนยัน",         code: "S07" },
+  { num: "01", label: "ข้อมูลนักเรียน",       en: "STUDENT"   },
+  { num: "02", label: "รายละเอียดการกระทำผิด", en: "INCIDENT"  },
+  { num: "03", label: "มาตรการ",               en: "MEASURES"  },
+  { num: "04", label: "ลายเซ็น",               en: "SIGNATURES"},
 ]
 
-const THAI_MONTHS = [
-  "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
-  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
-]
+// ── Form state types ───────────────────────────────────────────────────────────
 
-const CONSIDERATION_MEASURES = [
-  { id: "notify_parent",  label: "แจ้งผู้ปกครอง" },
-  { id: "invite_parent",  label: "เชิญผู้ปกครองรับทราบพฤติกรรม" },
-]
-
-const RESULT_MEASURES = [
-  { id: "verbal_warning",    label: "ตักเตือน" },
-  { id: "deduct_score",      label: "ตัดคะแนนความประพฤติ" },
-  { id: "behavior_activity", label: "ทำกิจกรรมปรับเปลี่ยนพฤติกรรม" },
-  { id: "probation_bond",    label: "ทำทัณฑ์บน" },
-]
-
-const BOND_PENALTY_OPTIONS = [
-  { id: "deduct_score",  label: "ตัดคะแนนความประพฤติ" },
-  { id: "behavior_camp", label: "ทำกิจกรรมค่ายปรับพฤติกรรม" },
-  { id: "suspension",    label: "พักการเรียน" },
-  { id: "transfer",      label: "ย้ายสถานศึกษา" },
-]
-
-// ── Form data types ────────────────────────────────────────────────────────────
-
-type StatementFormData = {
+type IncidentFormData = {
   semesterId: string
   semesterLabel: string
   academicYearId: string
@@ -101,32 +87,24 @@ type StatementFormData = {
   violationCategoryLabel: string
   violationSubCategoryId: string
   violationSubCategoryLabel: string
-  subject: string
-  detail: string
-  incidentDateTime: string
+  course: string
+  behavior: string
+  incidentDate: string
+  incidentTime: string
   location: string
   recorder: string
 }
 
 type MeasureFormData = {
-  selected: string[]
+  consider: { notify: boolean; invite: boolean }
+  result: {
+    verbal: boolean
+    deductScore: boolean
+    deductPoints: string
+    activity: boolean
+    bond: boolean
+  }
   notes: string
-}
-
-type BondFormData = {
-  selectedGuardianIndex: number | null
-  penaltyActions: string[]
-  deductPoints: string
-  witnessName: string
-}
-
-type TeacherOption = {
-  id: number
-  firstName: string
-  lastName: string
-  title: { name: string }
-  signatureUrl: string | null
-  role: string | null
 }
 
 type SignatureFormData = {
@@ -142,34 +120,57 @@ type SignatureFormData = {
 export default function NewStatementPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
+
+  // Step 0 state
   const [query, setQuery] = useState("")
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<Student[] | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Student | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const [semesterId, setSemesterId] = useState("")
+  const [semesterLabel, setSemesterLabel] = useState("")
+  const [academicYearId, setAcademicYearId] = useState("")
+  const [academicYearLabel, setAcademicYearLabel] = useState("")
+  const [semesters, setSemesters] = useState<SemesterItem[]>([])
+  const [academicYears, setAcademicYears] = useState<AcademicYearItem[]>([])
+  const [loadingSem, setLoadingSem] = useState(false)
 
-  const [formData, setFormData] = useState<StatementFormData>({
+  const [incident, setIncident] = useState<IncidentFormData>({
     semesterId: "", semesterLabel: "",
     academicYearId: "", academicYearLabel: "",
     violationCategoryId: "", violationCategoryLabel: "",
     violationSubCategoryId: "", violationSubCategoryLabel: "",
-    subject: "", detail: "", incidentDateTime: "", location: "", recorder: "",
+    course: "", behavior: "",
+    incidentDate: "", incidentTime: "",
+    location: "", recorder: "",
   })
 
-  const [measureData, setMeasureData] = useState<MeasureFormData>({ selected: [], notes: "" })
-
-  const [bondData, setBondData] = useState<BondFormData>({
-    selectedGuardianIndex: null, penaltyActions: [], deductPoints: "", witnessName: "",
+  const [measures, setMeasures] = useState<MeasureFormData>({
+    consider: { notify: false, invite: false },
+    result: { verbal: false, deductScore: false, deductPoints: "", activity: false, bond: false },
+    notes: "",
   })
 
-  const [signatureData, setSignatureData] = useState<SignatureFormData>({
+  const [sigData, setSigData] = useState<SignatureFormData>({
     studentSignature: "", guardianSignature: "", advisorSignature: "",
     disciplineTeacherId: null, gradeHeadTeacherId: null,
   })
 
-  const showBondStep = measureData.selected.includes("probation_bond")
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Load semesters/years for step 0
+  useEffect(() => {
+    setLoadingSem(true)
+    Promise.all([
+      fetch("/api/master/semesters").then((r) => r.json()),
+      fetch("/api/master/academic-years").then((r) => r.json()),
+    ]).then(([sem, ay]) => {
+      setSemesters(sem)
+      setAcademicYears(ay)
+      setLoadingSem(false)
+    }).catch(() => setLoadingSem(false))
+  }, [])
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -185,10 +186,13 @@ export default function NewStatementPage() {
       if (data.length === 0) {
         setSearchError("ไม่พบนักเรียน กรุณาตรวจสอบรหัสหรือชื่ออีกครั้ง")
         setResults([])
-      } else if (data.length === 1) {
-        selectStudent(data[0])
       } else {
         setResults(data)
+        if (data.length === 1) {
+          setSelected(data[0])
+          setQuery("")
+          setResults(null)
+        }
       }
     } catch {
       setSearchError("เกิดข้อผิดพลาดในการค้นหา กรุณาลองใหม่อีกครั้ง")
@@ -197,66 +201,58 @@ export default function NewStatementPage() {
     }
   }
 
-  function selectStudent(student: Student) {
-    setSelected(student)
-    setStep(1)
-  }
-
-  function handleBack() {
-    if (step === 1) setSelected(null)
-    setStep((s) => Math.max(0, s - 1))
-  }
-
-  function handleNext() {
-    if (step === 3 && !showBondStep) { setStep(5); return }
-    setStep((s) => s + 1)
-  }
-
-  function handleNextFromBond() { setStep(5) }
-
-  function handleBackFromSignatures() {
-    setStep(showBondStep ? 4 : 3)
-  }
-
-  function handleNextFromSignatures() { setStep(6) }
-  function handleBackFromConfirm() { setStep(5) }
+  const step0Valid = !!selected && !!semesterId && !!academicYearId
 
   async function handleSubmit() {
     if (!selected) return
     setSaving(true)
     setSaveError(null)
-    const bondGuardianId =
-      showBondStep && bondData.selectedGuardianIndex !== null
-        ? (selected.guardians[bondData.selectedGuardianIndex]?.id ?? null)
-        : null
+
+    const considerationMeasures: string[] = []
+    if (measures.consider.notify) considerationMeasures.push("notify_parent")
+    if (measures.consider.invite) considerationMeasures.push("invite_parent")
+
+    const resultMeasures: string[] = []
+    if (measures.result.verbal) resultMeasures.push("verbal_warning")
+    if (measures.result.deductScore) resultMeasures.push("deduct_score")
+    if (measures.result.activity) resultMeasures.push("behavior_activity")
+    if (measures.result.bond) resultMeasures.push("probation_bond")
+
+    const deductNote = measures.result.deductScore && measures.result.deductPoints
+      ? `ตัดคะแนน ${measures.result.deductPoints} คะแนน`
+      : ""
+    const measureNotes = [deductNote, measures.notes].filter(Boolean).join("\n") || null
+
+    const incidentDateTime = incident.incidentDate
+      ? `${incident.incidentDate}T${incident.incidentTime || "00:00"}`
+      : ""
+
+    const subject = incident.course.trim() || incident.behavior.trim().slice(0, 200)
+
     try {
       const res = await fetch("/api/statements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           studentId: selected.id,
-          semesterId: formData.semesterId,
-          academicYearId: formData.academicYearId,
-          violationCategoryId: formData.violationCategoryId,
-          violationSubCategoryId: formData.violationSubCategoryId || null,
-          subject: formData.subject,
-          detail: formData.detail,
-          incidentDateTime: formData.incidentDateTime,
-          location: formData.location,
-          recorder: formData.recorder,
-          considerationMeasures: measureData.selected.filter((id) => CONSIDERATION_MEASURES.some((m) => m.id === id)),
-          resultMeasures: measureData.selected.filter((id) => RESULT_MEASURES.some((m) => m.id === id)),
-          measureNotes: measureData.notes || null,
-          bond: showBondStep && bondGuardianId
-            ? { guardianId: bondGuardianId, penaltyActions: bondData.penaltyActions,
-                deductPoints: bondData.deductPoints ? Number(bondData.deductPoints) : null,
-                witnessName: bondData.witnessName || null }
-            : null,
-          studentSignature: signatureData.studentSignature || null,
-          guardianSignature: signatureData.guardianSignature || null,
-          advisorSignature: signatureData.advisorSignature || null,
-          disciplineTeacherId: signatureData.disciplineTeacherId,
-          gradeHeadTeacherId: signatureData.gradeHeadTeacherId,
+          semesterId,
+          academicYearId,
+          violationCategoryId: incident.violationCategoryId,
+          violationSubCategoryId: incident.violationSubCategoryId || null,
+          subject,
+          detail: incident.behavior,
+          incidentDateTime: incidentDateTime || null,
+          location: incident.location || null,
+          recorder: incident.recorder,
+          considerationMeasures,
+          resultMeasures,
+          measureNotes,
+          bond: null,
+          studentSignature: sigData.studentSignature || null,
+          guardianSignature: sigData.guardianSignature || null,
+          advisorSignature: sigData.advisorSignature || null,
+          disciplineTeacherId: sigData.disciplineTeacherId,
+          gradeHeadTeacherId: sigData.gradeHeadTeacherId,
         }),
       })
       if (!res.ok) {
@@ -272,68 +268,59 @@ export default function NewStatementPage() {
     }
   }
 
-  const displayStep = !showBondStep && step >= 5 ? step - 1 : step
-
   return (
-    <div className="ks-page" style={{ maxWidth: 780 }}>
+    <div className="ks-page" style={{ maxWidth: 860 }}>
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Link href="/record/statement" className="btn btn-ghost btn-sm btn-icon">
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <div className="page-eyebrow">
-              
-              <span>บันทึกถ้อยคำ · เพิ่มรายการใหม่</span>
-            </div>
-            <h1>เพิ่มบันทึกถ้อยคำ</h1>
+            <div className="page-eyebrow">บันทึกถ้อยคำ · สร้างใหม่</div>
+            <h1>บันทึกถ้อยคำนักเรียน</h1>
           </div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/record/statement" className="btn btn-ghost btn-sm">ยกเลิก</Link>
         </div>
       </div>
 
-      <WizardStepper currentStep={displayStep} showBondStep={showBondStep} />
+      {/* Film-frame stepper */}
+      <WizardStepper currentStep={step} />
 
       {step === 0 && (
-        <Step1Search
-          query={query} setQuery={setQuery} searching={searching}
-          results={results} error={searchError}
-          onSearch={handleSearch} onSelect={selectStudent}
+        <Step0Student
+          query={query} setQuery={setQuery}
+          searching={searching} results={results} error={searchError}
+          onSearch={handleSearch}
+          onSelectResult={(s) => { setSelected(s); setQuery(""); setResults(null) }}
+          selected={selected} onClearStudent={() => setSelected(null)}
+          semesters={semesters} academicYears={academicYears} loadingSem={loadingSem}
+          semesterId={semesterId} setSemesterId={(v, lbl) => { setSemesterId(v); setSemesterLabel(lbl) }}
+          academicYearId={academicYearId} setAcademicYearId={(v, lbl) => { setAcademicYearId(v); setAcademicYearLabel(lbl) }}
+          isValid={step0Valid}
+          onNext={() => setStep(1)}
         />
       )}
       {step === 1 && selected && (
-        <Step2Student student={selected} onBack={handleBack} onNext={handleNext} />
-      )}
-      {step === 2 && selected && (
-        <Step3Statement
-          student={selected} formData={formData} setFormData={setFormData}
-          onBack={handleBack} onNext={handleNext}
+        <Step1Incident
+          student={selected}
+          data={incident} setData={setIncident}
+          onBack={() => setStep(0)} onNext={() => setStep(2)}
         />
       )}
-      {step === 3 && (
-        <Step4Measures
-          measureData={measureData} setMeasureData={setMeasureData}
-          onBack={handleBack} onNext={handleNext}
+      {step === 2 && (
+        <Step2Measures
+          data={measures} setData={setMeasures}
+          onBack={() => setStep(1)} onNext={() => setStep(3)}
         />
       )}
-      {step === 4 && showBondStep && selected && (
-        <Step5Bond
-          student={selected} formData={formData} bondData={bondData}
-          setBondData={setBondData} onBack={handleBack} onNext={handleNextFromBond}
-        />
-      )}
-      {step === 5 && selected && (
-        <Step5Signature
-          student={selected} signatureData={signatureData}
-          setSignatureData={setSignatureData}
-          onBack={handleBackFromSignatures} onNext={handleNextFromSignatures}
-        />
-      )}
-      {step === 6 && selected && (
-        <Step6Confirm
-          student={selected} formData={formData} measureData={measureData}
-          bondData={bondData} showBondStep={showBondStep}
+      {step === 3 && selected && (
+        <Step3Signatures
+          student={selected}
+          data={sigData} setData={setSigData}
           saving={saving} saveError={saveError}
-          onBack={handleBackFromConfirm} onSubmit={handleSubmit}
+          onBack={() => setStep(2)} onSubmit={handleSubmit}
         />
       )}
     </div>
@@ -342,720 +329,642 @@ export default function NewStatementPage() {
 
 // ── Stepper ────────────────────────────────────────────────────────────────────
 
-function WizardStepper({ currentStep, showBondStep }: { currentStep: number; showBondStep?: boolean }) {
-  const visible = STEPS.filter((_, i) => i !== 4 || showBondStep)
-  const indices = STEPS.map((_, i) => i).filter((i) => i !== 4 || showBondStep)
-
+function WizardStepper({ currentStep }: { currentStep: number }) {
   return (
     <div className="wizard-stepper">
       <div className="wizard-frame">
-        {visible.map((s, vi) => {
-          const ai = indices[vi]
-          const state =
-            vi < currentStep ? "complete" :
-            vi === currentStep ? "current" :
-            (ai === 4 && !showBondStep) ? "disabled" : ""
+        {STEPS.map((s, i) => {
+          const state = i < currentStep ? "complete" : i === currentStep ? "current" : ""
           return (
-            <div key={ai} className={`wizard-step ${state}`}>
+            <div key={s.num} className={`wizard-step ${state}`}>
               <div className="step-tick" />
               <div className="step-meta">
-                <span className="step-num">{vi < currentStep ? "✓" : vi + 1}</span>
-                {s.code}
+                <span className="step-num">
+                  {i < currentStep ? <Check size={12} /> : s.num}
+                </span>
+                <span style={{ fontSize: 10, letterSpacing: "0.07em", color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>{s.en}</span>
               </div>
               <span className="step-label">{s.label}</span>
             </div>
           )
         })}
       </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--rule-soft)", fontSize: 12, color: "var(--ink-3)" }}>
+        <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.06em" }}>
+          ขั้นตอน {currentStep + 1} จาก {STEPS.length}
+        </span>
+        <span style={{ display: "flex", gap: 14 }}>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--sage)", borderRadius: 2, marginRight: 5 }} />เสร็จแล้ว</span>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--indigo)", borderRadius: 2, marginRight: 5 }} />ปัจจุบัน</span>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--rule-2)", borderRadius: 2, marginRight: 5 }} />ยังไม่ถึง</span>
+        </span>
+      </div>
     </div>
   )
 }
 
-// ── Step 1: Search ─────────────────────────────────────────────────────────────
+// ── Step 0: Student ────────────────────────────────────────────────────────────
 
-interface Step1Props {
+interface Step0Props {
   query: string
   setQuery: (v: string) => void
   searching: boolean
   results: Student[] | null
   error: string | null
   onSearch: (e: React.FormEvent) => void
-  onSelect: (s: Student) => void
+  onSelectResult: (s: Student) => void
+  selected: Student | null
+  onClearStudent: () => void
+  semesters: SemesterItem[]
+  academicYears: AcademicYearItem[]
+  loadingSem: boolean
+  semesterId: string
+  setSemesterId: (id: string, label: string) => void
+  academicYearId: string
+  setAcademicYearId: (id: string, label: string) => void
+  isValid: boolean
+  onNext: () => void
 }
 
-function Step1Search({ query, setQuery, searching, results, error, onSearch, onSelect }: Step1Props) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
-      <div className="wizard-body">
-        <h2 className="step-heading">ค้นหานักเรียน</h2>
-        <p className="step-sub">พิมพ์รหัสประจำตัวนักเรียน หรือ ชื่อ-นามสกุล</p>
+function Step0Student({
+  query, setQuery, searching, results, error, onSearch, onSelectResult,
+  selected, onClearStudent,
+  semesters, academicYears, loadingSem,
+  semesterId, setSemesterId, academicYearId, setAcademicYearId,
+  isValid, onNext,
+}: Step0Props) {
+  const advisor1 = selected?.advisors.find((a) => a.slot === 1)?.teacher
 
+  function teacherName(t: { title: { name: string }; firstName: string; lastName: string }) {
+    return `${t.title.name}${t.firstName} ${t.lastName}`
+  }
+
+  return (
+    <div className="wizard-body">
+      <h2 className="step-heading">ค้นหาและเลือกนักเรียน</h2>
+      <p className="step-sub">พิมพ์รหัสนักเรียน ชื่อ-สกุล หรือชั้นเรียน เพื่อค้นหา</p>
+
+      {/* Search */}
+      <div style={{ marginBottom: 16 }}>
+        <FieldLabel>ค้นหา</FieldLabel>
         <form onSubmit={onSearch} style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, position: "relative" }}>
             <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--ink-3)" }} />
             <input
               className="ks-input"
               style={{ paddingLeft: 42 }}
-              type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="เช่น 42344 หรือ สมชาย"
-              autoFocus
+              onChange={(e) => { setQuery(e.target.value); if (!e.target.value) onClearStudent() }}
+              placeholder="เช่น 30412 · ปวีณ์ธิดา · ม.4/2"
+              autoFocus={!selected}
               disabled={searching}
             />
           </div>
           <button type="submit" className="btn btn-primary" disabled={!query.trim() || searching}>
-            {searching
-              ? <svg className="spin" width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-              : <Search size={15} />}
-            ค้นหา
+            {searching ? <SpinIcon /> : <Search size={14} />} ค้นหา
           </button>
         </form>
-
         {error && (
-          <div style={{ marginTop: 16, padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
+          <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
             {error}
           </div>
         )}
       </div>
 
-      {results && results.length > 1 && (
-        <div className="ks-card">
-          <div className="ks-card-header">
-            <div>
-              <div className="eyebrow">พบ {results.length} รายการ</div>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>เลือกนักเรียนที่ต้องการบันทึก</div>
+      {/* Search results dropdown */}
+      {results && results.length > 1 && !selected && (
+        <div style={{ border: "1px solid var(--rule)", borderRadius: "var(--radius)", marginBottom: 20, overflow: "hidden", background: "var(--surface-2)" }}>
+          {results.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => onSelectResult(s)}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "none", border: "none", borderBottom: "1px solid var(--rule-soft)", cursor: "pointer", textAlign: "left" }}
+            >
+              <div style={{ width: 36, height: 36, background: "var(--indigo-wash)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <User size={15} style={{ color: "var(--indigo)" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500, fontSize: 14 }}>{s.title.name}{s.firstName} {s.lastName}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>{s.studentCode} · {s.gradeLevel}/{s.classRoom}</div>
+              </div>
+              <ChevronRight size={14} style={{ color: "var(--ink-4)" }} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Selected student card */}
+      {selected && (
+        <div className="ks-card" style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", padding: 20, gap: 16, alignItems: "flex-start" }}>
+            <div style={{ width: 52, height: 52, background: "var(--indigo)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <User size={22} color="#fff" />
             </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ink-3)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                  STUDENT · {selected.studentCode}
+                </span>
+                <span className="chip chip-approved" style={{ height: 20, fontSize: 11 }}>ตรงกัน</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.005em", marginBottom: 2 }}>
+                {selected.title.name}{selected.firstName} {selected.lastName}
+              </div>
+              <div style={{ color: "var(--ink-2)", fontSize: 13.5 }}>
+                ชั้น {selected.gradeLevel}/{selected.classRoom} · เลขที่ {selected.classNumber}
+              </div>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={onClearStudent}>
+              เปลี่ยน
+            </button>
           </div>
-          <div>
-            {results.map((s) => (
-              <button
-                key={s.id}
-                className="student-result"
-                style={{ width: "100%", textAlign: "left", background: "none", border: "none", borderBottom: "1px solid var(--rule-soft)", cursor: "pointer" }}
-                onClick={() => onSelect(s)}
-              >
-                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--indigo-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <User size={16} style={{ color: "var(--indigo)" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 500, fontSize: 14 }}>{s.title.name}{s.firstName} {s.lastName}</div>
-                  <div className="mono" style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                    {s.studentCode} · {s.gradeLevel}/{s.classRoom} · เลขที่ {s.classNumber}
+          <div style={{ padding: "0 20px 20px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, borderTop: "1px solid var(--rule-soft)", paddingTop: 16 }}>
+            <div>
+              <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.07em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 4 }}>ผู้ปกครอง</div>
+              {selected.guardians.length === 0 ? (
+                <div style={{ fontSize: 13.5, fontWeight: 500 }}>—</div>
+              ) : (
+                selected.guardians.map((g) => (
+                  <div key={g.id} style={{ fontSize: 13.5, fontWeight: 500 }}>
+                    {g.firstName} {g.lastName}
+                    <span style={{ fontSize: 12, fontWeight: 400, color: "var(--ink-3)", marginLeft: 6 }}>({g.relation.name})</span>
                   </div>
-                </div>
-                <ChevronRight size={14} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
-              </button>
-            ))}
+                ))
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.07em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 4 }}>ครูที่ปรึกษา</div>
+              <div style={{ fontSize: 13.5, fontWeight: 500 }}>
+                {advisor1 ? teacherName(advisor1) : "—"}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.07em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 4 }}>ชั้น / เลขที่</div>
+              <div style={{ fontSize: 13.5, fontWeight: 500 }}>
+                {selected.gradeLevel}/{selected.classRoom} · #{selected.classNumber}
+              </div>
+            </div>
           </div>
         </div>
       )}
-    </div>
-  )
-}
 
-// ── Step 2: Confirm student ────────────────────────────────────────────────────
-
-function Step2Student({ student, onBack, onNext }: { student: Student; onBack: () => void; onNext: () => void }) {
-  const fullName = `${student.title.name}${student.firstName} ${student.lastName}`
-  const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
-  const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
-  const father = student.guardians.find((g) => g.relation.name === "พ่อ")
-  const mother = student.guardians.find((g) => g.relation.name === "แม่")
-  const other = student.guardians.find((g) => g.relation.name !== "พ่อ" && g.relation.name !== "แม่")
-  const address = [
-    student.addressHouseNo && `บ้านเลขที่ ${student.addressHouseNo}`,
-    student.addressMoo && `หมู่ ${student.addressMoo}`,
-    student.addressVillage && `บ้าน${student.addressVillage}`,
-    student.addressSoi && `ซอย${student.addressSoi}`,
-    student.addressRoad && `ถนน${student.addressRoad}`,
-    `ต.${student.addressSubDistrict}`,
-    `อ.${student.addressDistrict}`,
-    `จ.${student.addressProvince}`,
-    student.addressPostalCode,
-  ].filter(Boolean).join(" ")
-
-  function formatDate(d: string) {
-    return new Date(d).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" })
-  }
-  function teacherName(t: { title: { name: string }; firstName: string; lastName: string }) {
-    return `${t.title.name}${t.firstName} ${t.lastName}`
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
-      <StudentMiniCard student={student} />
-
-      <div className="ks-card">
-        <div className="ks-card-header">
-          <div>
-            <div className="eyebrow">S01 · STUDENT</div>
-            <div style={{ fontWeight: 600, fontSize: 16 }}>{fullName}</div>
-          </div>
-          <div className="mono" style={{ fontSize: 13, color: "var(--ink-3)" }}>
-            {student.studentCode} · {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
-          </div>
-        </div>
-        <div className="ks-card-pad">
-          <div className="divider-label" style={{ marginTop: 0 }}>ข้อมูลส่วนตัว</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
-            <InfoRow label="เลขประจำตัวประชาชน" value={student.nationalId} mono />
-            <InfoRow label="วันเกิด" value={formatDate(student.birthDate)} />
-            <InfoRow label="สัญชาติ" value={student.nationality} />
-            <InfoRow label="เชื้อชาติ" value={student.ethnicity} />
-            <InfoRow label="ศาสนา" value={student.religion} />
-            <InfoRow label="หมู่เลือด" value={student.bloodType ?? "—"} />
-            {student.phone && <InfoRow label="โทรศัพท์" value={student.phone} />}
-          </div>
-
-          <div className="divider-label">ครอบครัวและครูที่ปรึกษา</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
-            <InfoRow label="บิดา" value={father ? `${father.firstName} ${father.lastName}` : "—"} />
-            <InfoRow label="มารดา" value={mother ? `${mother.firstName} ${mother.lastName}` : "—"} />
-            {other && <InfoRow label={`ผู้ปกครอง (${other.relation.name})`} value={`${other.firstName} ${other.lastName}`} />}
-            <InfoRow label="ครูที่ปรึกษา 1" value={advisor1 ? teacherName(advisor1) : "—"} />
-            <InfoRow label="ครูที่ปรึกษา 2" value={advisor2 ? teacherName(advisor2) : "—"} />
-          </div>
-
-          <div className="divider-label">ที่อยู่</div>
-          <div style={{ fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6 }}>{address || "—"}</div>
-        </div>
-      </div>
-
-      <div className="wizard-actions">
-        <button className="btn btn-secondary" onClick={onBack}>
-          <ChevronLeft size={14} /> ย้อนกลับ
-        </button>
-        <div className="right">
-          <button className="btn btn-primary" onClick={onNext}>
-            ถัดไป — บันทึกถ้อยคำ <ChevronRight size={14} />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Step 3: Statement form ─────────────────────────────────────────────────────
-
-type SemesterItem = { id: number; name: string; value: number }
-type AcademicYearItem = { id: number; year: number }
-type ViolationCategoryItem = { id: number; name: string }
-type ViolationSubCategoryItem = { id: number; name: string; violationCategoryId: number }
-
-interface Step3Props {
-  student: Student
-  formData: StatementFormData
-  setFormData: React.Dispatch<React.SetStateAction<StatementFormData>>
-  onBack: () => void
-  onNext: () => void
-}
-
-function Step3Statement({ student, formData, setFormData, onBack, onNext }: Step3Props) {
-  const [semesters, setSemesters] = useState<SemesterItem[]>([])
-  const [academicYears, setAcademicYears] = useState<AcademicYearItem[]>([])
-  const [violationCategories, setViolationCategories] = useState<ViolationCategoryItem[]>([])
-  const [violationSubCategories, setViolationSubCategories] = useState<ViolationSubCategoryItem[]>([])
-  const [loadingMaster, setLoadingMaster] = useState(true)
-  const [loadingSubCategories, setLoadingSubCategories] = useState(false)
-
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/master/semesters").then((r) => r.json()),
-      fetch("/api/master/academic-years").then((r) => r.json()),
-      fetch("/api/master/violation-categories").then((r) => r.json()),
-    ]).then(([sem, ay, vc]) => {
-      setSemesters(sem); setAcademicYears(ay); setViolationCategories(vc)
-      setLoadingMaster(false)
-    })
-  }, [])
-
-  useEffect(() => {
-    if (!formData.violationCategoryId) { setViolationSubCategories([]); return }
-    setLoadingSubCategories(true)
-    fetch(`/api/master/violation-sub-categories?categoryId=${formData.violationCategoryId}`)
-      .then((r) => r.json())
-      .then((data) => { setViolationSubCategories(data); setLoadingSubCategories(false) })
-      .catch(() => setLoadingSubCategories(false))
-  }, [formData.violationCategoryId])
-
-  function update(fields: Partial<StatementFormData>) {
-    setFormData((prev) => ({ ...prev, ...fields }))
-  }
-
-  const isValid =
-    formData.semesterId && formData.academicYearId && formData.violationCategoryId &&
-    formData.subject.trim() && formData.detail.trim() &&
-    formData.incidentDateTime && formData.location.trim() && formData.recorder.trim()
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
-      <StudentMiniCard student={student} />
-
-      <div className="wizard-body">
-        <h2 className="step-heading">บันทึกถ้อยคำ</h2>
-        <p className="step-sub">กรอกรายละเอียดการกระทำความผิด</p>
-
-        {loadingMaster ? (
-          <div style={{ textAlign: "center", padding: "24px 0", color: "var(--ink-3)" }}>กำลังโหลด...</div>
+      {/* Semester / Year */}
+      <div style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 20, marginBottom: 24 }}>
+        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>ภาคเรียน / ปีการศึกษา</div>
+        {loadingSem ? (
+          <div style={{ fontSize: 13, color: "var(--ink-3)" }}>กำลังโหลด...</div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <FieldGroup label="ภาคเรียน" required>
-                <select
-                  className="ks-select"
-                  value={formData.semesterId}
-                  onChange={(e) => {
-                    const found = semesters.find((s) => String(s.id) === e.target.value)
-                    update({ semesterId: e.target.value, semesterLabel: found?.name ?? "" })
-                  }}
-                >
-                  <option value="" disabled>เลือกภาคเรียน</option>
-                  {semesters.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </FieldGroup>
-              <FieldGroup label="ปีการศึกษา" required>
-                <select
-                  className="ks-select"
-                  value={formData.academicYearId}
-                  onChange={(e) => {
-                    const found = academicYears.find((a) => String(a.id) === e.target.value)
-                    update({ academicYearId: e.target.value, academicYearLabel: found ? String(found.year) : "" })
-                  }}
-                >
-                  <option value="" disabled>เลือกปีการศึกษา</option>
-                  {academicYears.map((a) => <option key={a.id} value={a.id}>{a.year}</option>)}
-                </select>
-              </FieldGroup>
-            </div>
-
-            <FieldGroup label="หมวดการผิดระเบียบ" required>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div>
+              <FieldLabel required>ภาคเรียน</FieldLabel>
               <select
                 className="ks-select"
-                value={formData.violationCategoryId}
+                value={semesterId}
                 onChange={(e) => {
-                  const found = violationCategories.find((c) => String(c.id) === e.target.value)
-                  update({ violationCategoryId: e.target.value, violationCategoryLabel: found?.name ?? "", violationSubCategoryId: "", violationSubCategoryLabel: "" })
+                  const found = semesters.find((s) => String(s.id) === e.target.value)
+                  setSemesterId(e.target.value, found?.name ?? "")
                 }}
               >
-                <option value="" disabled>เลือกหมวด</option>
-                {violationCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="" disabled>เลือกภาคเรียน</option>
+                {semesters.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-            </FieldGroup>
-
-            {formData.violationCategoryId && (
-              <FieldGroup label="หมวดย่อย">
-                {loadingSubCategories ? (
-                  <div style={{ fontSize: 13, color: "var(--ink-3)" }}>กำลังโหลด...</div>
-                ) : violationSubCategories.length === 0 ? (
-                  <div style={{ fontSize: 13, color: "var(--ink-4)" }}>ไม่มีหมวดย่อยสำหรับหมวดนี้</div>
-                ) : (
-                  <select
-                    className="ks-select"
-                    value={formData.violationSubCategoryId}
-                    onChange={(e) => {
-                      const found = violationSubCategories.find((s) => String(s.id) === e.target.value)
-                      update({ violationSubCategoryId: e.target.value, violationSubCategoryLabel: found?.name ?? "" })
-                    }}
-                  >
-                    <option value="">เลือกหมวดย่อย (ถ้ามี)</option>
-                    {violationSubCategories.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                )}
-              </FieldGroup>
-            )}
-
-            <FieldGroup label="เรื่อง" required>
-              <textarea
-                className="ks-textarea"
-                value={formData.subject}
-                onChange={(e) => update({ subject: e.target.value })}
-                placeholder="กรอกพฤติกรรมที่กระทำความผิด"
-                rows={3}
-              />
-            </FieldGroup>
-
-            <FieldGroup label="รายละเอียดการผิดระเบียบ" required>
-              <textarea
-                className="ks-textarea"
-                value={formData.detail}
-                onChange={(e) => update({ detail: e.target.value })}
-                placeholder="กรอกรายละเอียดการกระทำความผิด"
-                rows={3}
-              />
-            </FieldGroup>
-
-            <FieldGroup label="วันเวลาเกิดเหตุ" required>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <input
-                  className="ks-input"
-                  type="date"
-                  value={formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : ""}
-                  onChange={(e) => {
-                    const date = e.target.value
-                    const time = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 16) : "00:00"
-                    update({ incidentDateTime: date ? `${date}T${time}` : "" })
-                  }}
-                />
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <select
-                    className="ks-select"
-                    value={formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : ""}
-                    onChange={(e) => {
-                      const hh = e.target.value
-                      const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
-                      const mm = formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : "00"
-                      update({ incidentDateTime: hh !== "" ? `${date}T${hh}:${mm}` : "" })
-                    }}
-                  >
-                    <option value="">ชม.</option>
-                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  <span style={{ color: "var(--ink-3)" }}>:</span>
-                  <select
-                    className="ks-select"
-                    value={formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : ""}
-                    onChange={(e) => {
-                      const mm = e.target.value
-                      const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
-                      const hh = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : "00"
-                      update({ incidentDateTime: mm !== "" ? `${date}T${hh}:${mm}` : "" })
-                    }}
-                  >
-                    <option value="">นาที</option>
-                    {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </FieldGroup>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <FieldGroup label="สถานที่เกิดเหตุ" required>
-                <input
-                  className="ks-input"
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => update({ location: e.target.value })}
-                  placeholder="ระบุสถานที่"
-                />
-              </FieldGroup>
-              <FieldGroup label="ผู้บันทึกข้อมูล" required>
-                <input
-                  className="ks-input"
-                  type="text"
-                  value={formData.recorder}
-                  onChange={(e) => update({ recorder: e.target.value })}
-                  placeholder="ชื่อผู้บันทึก"
-                />
-              </FieldGroup>
+            </div>
+            <div>
+              <FieldLabel required>ปีการศึกษา</FieldLabel>
+              <select
+                className="ks-select"
+                value={academicYearId}
+                onChange={(e) => {
+                  const found = academicYears.find((a) => String(a.id) === e.target.value)
+                  setAcademicYearId(e.target.value, found ? String(found.year) : "")
+                }}
+              >
+                <option value="" disabled>เลือกปีการศึกษา</option>
+                {academicYears.map((a) => <option key={a.id} value={a.id}>{a.year}</option>)}
+              </select>
             </div>
           </div>
         )}
+      </div>
 
-        <div className="wizard-actions">
-          <button className="btn btn-secondary" onClick={onBack}>
-            <ChevronLeft size={14} /> ย้อนกลับ
-          </button>
-          <div className="right">
-            <button className="btn btn-primary" onClick={onNext} disabled={!isValid}>
-              ถัดไป — มาตรการ <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
+      <div className="wizard-actions">
+        <div />
+        <button className="btn btn-primary" onClick={onNext} disabled={!isValid} style={{ opacity: isValid ? 1 : 0.5 }}>
+          ถัดไป — รายละเอียดการกระทำผิด <ChevronRight size={14} />
+        </button>
       </div>
     </div>
   )
 }
 
-// ── Step 4: Measures ───────────────────────────────────────────────────────────
+// ── Step 1: Incident ───────────────────────────────────────────────────────────
 
-interface Step4Props {
-  measureData: MeasureFormData
-  setMeasureData: React.Dispatch<React.SetStateAction<MeasureFormData>>
+function Step1Incident({
+  student, data, setData, onBack, onNext,
+}: {
+  student: Student
+  data: IncidentFormData
+  setData: React.Dispatch<React.SetStateAction<IncidentFormData>>
   onBack: () => void
   onNext: () => void
+}) {
+  const [categories, setCategories] = useState<ViolationCategoryItem[]>([])
+  const [subCategories, setSubCategories] = useState<ViolationSubCategoryItem[]>([])
+  const [loadingCats, setLoadingCats] = useState(true)
+  const [loadingSubs, setLoadingSubs] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/master/violation-categories")
+      .then((r) => r.json())
+      .then((data) => { setCategories(data); setLoadingCats(false) })
+      .catch(() => setLoadingCats(false))
+  }, [])
+
+  useEffect(() => {
+    if (!data.violationCategoryId) { setSubCategories([]); return }
+    setLoadingSubs(true)
+    fetch(`/api/master/violation-sub-categories?categoryId=${data.violationCategoryId}`)
+      .then((r) => r.json())
+      .then((subs) => { setSubCategories(subs); setLoadingSubs(false) })
+      .catch(() => setLoadingSubs(false))
+  }, [data.violationCategoryId])
+
+  function upd(fields: Partial<IncidentFormData>) {
+    setData((prev) => ({ ...prev, ...fields }))
+  }
+
+  const isValid =
+    !!data.violationCategoryId && !!data.behavior.trim() &&
+    !!data.incidentDate && !!data.recorder.trim()
+
+  const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
+  const defaultRecorder = advisor1
+    ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}`
+    : ""
+
+  // Pre-fill recorder from advisor on mount
+  useEffect(() => {
+    if (!data.recorder && defaultRecorder) {
+      upd({ recorder: defaultRecorder })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div className="wizard-body">
+      <StudentMiniCard student={student} />
+      <h2 className="step-heading" style={{ marginTop: 20 }}>รายละเอียดการกระทำผิด</h2>
+      <p className="step-sub">เลือกหมวดและกรอกรายละเอียดเหตุการณ์ที่เกิดขึ้นให้ครบถ้วน</p>
+
+      {loadingCats ? (
+        <div style={{ padding: "24px 0", textAlign: "center", color: "var(--ink-3)" }}>กำลังโหลด...</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div>
+              <FieldLabel required>หมวดการผิดระเบียบ</FieldLabel>
+              <select
+                className="ks-select"
+                value={data.violationCategoryId}
+                onChange={(e) => {
+                  const found = categories.find((c) => String(c.id) === e.target.value)
+                  upd({ violationCategoryId: e.target.value, violationCategoryLabel: found?.name ?? "", violationSubCategoryId: "", violationSubCategoryLabel: "" })
+                }}
+              >
+                <option value="" disabled>เลือกหมวด</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <FieldLabel>เรื่อง</FieldLabel>
+              {loadingSubs ? (
+                <div style={{ height: 38, background: "var(--surface-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
+              ) : subCategories.length === 0 ? (
+                <div className="ks-input" style={{ color: "var(--ink-4)", pointerEvents: "none" }}>—</div>
+              ) : (
+                <select
+                  className="ks-select"
+                  value={data.violationSubCategoryId}
+                  onChange={(e) => {
+                    const found = subCategories.find((s) => String(s.id) === e.target.value)
+                    upd({ violationSubCategoryId: e.target.value, violationSubCategoryLabel: found?.name ?? "" })
+                  }}
+                >
+                  <option value="">เลือกหมวดย่อย (ถ้ามี)</option>
+                  {subCategories.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>วิชา / กิจกรรมที่เกี่ยวข้อง</FieldLabel>
+            <input
+              className="ks-input"
+              value={data.course}
+              onChange={(e) => upd({ course: e.target.value })}
+              placeholder="เช่น คณิตศาสตร์ (ค23101)"
+            />
+          </div>
+
+          <div>
+            <FieldLabel required>รายละเอียดพฤติกรรม</FieldLabel>
+            <textarea
+              className="ks-textarea"
+              value={data.behavior}
+              onChange={(e) => upd({ behavior: e.target.value })}
+              placeholder="เล่ารายละเอียดเหตุการณ์ บุคคลที่เกี่ยวข้อง และข้อเท็จจริงที่สังเกตได้"
+              rows={5}
+              style={{ resize: "vertical" }}
+            />
+            <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 6, display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)" }}>
+              <span>เคล็ดลับ: ใช้ข้อเท็จจริง หลีกเลี่ยงการตัดสิน</span>
+              <span>{data.behavior.length} / 1000</span>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+            <div>
+              <FieldLabel required>วันที่เกิดเหตุ</FieldLabel>
+              <DatePicker
+                value={data.incidentDate}
+                onChange={(v) => upd({ incidentDate: v })}
+                placeholder="เลือกวันที่เกิดเหตุ"
+              />
+            </div>
+            <div>
+              <FieldLabel>เวลา</FieldLabel>
+              <input
+                className="ks-input"
+                type="time"
+                value={data.incidentTime}
+                onChange={(e) => upd({ incidentTime: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel>สถานที่เกิดเหตุ</FieldLabel>
+              <input
+                className="ks-input"
+                value={data.location}
+                onChange={(e) => upd({ location: e.target.value })}
+                placeholder="เช่น อาคาร 3 ห้อง 302"
+              />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel required>ผู้บันทึก</FieldLabel>
+            <input
+              className="ks-input"
+              value={data.recorder}
+              onChange={(e) => upd({ recorder: e.target.value })}
+              placeholder="ชื่อ-นามสกุลผู้บันทึก"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack}><ChevronLeft size={14} /> ย้อนกลับ</button>
+        <button className="btn btn-primary" onClick={onNext} disabled={!isValid} style={{ opacity: isValid ? 1 : 0.5 }}>
+          ถัดไป — มาตรการ <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  )
 }
 
-function Step4Measures({ measureData, setMeasureData, onBack, onNext }: Step4Props) {
-  const showBond = measureData.selected.includes("probation_bond")
+// ── Step 2: Measures ───────────────────────────────────────────────────────────
 
-  function toggle(id: string) {
-    setMeasureData((prev) => ({
-      ...prev,
-      selected: prev.selected.includes(id)
-        ? prev.selected.filter((m) => m !== id)
-        : [...prev.selected, id],
-    }))
+function Step2Measures({
+  data, setData, onBack, onNext,
+}: {
+  data: MeasureFormData
+  setData: React.Dispatch<React.SetStateAction<MeasureFormData>>
+  onBack: () => void
+  onNext: () => void
+}) {
+  function updConsider(k: keyof typeof data.consider, v: boolean) {
+    setData((p) => ({ ...p, consider: { ...p.consider, [k]: v } }))
+  }
+  function updResult(k: keyof typeof data.result, v: boolean | string) {
+    setData((p) => ({ ...p, result: { ...p.result, [k]: v } }))
   }
 
   return (
     <div className="wizard-body">
-      <h2 className="step-heading">มาตรการ / การดำเนินการ</h2>
-      <p className="step-sub">เลือกมาตรการที่จะดำเนินการกับนักเรียน</p>
+      <h2 className="step-heading">มาตรการที่กำหนด</h2>
+      <p className="step-sub">เลือกมาตรการให้สอดคล้องกับระเบียบโรงเรียนและความรุนแรงของการกระทำผิด</p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <div>
-          <div className="divider-label" style={{ marginTop: 0 }}>ส่วนที่ 3 — การพิจารณา</div>
-          <MeasureList items={CONSIDERATION_MEASURES} selected={measureData.selected} onToggle={toggle} />
-        </div>
-        <div>
-          <div className="divider-label">ส่วนที่ 4 — ผลการพิจารณา</div>
-          <MeasureList items={RESULT_MEASURES} selected={measureData.selected} onToggle={toggle} />
-        </div>
-
-        {showBond && (
-          <div style={{ padding: "12px 16px", background: "var(--amber-wash, #fffbeb)", border: "1px solid var(--amber)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--amber)" }}>
-            <ShieldAlert size={13} style={{ display: "inline", marginRight: 6 }} />
-            เลือก <strong>ทำทัณฑ์บน</strong> — ระบบจะเพิ่มขั้นตอนกรอกสัญญาก่อนยืนยัน
-          </div>
-        )}
-
-        <FieldGroup label="หมายเหตุเพิ่มเติม">
-          <textarea
-            className="ks-textarea"
-            value={measureData.notes}
-            onChange={(e) => setMeasureData((prev) => ({ ...prev, notes: e.target.value }))}
-            placeholder="บันทึกเพิ่มเติม (ถ้ามี)"
-            rows={2}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 22 }}>
+        {/* A · CONSIDER */}
+        <MeasureBlock marker="A · CONSIDER" title="มาตรการพิจารณา">
+          <CheckRow
+            checked={data.consider.notify}
+            onChange={(v) => updConsider("notify", v)}
+            label="แจ้งผู้ปกครองทราบ"
           />
-        </FieldGroup>
+          <CheckRow
+            checked={data.consider.invite}
+            onChange={(v) => updConsider("invite", v)}
+            label="เชิญผู้ปกครองมาพบ"
+          />
+        </MeasureBlock>
+
+        {/* B · RESULT */}
+        <MeasureBlock marker="B · RESULT" title="ผลการพิจารณา">
+          <CheckRow
+            checked={data.result.verbal}
+            onChange={(v) => updResult("verbal", v)}
+            label="ตักเตือนด้วยวาจา"
+          />
+          <CheckRow
+            checked={data.result.deductScore}
+            onChange={(v) => updResult("deductScore", v)}
+            label="ตัดคะแนนความประพฤติ"
+          >
+            {data.result.deductScore && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, marginTop: 8 }}>
+                <input
+                  className="ks-input"
+                  type="number" min={1} max={100}
+                  style={{ width: 80, height: 32 }}
+                  value={data.result.deductPoints}
+                  onChange={(e) => updResult("deductPoints", e.target.value)}
+                  placeholder="0"
+                />
+                <span style={{ color: "var(--ink-2)" }}>คะแนน</span>
+              </div>
+            )}
+          </CheckRow>
+          <CheckRow
+            checked={data.result.activity}
+            onChange={(v) => updResult("activity", v)}
+            label="ทำกิจกรรมพัฒนาพฤติกรรม"
+          />
+          <CheckRow
+            checked={data.result.bond}
+            onChange={(v) => updResult("bond", v)}
+            label="ทำทัณฑ์บน"
+          />
+        </MeasureBlock>
+      </div>
+
+      <div>
+        <FieldLabel>หมายเหตุมาตรการ</FieldLabel>
+        <textarea
+          className="ks-textarea"
+          value={data.notes}
+          onChange={(e) => setData((p) => ({ ...p, notes: e.target.value }))}
+          placeholder="ระบุข้อพิจารณาเพิ่มเติม หรือเงื่อนไขพิเศษที่กำหนดไว้"
+          rows={3}
+        />
       </div>
 
       <div className="wizard-actions">
-        <button className="btn btn-secondary" onClick={onBack}>
-          <ChevronLeft size={14} /> ย้อนกลับ
+        <button className="btn btn-secondary" onClick={onBack}><ChevronLeft size={14} /> ย้อนกลับ</button>
+        <button className="btn btn-primary" onClick={onNext}>
+          ถัดไป — ลายเซ็น <ChevronRight size={14} />
         </button>
-        <div className="right">
-          <button className="btn btn-primary" onClick={onNext}>
-            {showBond ? "ถัดไป — ทำทัณฑ์บน" : "ถัดไป — ลงนาม"} <ChevronRight size={14} />
-          </button>
-        </div>
       </div>
     </div>
   )
 }
 
-function MeasureList({
-  items, selected, onToggle,
-}: { items: typeof CONSIDERATION_MEASURES; selected: string[]; onToggle: (id: string) => void }) {
+function MeasureBlock({ title, children }: { marker?: string; title: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {items.map((m) => {
-        const checked = selected.includes(m.id)
-        const isBond = m.id === "probation_bond"
-        return (
-          <label
-            key={m.id}
-            style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-              borderRadius: "var(--radius)",
-              border: `1px solid ${checked ? (isBond ? "var(--amber)" : "var(--periwinkle)") : "var(--rule)"}`,
-              background: checked ? (isBond ? "var(--amber-wash, #fffbeb)" : "var(--indigo-wash)") : "var(--surface)",
-              cursor: "pointer",
-            }}
-          >
-            <div style={{
-              width: 18, height: 18, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
-              background: checked ? (isBond ? "var(--amber)" : "var(--indigo)") : "transparent",
-              border: `2px solid ${checked ? (isBond ? "var(--amber)" : "var(--indigo)") : "var(--rule-2)"}`,
-              flexShrink: 0,
-            }}>
-              {checked && <Check size={11} color="#fff" />}
-            </div>
-            <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={() => onToggle(m.id)} />
-            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>{m.label}</span>
-            {isBond && (
-              <span className="chip chip-pending" style={{ fontSize: 11 }}>+ขั้นตอน</span>
-            )}
-          </label>
-        )
-      })}
+    <div style={{ background: "var(--surface-2)", border: "1px solid var(--rule)", borderRadius: 6, padding: 20 }}>
+      <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 16, color: "var(--ink)" }}>{title}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
     </div>
   )
 }
 
-// ── Step 5 (Bond) ──────────────────────────────────────────────────────────────
-
-interface Step5Props {
-  student: Student
-  formData: StatementFormData
-  bondData: BondFormData
-  setBondData: React.Dispatch<React.SetStateAction<BondFormData>>
-  onBack: () => void
-  onNext: () => void
+function CheckRow({
+  checked, onChange, label, children,
+}: { checked: boolean; onChange: (v: boolean) => void; label: string; children?: React.ReactNode }) {
+  return (
+    <div>
+      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+        <div style={{
+          width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: checked ? "var(--indigo)" : "transparent",
+          border: `2px solid ${checked ? "var(--indigo)" : "var(--rule-2)"}`,
+        }}>
+          {checked && <Check size={11} color="#fff" />}
+        </div>
+        <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={(e) => onChange(e.target.checked)} />
+        <span style={{ fontSize: 13.5, color: "var(--ink)" }}>{label}</span>
+      </label>
+      {children && <div style={{ marginLeft: 28 }}>{children}</div>}
+    </div>
+  )
 }
 
-function Step5Bond({ student, formData, bondData, setBondData, onBack, onNext }: Step5Props) {
-  const selectedGuardian =
-    bondData.selectedGuardianIndex !== null ? student.guardians[bondData.selectedGuardianIndex] : null
-  const isValid =
-    bondData.selectedGuardianIndex !== null && bondData.penaltyActions.length > 0 &&
-    (!bondData.penaltyActions.includes("deduct_score") || bondData.deductPoints.trim() !== "")
+// ── Step 3: Signatures ─────────────────────────────────────────────────────────
 
-  function togglePenalty(id: string) {
-    setBondData((prev) => ({
-      ...prev,
-      penaltyActions: prev.penaltyActions.includes(id)
-        ? prev.penaltyActions.filter((p) => p !== id)
-        : [...prev.penaltyActions, id],
-      deductPoints: id === "deduct_score" && prev.penaltyActions.includes(id) ? "" : prev.deductPoints,
-    }))
+function Step3Signatures({
+  student, data, setData, saving, saveError, onBack, onSubmit,
+}: {
+  student: Student
+  data: SignatureFormData
+  setData: React.Dispatch<React.SetStateAction<SignatureFormData>>
+  saving: boolean
+  saveError: string | null
+  onBack: () => void
+  onSubmit: () => void
+}) {
+  const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
+  const advisorName = advisor1
+    ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}`
+    : "ครูที่ปรึกษา"
+
+  const guardian = student.guardians[0]
+  const guardianName = guardian ? `${guardian.firstName} ${guardian.lastName}` : "ผู้ปกครอง"
+  const studentName = `${student.title.name}${student.firstName} ${student.lastName}`
+
+  function setSig(field: keyof Pick<SignatureFormData, "studentSignature" | "guardianSignature" | "advisorSignature">, val: string) {
+    setData((p) => ({ ...p, [field]: val }))
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+    <div className="wizard-body">
       <StudentMiniCard student={student} />
+      <h2 className="step-heading" style={{ marginTop: 20 }}>ลายเซ็นทุกฝ่าย</h2>
+      <p className="step-sub">ทุกฝ่ายลงลายมือชื่อในช่องที่กำหนด แล้วกด "ยืนยันลายเซ็น"</p>
 
-      <div className="wizard-body">
-        <h2 className="step-heading">ทำทัณฑ์บน</h2>
-        <p className="step-sub">ระบุผู้ปกครองและบทลงโทษหากทำผิดซ้ำ</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
+        <SigPad
+          label="นักเรียน"
+          name={studentName}
+          value={data.studentSignature}
+          onChange={(v) => setSig("studentSignature", v)}
+          onClear={() => setSig("studentSignature", "")}
+        />
+        <SigPad
+          label="ผู้ปกครอง"
+          name={guardianName}
+          value={data.guardianSignature}
+          onChange={(v) => setSig("guardianSignature", v)}
+          onClear={() => setSig("guardianSignature", "")}
+        />
+        <SigPad
+          label="ครูที่ปรึกษา"
+          name={advisorName}
+          value={data.advisorSignature}
+          onChange={(v) => setSig("advisorSignature", v)}
+          onClear={() => setSig("advisorSignature", "")}
+        />
+      </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <div>
-            <div className="divider-label" style={{ marginTop: 0 }}>เลือกผู้ปกครองลงนาม <span style={{ color: "var(--rose)" }}>*</span></div>
-            {student.guardians.length === 0 ? (
-              <div style={{ fontSize: 13.5, color: "var(--ink-3)", padding: "12px 0" }}>ไม่มีข้อมูลผู้ปกครองในระบบ</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {student.guardians.map((g, idx) => {
-                  const sel = bondData.selectedGuardianIndex === idx
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setBondData((prev) => ({ ...prev, selectedGuardianIndex: idx }))}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
-                        borderRadius: "var(--radius)",
-                        border: `2px solid ${sel ? "var(--indigo)" : "var(--rule)"}`,
-                        background: sel ? "var(--indigo-wash)" : "var(--surface)",
-                        cursor: "pointer", textAlign: "left",
-                      }}
-                    >
-                      <div style={{
-                        width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
-                        border: `2px solid ${sel ? "var(--indigo)" : "var(--rule-2)"}`,
-                        background: sel ? "var(--indigo)" : "transparent",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        {sel && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 500, fontSize: 14 }}>{g.firstName} {g.lastName}</div>
-                        <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{g.relation.name}{g.phone ? ` · ${g.phone}` : ""}</div>
-                      </div>
-                      {sel && <span className="chip chip-approved" style={{ fontSize: 11 }}>เลือกแล้ว</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+        <TeacherSigSelect
+          label="ครูฝ่ายปกครอง"
+          role="ครูฝ่ายปกครอง"
+          selectedId={data.disciplineTeacherId}
+          onSelect={(id) => setData((p) => ({ ...p, disciplineTeacherId: id }))}
+        />
+        <TeacherSigSelect
+          label="หัวหน้าระดับชั้น"
+          role="หัวหน้าระดับชั้น"
+          selectedId={data.gradeHeadTeacherId}
+          onSelect={(id) => setData((p) => ({ ...p, gradeHeadTeacherId: id }))}
+        />
+      </div>
 
-          {selectedGuardian && (
-            <div>
-              <div className="divider-label">ข้อมูลในสัญญา</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
-                <InfoRow label="ผู้ปกครอง" value={`${selectedGuardian.firstName} ${selectedGuardian.lastName}`} />
-                <InfoRow label="ความสัมพันธ์" value={selectedGuardian.relation.name} />
-                <InfoRow label="นักเรียน" value={`${student.title.name}${student.firstName} ${student.lastName}`} />
-                <InfoRow label="ชั้น / เลขที่" value={`${student.gradeLevel}/${student.classRoom} · เลขที่ ${student.classNumber}`} />
-              </div>
-              <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--ink-2)", lineHeight: 1.6 }}>
-                {formData.detail || "—"}
-              </div>
-            </div>
-          )}
+      <div style={{ padding: "12px 16px", background: "var(--indigo-wash)", borderRadius: "var(--radius)", fontSize: 12.5, color: "var(--indigo-ink)", display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        ลายเซ็นจะถูกบันทึกพร้อมวันเวลาเพื่อใช้ในการตรวจสอบในภายหลัง
+      </div>
 
-          <div>
-            <div className="divider-label">บทลงโทษหากทำผิดซ้ำ <span style={{ color: "var(--rose)" }}>*</span></div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {BOND_PENALTY_OPTIONS.map((opt) => {
-                const checked = bondData.penaltyActions.includes(opt.id)
-                return (
-                  <label
-                    key={opt.id}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-                      borderRadius: "var(--radius)",
-                      border: `1px solid ${checked ? "var(--amber)" : "var(--rule)"}`,
-                      background: checked ? "var(--amber-wash, #fffbeb)" : "var(--surface)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{
-                      width: 18, height: 18, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
-                      background: checked ? "var(--amber)" : "transparent",
-                      border: `2px solid ${checked ? "var(--amber)" : "var(--rule-2)"}`,
-                      flexShrink: 0,
-                    }}>
-                      {checked && <Check size={11} color="#fff" />}
-                    </div>
-                    <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={() => togglePenalty(opt.id)} />
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{opt.label}</span>
-                    {opt.id === "deduct_score" && checked && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input
-                          type="number" min={1} max={100}
-                          value={bondData.deductPoints}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => setBondData((prev) => ({ ...prev, deductPoints: e.target.value }))}
-                          placeholder="0"
-                          className="ks-input"
-                          style={{ width: 64, textAlign: "center" }}
-                        />
-                        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>คะแนน</span>
-                      </div>
-                    )}
-                  </label>
-                )
-              })}
-            </div>
-          </div>
-
-          <FieldGroup label="ชื่อพยาน">
-            <input
-              className="ks-input"
-              type="text"
-              value={bondData.witnessName}
-              onChange={(e) => setBondData((prev) => ({ ...prev, witnessName: e.target.value }))}
-              placeholder="ชื่อ-นามสกุลพยาน (ถ้ามี)"
-            />
-          </FieldGroup>
+      {saveError && (
+        <div style={{ padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)", marginBottom: 16 }}>
+          {saveError}
         </div>
+      )}
 
-        <div className="wizard-actions">
-          <button className="btn btn-secondary" onClick={onBack}>
-            <ChevronLeft size={14} /> ย้อนกลับ
-          </button>
-          <div className="right">
-            <button className="btn btn-primary" onClick={onNext} disabled={!isValid}>
-              ถัดไป — ลงนาม <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack} disabled={saving}><ChevronLeft size={14} /> ย้อนกลับ</button>
+        <button
+          className="btn btn-primary"
+          onClick={onSubmit}
+          disabled={saving}
+          style={{ background: "var(--sage, #059669)" }}
+        >
+          {saving ? <><SpinIcon /> กำลังบันทึก...</> : <><Check size={14} /> ยืนยันและบันทึก</>}
+        </button>
       </div>
     </div>
   )
 }
 
-// ── Step 5 (Signature) ─────────────────────────────────────────────────────────
+// ── SigPad ─────────────────────────────────────────────────────────────────────
 
-interface Step5SignatureProps {
-  student: Student
-  signatureData: SignatureFormData
-  setSignatureData: React.Dispatch<React.SetStateAction<SignatureFormData>>
-  onBack: () => void
-  onNext: () => void
-}
-
-function SigPad({
-  label, value, onChange, onClear,
-}: { label: string; value: string; onChange: (url: string) => void; onClear: () => void }) {
+function SigPad({ label, name, value, onChange, onClear }: {
+  label: string; name: string; value: string
+  onChange: (url: string) => void; onClear: () => void
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing = useRef(false)
 
@@ -1089,19 +998,19 @@ function SigPad({
   function stopDraw() { drawing.current = false }
 
   function clear() {
-    const canvas = canvasRef.current!
-    canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height)
+    canvasRef.current?.getContext("2d")?.clearRect(0, 0, 600, 160)
     onClear()
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)" }}>
-        {label}
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+        <span>§ ลายเซ็น{label}</span>
+        <span style={{ color: value ? "var(--sage)" : "var(--ink-4)" }}>{value ? "● ลงนามแล้ว" : "○ ยังไม่ลงนาม"}</span>
       </div>
-      <div className="sig-pad" style={{ height: 160, cursor: "crosshair", border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash, #f0fdf4)" : undefined }}>
+      <div className="sig-pad" style={{ height: 140, border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash, #f0fdf4)" : undefined, cursor: "crosshair" }}>
         {value ? (
-          <img src={value} alt="signature" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+          <img src={value} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
         ) : (
           <canvas
             ref={canvasRef} width={600} height={160}
@@ -1112,26 +1021,27 @@ function SigPad({
         )}
         <span className="sig-label">{label}</span>
       </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
         <button type="button" className="btn btn-secondary btn-sm" onClick={clear}>ล้าง</button>
         {!value && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => onChange(canvasRef.current!.toDataURL("image/png"))}>
+          <button type="button" className="btn btn-primary btn-sm"
+            onClick={() => onChange(canvasRef.current!.toDataURL("image/png"))}>
             ยืนยันลายเซ็น
           </button>
         )}
-        {value && (
-          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: "var(--sage)" }}>
-            <Check size={13} /> บันทึกแล้ว
-          </span>
-        )}
+        {value && <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "var(--sage)" }}><Check size={12} /> บันทึกแล้ว</span>}
       </div>
+      <div style={{ marginTop: 8, fontSize: 13, fontWeight: 500 }}>{name}</div>
     </div>
   )
 }
 
-function TeacherSigSelect({
-  label, role, selectedId, onSelect,
-}: { label: string; role: string; selectedId: number | null; onSelect: (id: number | null) => void }) {
+// ── TeacherSigSelect ───────────────────────────────────────────────────────────
+
+function TeacherSigSelect({ label, role, selectedId, onSelect }: {
+  label: string; role: string; selectedId: number | null
+  onSelect: (id: number | null) => void
+}) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -1145,22 +1055,20 @@ function TeacherSigSelect({
   const selected = teachers.find((t) => t.id === selectedId)
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)" }}>
-        {label}
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+        <span>§ ลายเซ็น{label}</span>
+        {selected && <span style={{ color: "var(--sage)" }}>● เลือกแล้ว</span>}
       </div>
       {loading ? (
-        <div style={{ height: 42, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
+        <div style={{ height: 38, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
       ) : teachers.length === 0 ? (
         <div style={{ fontSize: 13, color: "var(--ink-4)" }}>ไม่พบครูที่มีบทบาทนี้</div>
       ) : (
         <select
           className="ks-select"
           value={selectedId ?? ""}
-          onChange={(e) => {
-            const id = e.target.value ? Number(e.target.value) : null
-            onSelect(id)
-          }}
+          onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}
         >
           <option value="">เลือก{label}</option>
           {teachers.map((t) => (
@@ -1169,7 +1077,7 @@ function TeacherSigSelect({
         </select>
       )}
       {selected && (
-        <div className="sig-display" style={{ borderColor: selected.signatureUrl ? "var(--sage)" : undefined }}>
+        <div className="sig-display" style={{ marginTop: 10, borderColor: selected.signatureUrl ? "var(--sage)" : undefined }}>
           {selected.signatureUrl
             ? <img src={selected.signatureUrl} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
             : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ยังไม่มีลายเซ็นในระบบ</span>}
@@ -1180,214 +1088,20 @@ function TeacherSigSelect({
   )
 }
 
-function Step5Signature({ student, signatureData, setSignatureData, onBack, onNext }: Step5SignatureProps) {
-  const advisor = student.advisors.find((a) => a.slot === 1)?.teacher
-
-  function setSig(field: keyof Pick<SignatureFormData, "studentSignature" | "guardianSignature" | "advisorSignature">, val: string) {
-    setSignatureData((prev) => ({ ...prev, [field]: val }))
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
-      <StudentMiniCard student={student} />
-
-      <div className="wizard-body">
-        <h2 className="step-heading">ลงนาม</h2>
-        <p className="step-sub">เซ็นชื่อในช่องที่กำหนด แล้วกด "ยืนยันลายเซ็น"</p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-          <SigPad
-            label="นักเรียน"
-            value={signatureData.studentSignature}
-            onChange={(v) => setSig("studentSignature", v)}
-            onClear={() => setSig("studentSignature", "")}
-          />
-          <SigPad
-            label="ผู้ปกครอง (รับทราบ)"
-            value={signatureData.guardianSignature}
-            onChange={(v) => setSig("guardianSignature", v)}
-            onClear={() => setSig("guardianSignature", "")}
-          />
-          <SigPad
-            label={`ครูที่ปรึกษา${advisor ? ` — ${advisor.title.name}${advisor.firstName} ${advisor.lastName}` : ""}`}
-            value={signatureData.advisorSignature}
-            onChange={(v) => setSig("advisorSignature", v)}
-            onClear={() => setSig("advisorSignature", "")}
-          />
-          <TeacherSigSelect
-            label="ครูฝ่ายปกครอง"
-            role="ครูฝ่ายปกครอง"
-            selectedId={signatureData.disciplineTeacherId}
-            onSelect={(id) => setSignatureData((prev) => ({ ...prev, disciplineTeacherId: id }))}
-          />
-        </div>
-
-        <div style={{ gridColumn: "1/-1", marginTop: 16 }}>
-          <TeacherSigSelect
-            label="หัวหน้าระดับชั้น"
-            role="หัวหน้าระดับชั้น"
-            selectedId={signatureData.gradeHeadTeacherId}
-            onSelect={(id) => setSignatureData((prev) => ({ ...prev, gradeHeadTeacherId: id }))}
-          />
-        </div>
-
-        <div className="wizard-actions">
-          <button className="btn btn-secondary" onClick={onBack}>
-            <ChevronLeft size={14} /> ย้อนกลับ
-          </button>
-          <div className="right">
-            <button className="btn btn-primary" onClick={onNext}>
-              ถัดไป — ยืนยัน <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Step 6: Confirm & Submit ───────────────────────────────────────────────────
-
-interface Step6Props {
-  student: Student
-  formData: StatementFormData
-  measureData: MeasureFormData
-  bondData: BondFormData
-  showBondStep: boolean
-  saving: boolean
-  saveError: string | null
-  onBack: () => void
-  onSubmit: () => void
-}
-
-function Step6Confirm({ student, formData, measureData, bondData, showBondStep, saving, saveError, onBack, onSubmit }: Step6Props) {
-  function formatThaiDateTime(dt: string) {
-    if (!dt) return "—"
-    const [datePart, timePart] = dt.split("T")
-    const [year, month, day] = datePart.split("-")
-    return `${Number(day)} ${THAI_MONTHS[Number(month) - 1]} ${Number(year) + 543}${timePart ? ` เวลา ${timePart} น.` : ""}`
-  }
-
-  const selectedLabels = [...CONSIDERATION_MEASURES, ...RESULT_MEASURES]
-    .filter((m) => measureData.selected.includes(m.id))
-    .map((m) => m.label)
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
-      <StudentMiniCard student={student} />
-
-      <div className="ks-card">
-        <div className="ks-card-header">
-          <div>
-            <div className="eyebrow">SUMMARY · สรุปข้อมูลก่อนบันทึก</div>
-          </div>
-          <span className="chip chip-pending">รออนุมัติ</span>
-        </div>
-        <div className="ks-card-pad">
-          <div className="divider-label" style={{ marginTop: 0 }}>ถ้อยคำ</div>
-          <InfoRow label="ภาคเรียน" value={formData.semesterLabel} />
-          <InfoRow label="ปีการศึกษา" value={formData.academicYearLabel} />
-          <InfoRow label="หมวด" value={formData.violationCategoryLabel} />
-          {formData.violationSubCategoryLabel && <InfoRow label="หมวดย่อย" value={formData.violationSubCategoryLabel} />}
-          <InfoRow label="วันเวลาเกิดเหตุ" value={formatThaiDateTime(formData.incidentDateTime)} />
-          <InfoRow label="สถานที่" value={formData.location} />
-          <InfoRow label="ผู้บันทึก" value={formData.recorder} />
-
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>เรื่อง</div>
-            <div style={{ fontSize: 13.5, padding: "10px 14px", background: "var(--surface-2)", borderRadius: "var(--radius)", lineHeight: 1.6 }}>{formData.subject}</div>
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>รายละเอียด</div>
-            <div style={{ fontSize: 13.5, padding: "10px 14px", background: "var(--surface-2)", borderRadius: "var(--radius)", lineHeight: 1.6 }}>{formData.detail}</div>
-          </div>
-
-          <div className="divider-label">มาตรการ</div>
-          {selectedLabels.length > 0 ? (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {selectedLabels.map((label) => (
-                <span key={label} className="measure-tag">
-                  <span className="dot" /> {label}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div style={{ fontSize: 13.5, color: "var(--ink-4)" }}>ไม่ได้เลือกมาตรการ</div>
-          )}
-          {measureData.notes && (
-            <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-3)", padding: "8px 12px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>{measureData.notes}</div>
-          )}
-
-          {showBondStep && (
-            <>
-              <div className="divider-label">ทัณฑ์บน</div>
-              {bondData.selectedGuardianIndex !== null && student.guardians[bondData.selectedGuardianIndex] && (() => {
-                const g = student.guardians[bondData.selectedGuardianIndex!]
-                return (
-                  <>
-                    <InfoRow label="ผู้ปกครองลงนาม" value={`${g.firstName} ${g.lastName} (${g.relation.name})`} />
-                  </>
-                )
-              })()}
-              {bondData.penaltyActions.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                  {BOND_PENALTY_OPTIONS.filter((o) => bondData.penaltyActions.includes(o.id)).map((o) => (
-                    <span key={o.id} className="measure-tag" style={{ background: "var(--amber-wash, #fffbeb)", color: "var(--amber)" }}>
-                      <span className="dot" style={{ background: "var(--amber)" }} /> {o.label}
-                      {o.id === "deduct_score" && bondData.deductPoints && ` ${bondData.deductPoints} คะแนน`}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {saveError && (
-        <div style={{ padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
-          {saveError}
-        </div>
-      )}
-
-      <div className="wizard-actions" style={{ background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: "var(--radius-lg)", padding: "20px 24px", marginTop: 0 }}>
-        <button className="btn btn-secondary" onClick={onBack} disabled={saving}>
-          <ChevronLeft size={14} /> ย้อนกลับ
-        </button>
-        <div className="right">
-          <button className="btn btn-primary" onClick={onSubmit} disabled={saving} style={{ background: "var(--sage, #059669)" }}>
-            {saving ? (
-              <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
-            ) : (
-              <><CheckCircle2 size={14} /> ยืนยันและบันทึก</>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Shared UI ──────────────────────────────────────────────────────────────────
+// ── Shared components ──────────────────────────────────────────────────────────
 
 function StudentMiniCard({ student }: { student: Student }) {
   return (
     <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "12px 16px",
-      background: "var(--indigo-wash)",
-      borderRadius: "var(--radius)",
-      border: "1px solid var(--periwinkle)",
+      display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+      background: "var(--indigo-wash)", borderRadius: "var(--radius)", border: "1px solid var(--periwinkle)",
     }}>
-      <div style={{
-        width: 34, height: 34, borderRadius: "50%",
-        background: "var(--indigo)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-      }}>
+      <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--indigo)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <User size={15} color="#fff" />
       </div>
       <div>
         <div style={{ fontWeight: 600, fontSize: 14 }}>{student.title.name}{student.firstName} {student.lastName}</div>
-        <div className="mono" style={{ fontSize: 12, color: "var(--indigo-ink)" }}>
+        <div style={{ fontSize: 12, color: "var(--indigo-ink)", fontFamily: "var(--font-mono)" }}>
           {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
         </div>
       </div>
@@ -1395,22 +1109,19 @@ function StudentMiniCard({ student }: { student: Student }) {
   )
 }
 
-function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <div className="info-row">
-      <span className="info-label">{label}</span>
-      <span className={`info-value${mono ? " mono" : ""}`}>{value || "—"}</span>
-    </div>
+    <label style={{ display: "block", fontSize: 12.5, fontWeight: 500, color: "var(--ink-2)", marginBottom: 6 }}>
+      {children}{required && <span style={{ color: "var(--rose)", marginLeft: 2 }}>*</span>}
+    </label>
   )
 }
 
-function FieldGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function SpinIcon() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 12.5, fontWeight: 500, color: "var(--ink-2)" }}>
-        {label}{required && <span style={{ color: "var(--rose)", marginLeft: 2 }}>*</span>}
-      </label>
-      {children}
-    </div>
+    <svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/>
+      <path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
   )
 }

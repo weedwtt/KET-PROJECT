@@ -93,12 +93,20 @@ export function Sidebar({ userName, role }: SidebarProps) {
               <ChevronDown size={11} className={`nav-chevron ${recordOpen ? "open" : ""}`} />
             </button>
             {recordOpen && (
-              <Link
-                href="/record/statement"
-                className={`nav-item child ${isActive("/record/statement") ? "active" : ""}`}
-              >
-                <span className="nav-label">บันทึกถ้อยคำนักเรียน</span>
-              </Link>
+              <>
+                <Link
+                  href="/record/statement"
+                  className={`nav-item child ${isActive("/record/statement") ? "active" : ""}`}
+                >
+                  <span className="nav-label">บันทึกถ้อยคำนักเรียน</span>
+                </Link>
+                <Link
+                  href="/record/bond"
+                  className={`nav-item child ${isActive("/record/bond") ? "active" : ""}`}
+                >
+                  <span className="nav-label">บันทึกทัณฑ์บน</span>
+                </Link>
+              </>
             )}
           </div>
         )}

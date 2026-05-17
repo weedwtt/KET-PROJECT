@@ -3,7 +3,7 @@
 import { useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { Search, ChevronLeft, ChevronRight, Eye, Pencil } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react"
 
 type Statement = {
   id: number
@@ -37,6 +37,20 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
   const pathname = usePathname()
   const [searchValue, setSearchValue] = useState(initialSearch)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    if (confirmDeleteId === null) return
+    setDeleting(true)
+    try {
+      await fetch(`/api/statements/${confirmDeleteId}`, { method: "DELETE" })
+      setConfirmDeleteId(null)
+      router.refresh()
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   function navigate(newPage: number, newSearch: string) {
     const params = new URLSearchParams()
@@ -130,6 +144,14 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                         <Pencil size={14} />
                       </Link>
                     )}
+                    <button
+                      className="btn btn-ghost btn-sm btn-icon"
+                      title="ลบ"
+                      style={{ color: "var(--rose)" }}
+                      onClick={() => setConfirmDeleteId(row.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -165,6 +187,36 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
           </button>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      {confirmDeleteId !== null && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1000,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div className="ks-card" style={{ width: 360, padding: 28, display: "flex", flexDirection: "column", gap: 18 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>ยืนยันการลบ</div>
+              <p style={{ margin: 0, fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.6 }}>
+                บันทึกถ้อยคำ <span className="mono">#{confirmDeleteId}</span> จะถูกลบถาวรและไม่สามารถกู้คืนได้
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmDeleteId(null)} disabled={deleting}>
+                ยกเลิก
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ background: "var(--rose)", borderColor: "var(--rose)", opacity: deleting ? 0.6 : 1 }}
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "กำลังลบ..." : "ลบ"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

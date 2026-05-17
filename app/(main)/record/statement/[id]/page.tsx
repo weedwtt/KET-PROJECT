@@ -37,7 +37,7 @@ type StatementDetail = {
   } | null
   disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
   gradeHeadTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
-  approvedByTeacher: { id: number; firstName: string; lastName: string; title: { name: string } } | null
+  approvedByTeacher: { id: number; firstName: string; lastName: string; signatureUrl: string | null; title: { name: string } } | null
 }
 
 type Approver = { id: number; firstName: string; lastName: string; role: string | null; title: { name: string } }
@@ -307,40 +307,6 @@ export default function StatementDetailPage() {
 
         {/* Sidebar column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)", position: "sticky", top: 16 }}>
-          {/* Send for approval */}
-          {!isApproved && (
-            <div className="ks-card ks-card-pad" style={{ background: "var(--surface-2)" }}>
-              <div className="eyebrow" style={{ marginBottom: 12 }}>ส่งอนุมัติ</div>
-              <label className="field-label">เลือกผู้พิจารณาอนุมัติ</label>
-              <select
-                className="ks-select"
-                value={selectedApproverId}
-                onChange={(e) => setSelectedApproverId(e.target.value)}
-              >
-                <option value="">— เลือกผู้อนุมัติ —</option>
-                {approvers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title?.name}{t.firstName} {t.lastName}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: 14, justifyContent: "center", opacity: (!selectedApproverId || approving) ? 0.5 : 1 }}
-                disabled={!selectedApproverId || approving}
-                onClick={handleApprove}
-              >
-                {approving ? "กำลังส่ง..." : "ส่งเพื่อพิจารณาอนุมัติ"}
-              </button>
-              {approveError && (
-                <p style={{ marginTop: 10, fontSize: 12, color: "var(--rose)" }}>{approveError}</p>
-              )}
-              <p style={{ marginTop: 12, fontSize: 12, color: "var(--ink-3)", lineHeight: 1.55 }}>
-                เมื่อส่งแล้ว ผู้พิจารณาจะได้รับแจ้งเตือนทันที และไม่สามารถแก้ไขบันทึกได้จนกว่าจะมีการตีคืน
-              </p>
-            </div>
-          )}
-
           {/* Approved info */}
           {isApproved && (
             <div className="ks-card ks-card-pad" style={{ background: "var(--sage-soft)" }}>
@@ -351,6 +317,12 @@ export default function StatementDetailPage() {
               <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
                 {formatThaiDateTime(record.approvedAt)}
               </div>
+              {record.approvedByTeacher?.signatureUrl && (
+                <div className="sig-display" style={{ marginTop: 14, borderColor: "var(--sage)", background: "var(--sage-wash, #f0fdf4)" }}>
+                  <img src={record.approvedByTeacher.signatureUrl} alt="ลายเซ็นผู้อนุมัติ" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+                  <div className="sig-name">{record.approvedByTeacher.title?.name}{record.approvedByTeacher.firstName} {record.approvedByTeacher.lastName}</div>
+                </div>
+              )}
             </div>
           )}
 
