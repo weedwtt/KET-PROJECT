@@ -839,6 +839,78 @@ a { color: inherit; text-decoration: none; }
   border-radius: 8px; padding: 20px;
 }
 
+/* ─────────── Import page ─────────── */
+.import-dropzone {
+  border: 2px dashed var(--rule-2);
+  border-radius: 12px;
+  background: var(--surface-2);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  transition: border-color .15s, background .15s;
+  max-width: 560px;
+}
+.import-dropzone:hover,
+.import-dropzone[data-drag="true"] {
+  border-color: var(--indigo);
+  background: var(--indigo-wash);
+}
+
+.import-file-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 10px 16px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+
+.import-preview-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+.import-preview-table { margin: 0; border-radius: 0; }
+.import-preview-table thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface-2);
+  white-space: nowrap; font-size: 12px;
+}
+.import-preview-table tbody td { font-size: 13px; white-space: nowrap; }
+
+.import-progress-block { margin-bottom: 16px; }
+.import-progress-bar-wrap {
+  height: 8px; border-radius: 99px;
+  background: var(--rule);
+  overflow: hidden; margin-bottom: 10px;
+}
+.import-progress-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width .2s ease, background-color .3s;
+}
+.import-progress-stats {
+  display: flex; align-items: center; gap: 16px;
+  font-size: 13px;
+}
+.import-progress-stats span { display: flex; align-items: center; gap: 4px; }
+
+.import-log {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 12px 14px;
+  font-family: var(--font-mono); font-size: 12px;
+  max-height: 320px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.import-log-line {
+  display: flex; align-items: flex-start; gap: 6px;
+  line-height: 1.5; padding: 1px 0;
+}
+.import-log-ok    { color: var(--sage); }
+.import-log-error { color: var(--rose); }
+.import-log-warn  { color: var(--amber); }
+.import-log-info  { color: var(--ink-3); }
+
 /* ─────────── shadcn base layer ─────────── */
 @layer base {
   * { @apply border-border outline-ring/50; }

@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { signOut } from "next-auth/react"
 import {
   LayoutDashboard, FileText, History, Inbox,
   Users, UserCog, ChevronDown,
-  LogOut, PanelLeft, List, BarChart2,
+  LogOut, PanelLeft, List, BarChart2, FileUp,
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 
@@ -55,7 +56,7 @@ export function Sidebar({ userName, role }: SidebarProps) {
 
       {/* ── Brand ── */}
       <div className="sidebar-brand">
-        <div className="sidebar-crest">บพ</div>
+        <Image src="/school-logo.png" alt="โลโก้โรงเรียน" width={36} height={36} style={{ objectFit: "contain", flexShrink: 0 }} />
         <div className="min-w-0 flex-1">
           <div className="brand-name">โรงเรียนบางพลีราษฎร์บำรุง</div>
           <div className="brand-sub">EST · 2475</div>
@@ -158,6 +159,13 @@ export function Sidebar({ userName, role }: SidebarProps) {
             >
               <UserCog size={16} className="nav-icon" />
               <span className="nav-label">จัดการผู้ใช้</span>
+            </Link>
+            <Link
+              href="/dashboard/master/import"
+              className={`nav-item ${isActive("/dashboard/master/import") ? "active" : ""}`}
+            >
+              <FileUp size={16} className="nav-icon" />
+              <span className="nav-label">นำเข้าข้อมูลนักเรียน</span>
             </Link>
           </>
         )}

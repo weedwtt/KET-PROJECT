@@ -47,7 +47,7 @@ model Student {
   classNumber Int @map("class_number")
 
   /// ระดับชั้น เช่น ม.1, ม.2, ป.6
-  gradeLevel String @db.VarChar(10) @map("grade_level")
+  gradeLevel String @db.VarChar(20) @map("grade_level")
 
   /// ห้องเรียน เช่น 1, 2, 3 (ม.1/1 = gradeLevel "ม.1" + classRoom 1)
   classRoom Int @map("class_room")
@@ -62,16 +62,16 @@ model Student {
   // ────── ข้อมูลส่วนตัว ──────
   birthDate  DateTime @map("birth_date") @db.Date
   nationalId String   @unique @db.Char(13) @map("national_id")
-  phone      String?  @db.VarChar(20)
+  phone      String?  @db.VarChar(30)
 
-  nationality String  @db.VarChar(50)
-  ethnicity   String  @db.VarChar(50)
-  religion    String  @db.VarChar(50)
-  bloodType   String? @db.VarChar(5) @map("blood_type")
+  nationality String  @db.VarChar(100)
+  ethnicity   String  @db.VarChar(100)
+  religion    String  @db.VarChar(100)
+  bloodType   String? @db.VarChar(10) @map("blood_type")
 
   // ────── ที่อยู่ ──────
-  addressHouseNo     String  @db.VarChar(20)  @map("address_house_no")
-  addressMoo         String? @db.VarChar(10)  @map("address_moo")
+  addressHouseNo     String  @db.VarChar(50)  @map("address_house_no")
+  addressMoo         String? @db.VarChar(30)  @map("address_moo")
   addressVillage     String? @db.VarChar(100) @map("address_village")
   addressRoad        String? @db.VarChar(100) @map("address_road")
   addressSoi         String? @db.VarChar(100) @map("address_soi")
@@ -137,11 +137,11 @@ model Teacher {
   lastName  String @db.VarChar(100) @map("last_name")
 
   // ────── ติดต่อ ──────
-  phone String @db.VarChar(20)
+  phone String @db.VarChar(30)
 
   // ────── ที่อยู่ ──────
-  addressHouseNo     String  @db.VarChar(20)  @map("address_house_no")
-  addressMoo         String? @db.VarChar(10)  @map("address_moo")
+  addressHouseNo     String  @db.VarChar(50)  @map("address_house_no")
+  addressMoo         String? @db.VarChar(30)  @map("address_moo")
   addressVillage     String? @db.VarChar(100) @map("address_village")
   addressRoad        String? @db.VarChar(100) @map("address_road")
   addressSoi         String? @db.VarChar(100) @map("address_soi")
