@@ -35,6 +35,7 @@ model GuardianRelation {
 model Student {
   id               Int               @id @default(autoincrement())
   statementRecords StatementRecord[]
+  bondRecords      BondRecord[]
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -46,7 +47,7 @@ model Student {
   classNumber Int @map("class_number")
 
   /// ระดับชั้น เช่น ม.1, ม.2, ป.6
-  gradeLevel String @db.VarChar(10) @map("grade_level")
+  gradeLevel String @db.VarChar(20) @map("grade_level")
 
   /// ห้องเรียน เช่น 1, 2, 3 (ม.1/1 = gradeLevel "ม.1" + classRoom 1)
   classRoom Int @map("class_room")
@@ -61,16 +62,16 @@ model Student {
   // ────── ข้อมูลส่วนตัว ──────
   birthDate  DateTime @map("birth_date") @db.Date
   nationalId String   @unique @db.Char(13) @map("national_id")
-  phone      String?  @db.VarChar(20)
+  phone      String?  @db.VarChar(30)
 
-  nationality String  @db.VarChar(50)
-  ethnicity   String  @db.VarChar(50)
-  religion    String  @db.VarChar(50)
-  bloodType   String? @db.VarChar(5) @map("blood_type")
+  nationality String  @db.VarChar(100)
+  ethnicity   String  @db.VarChar(100)
+  religion    String  @db.VarChar(100)
+  bloodType   String? @db.VarChar(10) @map("blood_type")
 
   // ────── ที่อยู่ ──────
-  addressHouseNo     String  @db.VarChar(20)  @map("address_house_no")
-  addressMoo         String? @db.VarChar(10)  @map("address_moo")
+  addressHouseNo     String  @db.VarChar(50)  @map("address_house_no")
+  addressMoo         String? @db.VarChar(30)  @map("address_moo")
   addressVillage     String? @db.VarChar(100) @map("address_village")
   addressRoad        String? @db.VarChar(100) @map("address_road")
   addressSoi         String? @db.VarChar(100) @map("address_soi")
@@ -136,11 +137,11 @@ model Teacher {
   lastName  String @db.VarChar(100) @map("last_name")
 
   // ────── ติดต่อ ──────
-  phone String @db.VarChar(20)
+  phone String @db.VarChar(30)
 
   // ────── ที่อยู่ ──────
-  addressHouseNo     String  @db.VarChar(20)  @map("address_house_no")
-  addressMoo         String? @db.VarChar(10)  @map("address_moo")
+  addressHouseNo     String  @db.VarChar(50)  @map("address_house_no")
+  addressMoo         String? @db.VarChar(30)  @map("address_moo")
   addressVillage     String? @db.VarChar(100) @map("address_village")
   addressRoad        String? @db.VarChar(100) @map("address_road")
   addressSoi         String? @db.VarChar(100) @map("address_soi")
@@ -166,6 +167,9 @@ model Teacher {
   disciplineStatements   StatementRecord[] @relation("DisciplineTeacher")
   gradeHeadStatements    StatementRecord[] @relation("GradeHeadTeacher")
   approvedStatements     StatementRecord[] @relation("ApprovedBy")
+  bondHeadTeacher        BondRecord[]      @relation("BondHeadTeacher")
+  bondDisciplineTeacher  BondRecord[]      @relation("BondDisciplineTeacher")
+  bondApprovals          BondRecord[]      @relation("BondApprovedBy")
   user                   User?
 
   @@index([firstName, lastName], map: "idx_teacher_name")
@@ -188,7 +192,8 @@ model Guardian {
   relationId Int              @map("relation_id")
   relation   GuardianRelation @relation(fields: [relationId], references: [id])
 
-  bonds StatementBond[]
+  bonds      StatementBond[]
+  bondRecords BondRecord[]
 
   @@index([studentId], map: "idx_guardian_student")
 
@@ -362,4 +367,71 @@ model StatementBond {
   witnessName String? @db.VarChar(200) @map("witness_name")
 
   @@map("statement_bonds")
+}
+
+// ─── Bond Record (standalone) ─────────────────────────────────────────────────
+
+/// บันทึกทัณฑ์บนแบบอิสระ (ไม่ผูกกับบันทึกถ้อยคำ)
+model BondRecord {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  studentId Int     @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id])
+
+  contractDate DateTime @map("contract_date")
+
+  /// ข้อมูลผู้ปกครอง (denormalized เพื่อให้แก้ไขได้หลัง auto-fill)
+  guardianId       Int?    @map("guardian_id")
+  guardian         Guardian? @relation(fields: [guardianId], references: [id])
+  guardianName     String  @db.VarChar(200) @map("guardian_name")
+  guardianRelation String  @db.VarChar(100) @map("guardian_relation")
+  guardianPhone    String? @db.VarChar(30)  @map("guardian_phone")
+
+  /// ที่อยู่ผู้ปกครอง
+  addressHouseNo   String? @db.VarChar(20)  @map("address_house_no")
+  addressMoo       String? @db.VarChar(10)  @map("address_moo")
+  addressVillage   String? @db.VarChar(100) @map("address_village")
+  addressRoad      String? @db.VarChar(100) @map("address_road")
+  addressSoi       String? @db.VarChar(100) @map("address_soi")
+  addressSubDistrict String? @db.VarChar(100) @map("address_sub_district")
+  addressDistrict  String? @db.VarChar(100) @map("address_district")
+  addressProvince  String? @db.VarChar(100) @map("address_province")
+
+  /// รายละเอียดการกระทำผิด
+  violationDetail  String  @db.Text @map("violation_detail")
+
+  /// มาตรการที่จะดำเนินการหากทำผิดซ้ำ
+  measureDeductScore   Boolean @default(false) @map("measure_deduct_score")
+  measureDeductPoints  Int?    @map("measure_deduct_points")
+  measureActivity      Boolean @default(false) @map("measure_activity")
+  measureSuspension    Boolean @default(false) @map("measure_suspension")
+  measureTransfer      Boolean @default(false) @map("measure_transfer")
+
+  /// ผู้บันทึก
+  recorder String @db.VarChar(200)
+
+  /// สถานะ: active | expired | closed
+  status String @default("active") @db.VarChar(20)
+
+  /// ลายเซ็น (base64 PNG)
+  guardianSignature    String? @db.Text @map("guardian_signature")
+  studentSignature     String? @db.Text @map("student_signature")
+  advisorSignature     String? @db.Text @map("advisor_signature")
+  headTeacherId        Int?    @map("head_teacher_id")
+  headTeacher          Teacher? @relation("BondHeadTeacher", fields: [headTeacherId], references: [id])
+  disciplineTeacherId  Int?    @map("discipline_teacher_id")
+  disciplineTeacher    Teacher? @relation("BondDisciplineTeacher", fields: [disciplineTeacherId], references: [id])
+  viceDirectorSignature String? @db.Text @map("vice_director_signature")
+  directorSignature    String? @db.Text @map("director_signature")
+
+  approvedByTeacherId  Int?     @map("approved_by_teacher_id")
+  approvedByTeacher    Teacher? @relation("BondApprovedBy", fields: [approvedByTeacherId], references: [id])
+  approvedAt           DateTime? @map("approved_at")
+
+  @@index([studentId], map: "idx_bond_student")
+  @@index([contractDate], map: "idx_bond_date")
+
+  @@map("bond_records")
 }

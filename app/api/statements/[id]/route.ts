@@ -80,6 +80,7 @@ const STATEMENT_INCLUDE = {
       id: true,
       firstName: true,
       lastName: true,
+      signatureUrl: true,
       title: { select: { name: true } },
     },
   },
@@ -93,6 +94,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   })
   if (!record) return Response.json({ error: "ไม่พบรายการ" }, { status: 404 })
   return Response.json(record)
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const existing = await db.statementRecord.findUnique({ where: { id: Number(id) } })
+  if (!existing) return Response.json({ error: "ไม่พบรายการ" }, { status: 404 })
+  await db.statementRecord.delete({ where: { id: Number(id) } })
+  return new Response(null, { status: 204 })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

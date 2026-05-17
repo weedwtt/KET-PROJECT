@@ -40,13 +40,44 @@ async function getPendingStatements() {
   }
 }
 
+async function getPendingBonds() {
+  try {
+    const rows = await db.bondRecord.findMany({
+      where: { directorSignature: null },
+      select: {
+        id: true,
+        contractDate: true,
+        guardianName: true,
+        recorder: true,
+        student: {
+          select: {
+            studentCode: true,
+            firstName: true,
+            lastName: true,
+            gradeLevel: true,
+            classRoom: true,
+            title: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { contractDate: "desc" },
+    })
+    return rows
+  } catch {
+    return []
+  }
+}
+
 export default async function ApprovePage() {
   const session = await auth()
   const role = session?.user?.role
 
   if (role !== "DIRECTOR" && role !== "VICE_DIRECTOR" && role !== "ADMIN") redirect("/dashboard")
 
-  const statements = await getPendingStatements()
+  const [statements, bonds] = await Promise.all([
+    getPendingStatements(),
+    getPendingBonds(),
+  ])
 
   return (
     <div className="ks-page">
@@ -63,7 +94,7 @@ export default async function ApprovePage() {
       {/* Mini stat row */}
       <div className="grid-4" style={{ marginBottom: "var(--gap-lg)" }}>
         {[
-          { marker: "01", eyebrow: "QUEUE", num: statements.length, label: "ทั้งหมดที่รอ" },
+          { marker: "01", eyebrow: "QUEUE", num: statements.length + bonds.length, label: "ทั้งหมดที่รอ" },
           { marker: "02", eyebrow: "TODAY", num: "—", label: "รอจากวันนี้" },
           { marker: "03", eyebrow: "OVERDUE", num: "—", label: "เกินกำหนด (>24 ชม.)" },
           { marker: "04", eyebrow: "MY ROLE", num: role === "DIRECTOR" ? "ผอ." : "รองผอ.", label: "ระดับการอนุมัติ" },
@@ -76,7 +107,7 @@ export default async function ApprovePage() {
         ))}
       </div>
 
-      <ApprovalGrid data={statements} />
+      <ApprovalGrid data={statements} bonds={bonds} />
     </div>
   )
 }

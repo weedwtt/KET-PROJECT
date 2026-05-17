@@ -1,0 +1,394 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
+import { ChevronLeft, Check, ShieldCheck, User } from "lucide-react"
+
+type BondDetail = {
+  id: number
+  contractDate: string
+  guardianName: string
+  guardianRelation: string
+  guardianPhone: string | null
+  violationDetail: string
+  recorder: string
+  measureDeductScore: boolean
+  measureDeductPoints: number | null
+  measureActivity: boolean
+  measureSuspension: boolean
+  measureTransfer: boolean
+  guardianSignature: string | null
+  studentSignature: string | null
+  advisorSignature: string | null
+  viceDirectorSignature: string | null
+  directorSignature: string | null
+  headTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
+  disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
+  student: {
+    studentCode: string
+    firstName: string
+    lastName: string
+    gradeLevel: string
+    classRoom: number
+    classNumber: number
+    title: { name: string }
+  }
+}
+
+type MyTeacher = {
+  id: number
+  firstName: string
+  lastName: string
+  role: string | null
+  signatureUrl: string | null
+  title: { name: string }
+}
+
+const THAI_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"]
+function formatThaiDate(d: string | null) {
+  if (!d) return "—"
+  const dt = new Date(d)
+  return `${dt.getDate()} ${THAI_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`
+}
+
+export default function BondApproveDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+
+  const [record, setRecord] = useState<BondDetail | null>(null)
+  const [me, setMe] = useState<MyTeacher | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [signing, setSigning] = useState(false)
+  const [signError, setSignError] = useState<string | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    setFetchError(null)
+
+    const bondFetch = fetch(`/api/bonds/${id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.error) { setFetchError(data.error); return }
+        setRecord(data)
+      })
+      .catch(() => setFetchError("โหลดข้อมูลไม่สำเร็จ"))
+
+    const meFetch = fetch("/api/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => setMe(data))
+      .catch(() => {})
+
+    Promise.all([bondFetch, meFetch]).finally(() => setLoading(false))
+  }, [id])
+
+  async function handleSign() {
+    if (!me) return
+    setSigning(true); setSignError(null)
+    const sigField = me.role === "DIRECTOR" ? "directorSignature" : "viceDirectorSignature"
+    try {
+      const res = await fetch(`/api/bonds/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          [sigField]: me.signatureUrl ?? "signed",
+          approvedByTeacherId: me.id,
+          approvedAt: new Date().toISOString(),
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setSignError(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      router.push("/dashboard/approve")
+    } catch {
+      setSignError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  if (loading) return (
+    <div className="ks-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="spin" style={{ color: "var(--indigo)" }}>
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/>
+        <path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+    </div>
+  )
+
+  if (fetchError) return (
+    <div className="ks-page" style={{ textAlign: "center", color: "var(--rose)" }}>{fetchError}</div>
+  )
+
+  if (!record) return (
+    <div className="ks-page" style={{ textAlign: "center", color: "var(--ink-3)" }}>ไม่พบรายการ</div>
+  )
+
+  const isSigned = !!(record.directorSignature)
+  const approverName = me ? `${me.title.name}${me.firstName} ${me.lastName}` : ""
+
+  const measures: string[] = []
+  if (record.measureDeductScore) measures.push(`ตัดคะแนน${record.measureDeductPoints ? ` ${record.measureDeductPoints} คะแนน` : ""}`)
+  if (record.measureActivity) measures.push("กิจกรรมค่ายปรับพฤติกรรม")
+  if (record.measureSuspension) measures.push("พักการเรียน")
+  if (record.measureTransfer) measures.push("ย้ายสถานศึกษา")
+
+  return (
+    <div className="ks-page" style={{ maxWidth: 900 }}>
+      <div className="page-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/dashboard/approve" className="btn btn-ghost btn-sm btn-icon">
+            <ChevronLeft size={16} />
+          </Link>
+          <div>
+            <div className="page-eyebrow"><span>ฝ่ายปกครอง · ทัณฑ์บน #{record.id}</span></div>
+            <h1>รายละเอียดบันทึกทัณฑ์บน</h1>
+          </div>
+        </div>
+        <span className={`chip ${isSigned ? "chip-approved" : "chip-pending"}`}>
+          {isSigned ? "ลงนามแล้ว" : "รอลงนาม"}
+        </span>
+      </div>
+
+      <div className="detail-grid">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+
+          {/* Student */}
+          <div className="ks-card">
+            <div className="ks-card-header">
+              <div>
+                <div className="eyebrow">01 · STUDENT</div>
+                <div style={{ fontWeight: 600, fontSize: 16 }}>
+                  {record.student.title.name}{record.student.firstName} {record.student.lastName}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div className="mono" style={{ fontSize: 13, color: "var(--ink-3)" }}>{record.student.studentCode}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                  ชั้น {record.student.gradeLevel}/{record.student.classRoom} · เลขที่ {record.student.classNumber}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contract info */}
+          <div className="ks-card">
+            <div className="ks-card-header"><div className="eyebrow">02 · CONTRACT</div></div>
+            <div className="ks-card-pad">
+              <div className="info-row">
+                <span className="info-label">วันที่ทำสัญญา</span>
+                <span className="info-value">{formatThaiDate(record.contractDate)}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">ผู้ปกครอง</span>
+                <span className="info-value">{record.guardianName}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">ความสัมพันธ์</span>
+                <span className="info-value">{record.guardianRelation || "—"}</span>
+              </div>
+              {record.guardianPhone && (
+                <div className="info-row">
+                  <span className="info-label">โทรศัพท์</span>
+                  <span className="info-value mono">{record.guardianPhone}</span>
+                </div>
+              )}
+              <div className="info-row">
+                <span className="info-label">ผู้บันทึก</span>
+                <span className="info-value">{record.recorder}</span>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6 }}>รายละเอียดความผิด</div>
+                <div style={{ fontSize: 13.5, padding: "10px 14px", background: "var(--surface-2)", borderRadius: "var(--radius)", lineHeight: 1.7 }}>
+                  {record.violationDetail}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Measures */}
+          {measures.length > 0 && (
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">03 · MEASURES</div></div>
+              <div className="ks-card-pad">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {measures.map((m) => (
+                    <span key={m} className="measure-tag"><span className="dot" /> {m}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Signatures */}
+          <div className="ks-card">
+            <div className="ks-card-header"><div className="eyebrow">04 · SIGNATURES</div></div>
+            <div className="ks-card-pad">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                <SigBox label="ผู้ปกครอง" dataUrl={record.guardianSignature} />
+                <SigBox label="นักเรียน" dataUrl={record.studentSignature} />
+                <SigBox label="ครูที่ปรึกษา" dataUrl={record.advisorSignature} />
+              </div>
+              {(record.headTeacher || record.disciplineTeacher) && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+                  {record.headTeacher && (
+                    <SigBox
+                      label={`หัวหน้าระดับ — ${record.headTeacher.title.name}${record.headTeacher.firstName} ${record.headTeacher.lastName}`}
+                      dataUrl={record.headTeacher.signatureUrl}
+                    />
+                  )}
+                  {record.disciplineTeacher && (
+                    <SigBox
+                      label={`ครูฝ่ายปกครอง — ${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}`}
+                      dataUrl={record.disciplineTeacher.signatureUrl}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div style={{ position: "sticky", top: 16, display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+          {isSigned ? (
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">STATUS</div></div>
+              <div className="ks-card-pad">
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--sage-wash, #f0fdf4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--sage)" }}>
+                    <Check size={16} style={{ color: "var(--sage)" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "var(--sage)" }}>ลงนามแล้ว</div>
+                  </div>
+                </div>
+                <div style={{ marginTop: 16 }}>
+                  <SigBox label="ผู้อำนวยการ" dataUrl={record.directorSignature} />
+                </div>
+                {record.viceDirectorSignature && (
+                  <div style={{ marginTop: 12 }}>
+                    <SigBox label="รองผู้อำนวยการ" dataUrl={record.viceDirectorSignature} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">SIGN</div></div>
+              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {!showConfirm ? (
+                  <>
+                    {me && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--indigo-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <User size={14} style={{ color: "var(--indigo)" }} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{approverName}</div>
+                          <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{me.role}</div>
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowConfirm(true)}
+                      disabled={!me}
+                      style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                    >
+                      <ShieldCheck size={14} /> ลงนามบันทึกทัณฑ์บนนี้
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8 }}>
+                        ลายเซ็ต — {approverName}
+                      </div>
+                      <div className="sig-display" style={{ height: 120, borderColor: me?.signatureUrl ? "var(--sage)" : undefined }}>
+                        {me?.signatureUrl
+                          ? <img src={me.signatureUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
+                          : <span style={{ fontSize: 12.5, color: "var(--ink-4)" }}>ยังไม่มีลายเซ็นในระบบ</span>}
+                        <span className="sig-name">{approverName}</span>
+                      </div>
+                      {!me?.signatureUrl && (
+                        <div style={{ fontSize: 12, color: "var(--indigo)", marginTop: 6 }}>แนะนำให้อัปโหลดลายเซ็นก่อนลงนาม</div>
+                      )}
+                    </div>
+
+                    {signError && (
+                      <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                        {signError}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <button
+                        className="btn btn-primary"
+                        onClick={handleSign}
+                        disabled={signing}
+                        style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                      >
+                        {signing
+                          ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                          : <><Check size={14} /> บันทึกการลงนาม</>
+                        }
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => { setShowConfirm(false); setSignError(null) }}
+                        disabled={signing}
+                        style={{ width: "100%", justifyContent: "center" }}
+                      >
+                        <ChevronLeft size={14} /> ย้อนกลับ
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="ks-card">
+            <div className="ks-card-header"><div className="eyebrow">AUDIT</div></div>
+            <div className="ks-card-pad" style={{ fontSize: 13 }}>
+              <div className="info-row">
+                <span className="info-label">วันที่ทำสัญญา</span>
+                <span className="info-value mono">{formatThaiDate(record.contractDate)}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">ผู้บันทึก</span>
+                <span className="info-value">{record.recorder}</span>
+              </div>
+              <div className="info-row" style={{ borderBottom: 0 }}>
+                <span className="info-label">สถานะ</span>
+                <span className={`chip ${isSigned ? "chip-approved" : "chip-pending"}`} style={{ fontSize: 11 }}>
+                  {isSigned ? "ลงนามแล้ว" : "รอลงนาม"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SigBox({ label, dataUrl }: { label: string; dataUrl: string | null }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--ink-3)", textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div className="sig-display" style={{ borderColor: dataUrl ? "var(--sage)" : undefined, background: dataUrl ? "var(--sage-wash, #f0fdf4)" : undefined }}>
+        {dataUrl
+          ? <img src={dataUrl} alt="signature" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+          : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
+      </div>
+    </div>
+  )
+}

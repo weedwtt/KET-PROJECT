@@ -49,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: fullName,
             email: `${user.username}@school.ac.th`,
             teacherId: user.teacherId,
-            role: user.teacher?.role ?? null,
+            role: user.teacher?.role ?? (user.teacherId == null ? "ADMIN" : null),
           }
         } catch (err) {
           console.error("[auth] authorize error:", err)
