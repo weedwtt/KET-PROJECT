@@ -62,7 +62,7 @@ async function getPendingBonds() {
       },
       orderBy: { contractDate: "desc" },
     })
-    return rows
+    return rows.map((r) => ({ ...r, contractDate: r.contractDate.toISOString() }))
   } catch {
     return []
   }
