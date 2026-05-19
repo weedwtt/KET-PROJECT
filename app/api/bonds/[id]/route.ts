@@ -70,6 +70,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     addressSubDistrict, addressDistrict, addressProvince,
     violationDetail, measureDeductScore, measureDeductPoints,
     measureActivity, measureSuspension, measureTransfer,
+    advisor1Name, advisor2Name,
     recorder, status, headTeacherId, disciplineTeacherId,
     guardianSignature, studentSignature, advisorSignature,
   } = body
@@ -97,6 +98,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       measureActivity: !!measureActivity,
       measureSuspension: !!measureSuspension,
       measureTransfer: !!measureTransfer,
+      advisor1Name: advisor1Name !== undefined ? (advisor1Name || null) : undefined,
+      advisor2Name: advisor2Name !== undefined ? (advisor2Name || null) : undefined,
       recorder,
       status: status ?? undefined,
       headTeacherId: headTeacherId !== undefined ? (headTeacherId ? Number(headTeacherId) : null) : undefined,

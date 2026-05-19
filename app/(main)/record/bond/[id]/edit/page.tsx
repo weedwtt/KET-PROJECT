@@ -75,6 +75,8 @@ type BondFormData = {
   measureActivity: boolean
   measureSuspension: boolean
   measureTransfer: boolean
+  advisor1Name: string
+  advisor2Name: string
   recorder: string
   status: string
   headTeacherId: number | null
@@ -110,6 +112,7 @@ export default function BondEditPage() {
     addressProvince: "", violationDetail: "",
     measureDeductScore: false, measureDeductPoints: "",
     measureActivity: false, measureSuspension: false, measureTransfer: false,
+    advisor1Name: "", advisor2Name: "",
     recorder: "", status: "active", headTeacherId: null, disciplineTeacherId: null,
   })
   const [guardianSig, setGuardianSig] = useState("")
@@ -170,6 +173,8 @@ export default function BondEditPage() {
           measureActivity: !!data.measureActivity,
           measureSuspension: !!data.measureSuspension,
           measureTransfer: !!data.measureTransfer,
+          advisor1Name: data.advisor1Name ?? "",
+          advisor2Name: data.advisor2Name ?? "",
           recorder: data.recorder ?? "",
           status: data.status ?? "active",
           headTeacherId: data.headTeacherId ?? null,
@@ -227,6 +232,8 @@ export default function BondEditPage() {
           measureActivity: form.measureActivity,
           measureSuspension: form.measureSuspension,
           measureTransfer: form.measureTransfer,
+          advisor1Name: form.advisor1Name || null,
+          advisor2Name: form.advisor2Name || null,
           recorder: form.recorder,
           status: form.status,
           headTeacherId: form.headTeacherId,
@@ -254,7 +261,7 @@ export default function BondEditPage() {
 
   const advisor1 = student?.advisors.find((a) => a.slot === 1)?.teacher
 
-  const step0Valid = !!form.contractDate && !!form.semesterId && !!form.academicYearId && !!form.recorder
+  const step0Valid = !!form.contractDate && !!form.semesterId && !!form.academicYearId
   const step1Valid = !!form.guardianName
   const step2Valid = !!form.violationDetail
 
@@ -434,25 +441,11 @@ function StepStudentEdit({
         <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>
           ข้อมูลสัญญา
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
           <div>
             <FieldLabel required>วันที่ทำสัญญา</FieldLabel>
             <input className="ks-input" type="date" value={form.contractDate} onChange={(e) => upd({ contractDate: e.target.value })} />
           </div>
-          <div>
-            <FieldLabel required>ผู้บันทึก</FieldLabel>
-            <input className="ks-input" value={form.recorder} onChange={(e) => upd({ recorder: e.target.value })} placeholder="ชื่อผู้บันทึก" />
-          </div>
-          <div>
-            <FieldLabel>สถานะ</FieldLabel>
-            <select className="ks-select" value={form.status} onChange={(e) => upd({ status: e.target.value })}>
-              <option value="active">มีผลบังคับ</option>
-              <option value="expired">ครบกำหนด</option>
-              <option value="closed">ปิดแล้ว</option>
-            </select>
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div>
             <FieldLabel required>ภาคเรียน</FieldLabel>
             {loadingSem ? (
@@ -474,6 +467,14 @@ function StepStudentEdit({
                 {academicYears.map((a) => <option key={a.id} value={a.id}>{a.year}</option>)}
               </select>
             )}
+          </div>
+          <div>
+            <FieldLabel>สถานะ</FieldLabel>
+            <select className="ks-select" value={form.status} onChange={(e) => upd({ status: e.target.value })}>
+              <option value="active">มีผลบังคับ</option>
+              <option value="expired">ครบกำหนด</option>
+              <option value="closed">ปิดแล้ว</option>
+            </select>
           </div>
         </div>
       </div>
@@ -610,7 +611,7 @@ function StepMeasures({
       <h2 className="step-heading">มาตรการที่จะดำเนินการหากทำผิดซ้ำ</h2>
       <p className="step-sub">เลือกมาตรการที่จะใช้หากนักเรียนกระทำผิดซ้ำในอนาคต</p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
         <MeasureCheck checked={form.measureDeductScore} onChange={(v) => upd({ measureDeductScore: v })} label="ตัดคะแนนความประพฤติ">
           {form.measureDeductScore && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
@@ -623,6 +624,26 @@ function StepMeasures({
         <MeasureCheck checked={form.measureActivity} onChange={(v) => upd({ measureActivity: v })} label="ทำกิจกรรมค่ายปรับพฤติกรรม" />
         <MeasureCheck checked={form.measureSuspension} onChange={(v) => upd({ measureSuspension: v })} label="พักการเรียน" />
         <MeasureCheck checked={form.measureTransfer} onChange={(v) => upd({ measureTransfer: v })} label="ย้ายสถานศึกษา" />
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>
+          ครูที่ปรึกษาและผู้บันทึก
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+          <div>
+            <FieldLabel>ครูที่ปรึกษาคนที่ 1</FieldLabel>
+            <input className="ks-input" value={form.advisor1Name} onChange={(e) => upd({ advisor1Name: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+          </div>
+          <div>
+            <FieldLabel>ครูที่ปรึกษาคนที่ 2</FieldLabel>
+            <input className="ks-input" value={form.advisor2Name} onChange={(e) => upd({ advisor2Name: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+          </div>
+          <div>
+            <FieldLabel>ผู้บันทึก</FieldLabel>
+            <input className="ks-input" value={form.recorder} onChange={(e) => upd({ recorder: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+          </div>
+        </div>
       </div>
 
       <div className="wizard-actions">

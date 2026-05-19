@@ -473,7 +473,7 @@ function Step1StudentInfo({ student, onNext }: { student: Student; onNext: () =>
               {advisor1 ? teacherName(advisor1) : "—"}
             </div>
             {advisor2 && (
-              <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{teacherName(advisor2)}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 500 }}>{teacherName(advisor2)}</div>
             )}
           </div>
           <div>

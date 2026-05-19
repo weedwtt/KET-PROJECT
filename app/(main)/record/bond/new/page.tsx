@@ -75,6 +75,8 @@ type BondFormData = {
   measureActivity: boolean
   measureSuspension: boolean
   measureTransfer: boolean
+  advisor1Name: string
+  advisor2Name: string
   recorder: string
   headTeacherId: number | null
   disciplineTeacherId: number | null
@@ -114,6 +116,7 @@ export default function BondNewPage() {
     violationDetail: "",
     measureDeductScore: false, measureDeductPoints: "",
     measureActivity: false, measureSuspension: false, measureTransfer: false,
+    advisor1Name: "", advisor2Name: "",
     recorder: "",
     headTeacherId: null, disciplineTeacherId: null,
   })
@@ -175,10 +178,12 @@ export default function BondNewPage() {
     setStudent(s)
     setQuery("")
     setResults(null)
-    const advisor1 = s.advisors.find((a) => a.slot === 1)?.teacher
-    if (advisor1) {
-      upd({ recorder: `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}` })
-    }
+    const a1 = s.advisors.find((a) => a.slot === 1)?.teacher
+    const a2 = s.advisors.find((a) => a.slot === 2)?.teacher
+    upd({
+      advisor1Name: a1 ? `${a1.title.name}${a1.firstName} ${a1.lastName}` : "",
+      advisor2Name: a2 ? `${a2.title.name}${a2.firstName} ${a2.lastName}` : "",
+    })
   }
 
   function selectGuardian(g: Guardian) {
@@ -230,6 +235,8 @@ export default function BondNewPage() {
           measureActivity: form.measureActivity,
           measureSuspension: form.measureSuspension,
           measureTransfer: form.measureTransfer,
+          advisor1Name: form.advisor1Name || null,
+          advisor2Name: form.advisor2Name || null,
           recorder: form.recorder,
           headTeacherId: form.headTeacherId,
           disciplineTeacherId: form.disciplineTeacherId,
@@ -256,7 +263,7 @@ export default function BondNewPage() {
 
   const advisor1 = student?.advisors.find((a) => a.slot === 1)?.teacher
 
-  const step0Valid = !!student && !!form.contractDate && !!form.semesterId && !!form.academicYearId && !!form.recorder
+  const step0Valid = !!student && !!form.contractDate && !!form.semesterId && !!form.academicYearId
   const step1Valid = !!form.guardianName
   const step2Valid = !!form.violationDetail
 
@@ -477,22 +484,16 @@ function StepStudent({
         </div>
       )}
 
-      {/* Contract date + semester + year + recorder */}
+      {/* Contract date + semester + year */}
       <div style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>
           วันที่และภาคเรียน
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
           <div>
             <FieldLabel required>วันที่ทำสัญญา</FieldLabel>
             <input className="ks-input" type="date" value={form.contractDate} onChange={(e) => upd({ contractDate: e.target.value })} />
           </div>
-          <div>
-            <FieldLabel required>ผู้บันทึก</FieldLabel>
-            <input className="ks-input" value={form.recorder} onChange={(e) => upd({ recorder: e.target.value })} placeholder="ชื่อผู้บันทึก" />
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div>
             <FieldLabel required>ภาคเรียน</FieldLabel>
             {loadingSem ? (
@@ -650,7 +651,7 @@ function StepMeasures({
       <h2 className="step-heading">มาตรการที่จะดำเนินการหากทำผิดซ้ำ</h2>
       <p className="step-sub">เลือกมาตรการที่จะใช้หากนักเรียนกระทำผิดซ้ำในอนาคต</p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
         <MeasureCheck checked={form.measureDeductScore} onChange={(v) => upd({ measureDeductScore: v })} label="ตัดคะแนนความประพฤติ">
           {form.measureDeductScore && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
@@ -663,6 +664,26 @@ function StepMeasures({
         <MeasureCheck checked={form.measureActivity} onChange={(v) => upd({ measureActivity: v })} label="ทำกิจกรรมค่ายปรับพฤติกรรม" />
         <MeasureCheck checked={form.measureSuspension} onChange={(v) => upd({ measureSuspension: v })} label="พักการเรียน" />
         <MeasureCheck checked={form.measureTransfer} onChange={(v) => upd({ measureTransfer: v })} label="ย้ายสถานศึกษา" />
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>
+          ครูที่ปรึกษาและผู้บันทึก
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+          <div>
+            <FieldLabel>ครูที่ปรึกษาคนที่ 1</FieldLabel>
+            <input className="ks-input" value={form.advisor1Name} onChange={(e) => upd({ advisor1Name: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+          </div>
+          <div>
+            <FieldLabel>ครูที่ปรึกษาคนที่ 2</FieldLabel>
+            <input className="ks-input" value={form.advisor2Name} onChange={(e) => upd({ advisor2Name: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+          </div>
+          <div>
+            <FieldLabel>ผู้บันทึก</FieldLabel>
+            <input className="ks-input" value={form.recorder} onChange={(e) => upd({ recorder: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+          </div>
+        </div>
       </div>
 
       <div className="wizard-actions">
