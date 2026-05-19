@@ -8,7 +8,7 @@ import { ChevronLeft, Pencil, Check, Download, FileText } from "lucide-react"
 type StatementDetail = {
   id: number
   recordDate: string
-  recordedBy: string
+  recordedBy: string | null
   status: string
   approvedAt: string | null
   subject: string
@@ -200,7 +200,7 @@ export default function StatementDetailPage() {
               <InfoRow label="หมวดการผิดระเบียบ" value={record.violationCategory.name} />
               <InfoRow label="วัน-เวลาที่เกิดเหตุ" value={formatThaiDateTime(record.incidentAt)} mono />
               <InfoRow label="สถานที่เกิดเหตุ" value={record.location ?? "—"} />
-              <InfoRow label="ผู้บันทึก" value={record.recordedBy} />
+              <InfoRow label="ผู้บันทึก" value={record.recordedBy ?? "—"} />
               {record.subject && <InfoRow label="เรื่อง" value={record.subject} />}
               {record.content && (
                 <div style={{ paddingTop: 16, marginTop: 6, borderTop: "1px solid var(--rule-soft)" }}>

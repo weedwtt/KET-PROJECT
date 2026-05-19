@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronRight, ChevronLeft, Check, User } from "lucide-react"
+import { DatePicker } from "@/components/ui/date-picker"
+import { toast } from "sonner"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -60,23 +62,20 @@ type StatementFormData = {
   academicYearLabel: string
   violationCategoryId: string
   violationCategoryLabel: string
+  violationSubCategoryId: string
+  violationSubCategoryLabel: string
   subject: string
   detail: string
   incidentDateTime: string
   location: string
+  advisor1Name: string
+  advisor2Name: string
   recorder: string
 }
 
 type MeasureFormData = {
   selected: string[]
   notes: string
-}
-
-type BondFormData = {
-  selectedGuardianIndex: number | null
-  penaltyActions: string[]
-  deductPoints: string
-  witnessName: string
 }
 
 type TeacherOption = {
@@ -102,9 +101,8 @@ const STEPS = [
   { num: "01", label: "ข้อมูลนักเรียน", en: "STUDENT" },
   { num: "02", label: "บันทึกถ้อยคำ",   en: "STATEMENT" },
   { num: "03", label: "มาตรการ",         en: "MEASURES" },
-  { num: "04", label: "ทัณฑ์บน",         en: "BOND" },
-  { num: "05", label: "ลงนาม",           en: "SIGNATURES" },
-  { num: "06", label: "ยืนยัน",          en: "CONFIRM" },
+  { num: "04", label: "ลงนาม",           en: "SIGNATURES" },
+  { num: "05", label: "ยืนยัน",          en: "CONFIRM" },
 ]
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -126,13 +124,6 @@ const RESULT_MEASURES = [
   { id: "probation_bond",   label: "ทำทัณฑ์บน" },
 ]
 
-const BOND_PENALTY_OPTIONS = [
-  { id: "deduct_score",    label: "ตัดคะแนนความประพฤติ" },
-  { id: "behavior_camp",   label: "ทำกิจกรรมค่ายปรับพฤติกรรม" },
-  { id: "suspension",      label: "พักการเรียน" },
-  { id: "transfer",        label: "ย้ายสถานศึกษา" },
-]
-
 // ── Root page ──────────────────────────────────────────────────────────────────
 
 export default function EditStatementPage() {
@@ -149,16 +140,13 @@ export default function EditStatementPage() {
     semesterId: "", semesterLabel: "",
     academicYearId: "", academicYearLabel: "",
     violationCategoryId: "", violationCategoryLabel: "",
+    violationSubCategoryId: "", violationSubCategoryLabel: "",
     subject: "", detail: "",
-    incidentDateTime: "", location: "", recorder: "",
+    incidentDateTime: "", location: "",
+    advisor1Name: "", advisor2Name: "", recorder: "",
   })
 
   const [measureData, setMeasureData] = useState<MeasureFormData>({ selected: [], notes: "" })
-
-  const [bondData, setBondData] = useState<BondFormData>({
-    selectedGuardianIndex: null,
-    penaltyActions: [], deductPoints: "", witnessName: "",
-  })
 
   const [signatureData, setSignatureData] = useState<SignatureFormData>({
     studentSignature: "", guardianSignature: "", advisorSignature: "",
@@ -187,23 +175,22 @@ export default function EditStatementPage() {
           semesterId: String(rec.semester.id), semesterLabel: rec.semester.name,
           academicYearId: String(rec.academicYear.id), academicYearLabel: String(rec.academicYear.year),
           violationCategoryId: String(rec.violationCategory.id), violationCategoryLabel: rec.violationCategory.name,
+          violationSubCategoryId: rec.violationSubCategory ? String(rec.violationSubCategory.id) : "",
+          violationSubCategoryLabel: rec.violationSubCategory?.name ?? "",
           subject: rec.subject, detail: rec.content,
           incidentDateTime: incidentDate && incidentHour ? `${incidentDate}T${incidentHour}:${incidentMinute}` : "",
-          location: rec.location ?? "", recorder: rec.recordedBy,
+          location: rec.location ?? "",
+          advisor1Name: rec.advisor1Name ?? (rec.student.advisors.find((a: { slot: number }) => a.slot === 1)
+            ? (() => { const t = rec.student.advisors.find((a: { slot: number }) => a.slot === 1)!.teacher; return `${t.title.name}${t.firstName} ${t.lastName}` })()
+            : ""),
+          advisor2Name: rec.advisor2Name ?? (rec.student.advisors.find((a: { slot: number }) => a.slot === 2)
+            ? (() => { const t = rec.student.advisors.find((a: { slot: number }) => a.slot === 2)!.teacher; return `${t.title.name}${t.firstName} ${t.lastName}` })()
+            : ""),
+          recorder: rec.recordedBy ?? "",
         })
 
         const allMeasures = [...(rec.considerationMeasures ?? []), ...(rec.resultMeasures ?? [])]
         setMeasureData({ selected: allMeasures, notes: rec.measureNotes ?? "" })
-
-        if (rec.bond) {
-          const guardianIdx = rec.student.guardians.findIndex((g: Guardian) => g.id === rec.bond.guardianId)
-          setBondData({
-            selectedGuardianIndex: guardianIdx >= 0 ? guardianIdx : null,
-            penaltyActions: rec.bond.penaltyActions ?? [],
-            deductPoints: rec.bond.deductPoints ? String(rec.bond.deductPoints) : "",
-            witnessName: rec.bond.witnessName ?? "",
-          })
-        }
 
         setSignatureData({
           studentSignature:  rec.studentSignature  ?? "",
@@ -217,27 +204,13 @@ export default function EditStatementPage() {
       })
   }, [id, router])
 
-  const showBondStep = measureData.selected.includes("probation_bond")
-
-  function handleNext() {
-    if (step === 2 && !showBondStep) { setStep(4); return }
-    setStep((s) => s + 1)
-  }
-
-  function handleBack() {
-    if (step === 4 && !showBondStep) { setStep(2); return }
-    setStep((s) => Math.max(0, s - 1))
-  }
+  function handleNext() { setStep((s) => s + 1) }
+  function handleBack() { setStep((s) => Math.max(0, s - 1)) }
 
   async function handleSubmit() {
     if (!student) return
     setSaving(true)
     setSaveError(null)
-
-    const bondGuardianId =
-      showBondStep && bondData.selectedGuardianIndex !== null
-        ? (student.guardians[bondData.selectedGuardianIndex]?.id ?? null)
-        : null
 
     try {
       const res = await fetch(`/api/statements/${id}`, {
@@ -247,11 +220,14 @@ export default function EditStatementPage() {
           semesterId: formData.semesterId,
           academicYearId: formData.academicYearId,
           violationCategoryId: formData.violationCategoryId,
+          violationSubCategoryId: formData.violationSubCategoryId || null,
           subject: formData.subject,
           detail: formData.detail,
           incidentDateTime: formData.incidentDateTime || null,
           location: formData.location,
-          recorder: formData.recorder,
+          advisor1Name: formData.advisor1Name || null,
+          advisor2Name: formData.advisor2Name || null,
+          recorder: formData.recorder || null,
           considerationMeasures: measureData.selected.filter((mid) =>
             CONSIDERATION_MEASURES.some((m) => m.id === mid)
           ),
@@ -259,15 +235,6 @@ export default function EditStatementPage() {
             RESULT_MEASURES.some((m) => m.id === mid)
           ),
           measureNotes: measureData.notes || null,
-          bond:
-            showBondStep && bondGuardianId
-              ? {
-                  guardianId: bondGuardianId,
-                  penaltyActions: bondData.penaltyActions,
-                  deductPoints: bondData.deductPoints ? Number(bondData.deductPoints) : null,
-                  witnessName: bondData.witnessName || null,
-                }
-              : null,
           studentSignature:  signatureData.studentSignature  || null,
           guardianSignature: signatureData.guardianSignature || null,
           advisorSignature:  signatureData.advisorSignature  || null,
@@ -278,44 +245,37 @@ export default function EditStatementPage() {
       if (!res.ok) {
         const err = await res.json()
         setSaveError(err.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่")
+        toast.error(err.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่")
         return
       }
-      router.push(`/record/statement/${id}`)
+      toast.success("บันทึกการแก้ไขสำเร็จ")
+      router.push(`/record/statement`)
     } catch {
       setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่")
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่")
     } finally {
       setSaving(false)
     }
   }
 
-  const displayStep = !showBondStep && step >= 4 ? step - 1 : step
-  const visibleStepsList = STEPS.filter((_, i) => i !== 3 || showBondStep)
-
-  function isActualStepComplete(actualStep: number): boolean {
-    switch (actualStep) {
+  function isStepComplete(s: number): boolean {
+    switch (s) {
       case 0: return true
       case 1: return !!(
         formData.semesterId && formData.academicYearId &&
         formData.violationCategoryId && formData.subject &&
-        formData.detail && formData.incidentDateTime && formData.recorder
+        formData.detail && formData.incidentDateTime
       )
       case 2: return measureData.selected.length > 0
-      case 3: return bondData.selectedGuardianIndex !== null && bondData.penaltyActions.length > 0
+      case 3: return true
       case 4: return true
-      case 5: return true
       default: return false
     }
   }
 
-  const stepCompleted = visibleStepsList.map((s) => {
-    const actualIdx = STEPS.indexOf(s)
-    return isActualStepComplete(actualIdx)
-  })
+  const stepCompleted = STEPS.map((_, i) => isStepComplete(i))
 
-  function handleStepClick(visibleIndex: number) {
-    const actualIdx = STEPS.indexOf(visibleStepsList[visibleIndex])
-    setStep(actualIdx)
-  }
+  function handleStepClick(i: number) { setStep(i) }
 
   if (loading) {
     return (
@@ -345,10 +305,8 @@ export default function EditStatementPage() {
       </div>
 
       <WizardStepper
-        currentStep={displayStep}
-        showBondStep={showBondStep}
+        currentStep={step}
         stepCompleted={stepCompleted}
-        visibleSteps={visibleStepsList}
         onStepClick={handleStepClick}
       />
 
@@ -372,35 +330,23 @@ export default function EditStatementPage() {
           onNext={handleNext}
         />
       )}
-      {step === 3 && showBondStep && (
-        <Step4Bond
-          student={student}
-          formData={formData}
-          bondData={bondData}
-          setBondData={setBondData}
-          onBack={() => setStep(2)}
-          onNext={() => setStep(4)}
-        />
-      )}
-      {step === 4 && (
-        <Step5Signature
+      {step === 3 && (
+        <Step4Signature
           student={student}
           signatureData={signatureData}
           setSignatureData={setSignatureData}
           onBack={handleBack}
-          onNext={() => setStep(5)}
+          onNext={() => setStep(4)}
         />
       )}
-      {step === 5 && (
-        <Step6Confirm
+      {step === 4 && (
+        <Step5Confirm
           student={student}
           formData={formData}
           measureData={measureData}
-          bondData={bondData}
-          showBondStep={showBondStep}
           saving={saving}
           saveError={saveError}
-          onBack={() => setStep(4)}
+          onBack={() => setStep(3)}
           onSubmit={handleSubmit}
         />
       )}
@@ -412,36 +358,30 @@ export default function EditStatementPage() {
 
 function WizardStepper({
   currentStep,
-  showBondStep,
   stepCompleted,
-  visibleSteps,
   onStepClick,
 }: {
   currentStep: number
-  showBondStep: boolean
   stepCompleted: boolean[]
-  visibleSteps: typeof STEPS
-  onStepClick: (visibleIndex: number) => void
+  onStepClick: (i: number) => void
 }) {
   return (
     <div className="wizard-stepper">
       <div className="wizard-frame">
-        {visibleSteps.map((s, vi) => {
-          const isDone = vi < currentStep || (vi !== currentStep && stepCompleted[vi])
-          const isCurrent = vi === currentStep
+        {STEPS.map((s, i) => {
+          const isDone = i < currentStep || (i !== currentStep && stepCompleted[i])
+          const isCurrent = i === currentStep
           const state = isDone ? "complete" : isCurrent ? "current" : ""
           return (
             <div
               key={s.num}
               className={`wizard-step ${state}`}
-              onClick={() => onStepClick(vi)}
+              onClick={() => onStepClick(i)}
               style={{ cursor: "pointer" }}
             >
               <div className="step-tick" />
               <div className="step-meta">
-                <span className="step-num">
-                  {isDone ? <Check size={12} /> : s.num}
-                </span>
+                <span className="step-num">{isDone ? <Check size={12} /> : s.num}</span>
                 <span style={{ fontSize: 10, letterSpacing: "0.07em", color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>{s.en}</span>
               </div>
               <span className="step-label">{s.label}</span>
@@ -451,7 +391,7 @@ function WizardStepper({
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--rule-soft)", fontSize: 12, color: "var(--ink-3)" }}>
         <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.06em" }}>
-          ขั้นตอน {currentStep + 1} จาก {visibleSteps.length}
+          ขั้นตอน {currentStep + 1} จาก {STEPS.length}
         </span>
         <span style={{ display: "flex", gap: 14 }}>
           <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--sage)", borderRadius: 2, marginRight: 5 }} />เสร็จแล้ว</span>
@@ -588,6 +528,7 @@ function Step1StudentInfo({ student, onNext }: { student: Student; onNext: () =>
 type SemesterItem = { id: number; name: string; value: number }
 type AcademicYearItem = { id: number; year: number }
 type ViolationCategoryItem = { id: number; name: string }
+type ViolationSubCategoryItem = { id: number; name: string; violationCategoryId: number }
 
 interface Step2Props {
   student: Student
@@ -601,7 +542,9 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
   const [semesters, setSemesters] = useState<SemesterItem[]>([])
   const [academicYears, setAcademicYears] = useState<AcademicYearItem[]>([])
   const [violationCategories, setViolationCategories] = useState<ViolationCategoryItem[]>([])
+  const [subCategories, setSubCategories] = useState<ViolationSubCategoryItem[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
+  const [loadingSubs, setLoadingSubs] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -614,15 +557,26 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
     })
   }, [])
 
+  useEffect(() => {
+    if (!formData.violationCategoryId) { setSubCategories([]); return }
+    setLoadingSubs(true)
+    fetch(`/api/master/violation-sub-categories?categoryId=${formData.violationCategoryId}`)
+      .then((r) => r.json())
+      .then((subs) => { setSubCategories(subs); setLoadingSubs(false) })
+      .catch(() => setLoadingSubs(false))
+  }, [formData.violationCategoryId])
+
   function update(fields: Partial<StatementFormData>) {
     setFormData((prev) => ({ ...prev, ...fields }))
   }
 
+  const incidentDate = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : ""
+  const incidentTime = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 16) : ""
+
   const isValid =
     formData.semesterId && formData.academicYearId &&
     formData.violationCategoryId && formData.subject.trim() &&
-    formData.detail.trim() && formData.incidentDateTime &&
-    formData.location.trim() && formData.recorder.trim()
+    formData.detail.trim() && formData.incidentDateTime
 
   return (
     <div className="wizard-body">
@@ -669,20 +623,42 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
             </div>
           </div>
 
-          <div>
-            <FieldLabel required>หมวดการผิดระเบียบ</FieldLabel>
-            <select
-              className="ks-select"
-              value={formData.violationCategoryId}
-              onChange={(e) => {
-                const v = e.target.value
-                const found = violationCategories.find((c) => String(c.id) === v)
-                update({ violationCategoryId: v, violationCategoryLabel: found?.name ?? "" })
-              }}
-            >
-              <option value="">เลือกหมวด</option>
-              {violationCategories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-            </select>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div>
+              <FieldLabel required>หมวดการผิดระเบียบ</FieldLabel>
+              <select
+                className="ks-select"
+                value={formData.violationCategoryId}
+                onChange={(e) => {
+                  const v = e.target.value
+                  const found = violationCategories.find((c) => String(c.id) === v)
+                  update({ violationCategoryId: v, violationCategoryLabel: found?.name ?? "", violationSubCategoryId: "", violationSubCategoryLabel: "" })
+                }}
+              >
+                <option value="">เลือกหมวด</option>
+                {violationCategories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <FieldLabel>หมวดย่อย</FieldLabel>
+              {loadingSubs ? (
+                <div style={{ height: 38, background: "var(--surface-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
+              ) : subCategories.length === 0 ? (
+                <div className="ks-input" style={{ color: "var(--ink-4)", pointerEvents: "none" }}>—</div>
+              ) : (
+                <select
+                  className="ks-select"
+                  value={formData.violationSubCategoryId}
+                  onChange={(e) => {
+                    const found = subCategories.find((s) => String(s.id) === e.target.value)
+                    update({ violationSubCategoryId: e.target.value, violationSubCategoryLabel: found?.name ?? "" })
+                  }}
+                >
+                  <option value="">เลือกหมวดย่อย (ถ้ามี)</option>
+                  {subCategories.map((s) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
+                </select>
+              )}
+            </div>
           </div>
 
           <div>
@@ -713,60 +689,33 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
             </div>
           </div>
 
-          <div>
-            <FieldLabel required>วันและเวลาที่เกิดเหตุ</FieldLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+            <div>
+              <FieldLabel required>วันที่เกิดเหตุ</FieldLabel>
+              <DatePicker
+                value={incidentDate}
+                onChange={(v) => {
+                  const time = incidentTime || "00:00"
+                  update({ incidentDateTime: v ? `${v}T${time}` : "" })
+                }}
+                placeholder="เลือกวันที่เกิดเหตุ"
+              />
+            </div>
+            <div>
+              <FieldLabel>เวลา</FieldLabel>
               <input
-                type="date"
                 className="ks-input"
-                value={formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : ""}
+                type="time"
+                value={incidentTime}
                 onChange={(e) => {
-                  const date = e.target.value
-                  const time = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 16) : "00:00"
-                  update({ incidentDateTime: date ? `${date}T${time}` : "" })
+                  const time = e.target.value
+                  const date = incidentDate || new Date().toISOString().slice(0, 10)
+                  update({ incidentDateTime: `${date}T${time || "00:00"}` })
                 }}
               />
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <select
-                  className="ks-select"
-                  style={{ flex: 1 }}
-                  value={formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : ""}
-                  onChange={(e) => {
-                    const hh   = e.target.value
-                    const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
-                    const mm   = formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : "00"
-                    update({ incidentDateTime: hh !== "" ? `${date}T${hh}:${mm}` : "" })
-                  }}
-                >
-                  <option value="">ชม.</option>
-                  {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
-                <span style={{ color: "var(--ink-4)", fontWeight: 600 }}>:</span>
-                <select
-                  className="ks-select"
-                  style={{ flex: 1 }}
-                  value={formData.incidentDateTime ? formData.incidentDateTime.slice(14, 16) : ""}
-                  onChange={(e) => {
-                    const mm   = e.target.value
-                    const date = formData.incidentDateTime ? formData.incidentDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)
-                    const hh   = formData.incidentDateTime ? formData.incidentDateTime.slice(11, 13) : "00"
-                    update({ incidentDateTime: mm !== "" ? `${date}T${hh}:${mm}` : "" })
-                  }}
-                >
-                  <option value="">นาที</option>
-                  {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
             </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
-              <FieldLabel required>สถานที่เกิดเหตุ</FieldLabel>
+              <FieldLabel>สถานที่เกิดเหตุ</FieldLabel>
               <input
                 type="text"
                 className="ks-input"
@@ -775,16 +724,40 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
                 placeholder="เช่น อาคาร 3 ห้อง 302"
               />
             </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
-              <FieldLabel required>ผู้บันทึกข้อมูล</FieldLabel>
+              <FieldLabel>ครูที่ปรึกษาคนที่ 1</FieldLabel>
               <input
                 type="text"
                 className="ks-input"
-                value={formData.recorder}
-                onChange={(e) => update({ recorder: e.target.value })}
-                placeholder="ชื่อผู้บันทึก"
+                value={formData.advisor1Name}
+                onChange={(e) => update({ advisor1Name: e.target.value })}
+                placeholder="ชื่อ-นามสกุลครูที่ปรึกษา"
               />
             </div>
+            <div>
+              <FieldLabel>ครูที่ปรึกษาคนที่ 2</FieldLabel>
+              <input
+                type="text"
+                className="ks-input"
+                value={formData.advisor2Name}
+                onChange={(e) => update({ advisor2Name: e.target.value })}
+                placeholder="ชื่อ-นามสกุลครูที่ปรึกษา"
+              />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>ผู้บันทึก</FieldLabel>
+            <input
+              type="text"
+              className="ks-input"
+              value={formData.recorder}
+              onChange={(e) => update({ recorder: e.target.value })}
+              placeholder="ชื่อ-นามสกุลผู้บันทึก"
+            />
           </div>
         </div>
       )}
@@ -809,8 +782,6 @@ interface Step3Props {
 }
 
 function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Props) {
-  const showBond = measureData.selected.includes("probation_bond")
-
   function toggleMeasure(mid: string) {
     setMeasureData((prev) => ({
       ...prev,
@@ -840,30 +811,16 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
 
         {/* B · RESULT */}
         <MeasureBlock marker="B · RESULT" title="ผลการพิจารณา">
-          {RESULT_MEASURES.map((m) => {
-            const isBond = m.id === "probation_bond"
-            const checked = measureData.selected.includes(m.id)
-            return (
-              <CheckRow
-                key={m.id}
-                checked={checked}
-                onChange={() => toggleMeasure(m.id)}
-                label={m.label}
-                special={isBond}
-              />
-            )
-          })}
+          {RESULT_MEASURES.map((m) => (
+            <CheckRow
+              key={m.id}
+              checked={measureData.selected.includes(m.id)}
+              onChange={() => toggleMeasure(m.id)}
+              label={m.label}
+            />
+          ))}
         </MeasureBlock>
       </div>
-
-      {showBond && (
-        <div style={{ display: "flex", gap: 8, background: "color-mix(in srgb, var(--amber) 8%, white)", border: "1px solid color-mix(in srgb, var(--amber) 30%, white)", borderRadius: 8, padding: "10px 14px", marginBottom: 18 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--amber) 80%, black)", margin: 0 }}>
-            เลือก <strong>ทำทัณฑ์บน</strong> — ระบบจะเพิ่มขั้นตอนกรอกสัญญาทัณฑ์บนก่อนยืนยัน
-          </p>
-        </div>
-      )}
 
       <div>
         <FieldLabel>หมายเหตุมาตรการ</FieldLabel>
@@ -878,9 +835,7 @@ function Step3Measures({ measureData, setMeasureData, onBack, onNext }: Step3Pro
 
       <div className="wizard-actions">
         <button onClick={onBack} className="btn btn-secondary"><ChevronLeft size={14} /> ย้อนกลับ</button>
-        <button onClick={onNext} className="btn btn-primary">
-          {showBond ? <>ถัดไป — ทัณฑ์บน <ChevronRight size={14} /></> : <>ถัดไป — ลงนาม <ChevronRight size={14} /></>}
-        </button>
+        <button onClick={onNext} className="btn btn-primary">ถัดไป — ลงนาม <ChevronRight size={14} /></button>
       </div>
     </div>
   )
@@ -896,211 +851,27 @@ function MeasureBlock({ title, children }: { marker?: string; title: string; chi
 }
 
 function CheckRow({
-  checked, onChange, label, special, children,
-}: { checked: boolean; onChange: () => void; label: string; special?: boolean; children?: React.ReactNode }) {
-  const color = special ? "var(--amber)" : "var(--indigo)"
+  checked, onChange, label,
+}: { checked: boolean; onChange: () => void; label: string }) {
   return (
-    <div>
-      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-        <div style={{
-          width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: checked ? color : "transparent",
-          border: `2px solid ${checked ? color : "var(--rule-2)"}`,
-        }}>
-          {checked && <Check size={11} color="#fff" />}
-        </div>
-        <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={onChange} />
-        <span style={{ fontSize: 13.5, color: "var(--ink)", flex: 1 }}>{label}</span>
-        {special && (
-          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--amber)", background: "color-mix(in srgb, var(--amber) 12%, white)", padding: "2px 8px", borderRadius: 99 }}>
-            เพิ่มขั้นตอน
-          </span>
-        )}
-      </label>
-      {children && <div style={{ marginLeft: 28 }}>{children}</div>}
-    </div>
+    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+      <div style={{
+        width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: checked ? "var(--indigo)" : "transparent",
+        border: `2px solid ${checked ? "var(--indigo)" : "var(--rule-2)"}`,
+      }}>
+        {checked && <Check size={11} color="#fff" />}
+      </div>
+      <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={onChange} />
+      <span style={{ fontSize: 13.5, color: "var(--ink)", flex: 1 }}>{label}</span>
+    </label>
   )
 }
 
-// ── Step 4: Bond ───────────────────────────────────────────────────────────────
+// ── Step 4: Signatures ─────────────────────────────────────────────────────────
 
 interface Step4Props {
-  student: Student
-  formData: StatementFormData
-  bondData: BondFormData
-  setBondData: React.Dispatch<React.SetStateAction<BondFormData>>
-  onBack: () => void
-  onNext: () => void
-}
-
-function Step4Bond({ student, formData, bondData, setBondData, onBack, onNext }: Step4Props) {
-  const selectedGuardian =
-    bondData.selectedGuardianIndex !== null ? student.guardians[bondData.selectedGuardianIndex] : null
-
-  const isValid =
-    bondData.selectedGuardianIndex !== null &&
-    bondData.penaltyActions.length > 0 &&
-    (!bondData.penaltyActions.includes("deduct_score") || bondData.deductPoints.trim() !== "")
-
-  function togglePenalty(pid: string) {
-    setBondData((prev) => ({
-      ...prev,
-      penaltyActions: prev.penaltyActions.includes(pid)
-        ? prev.penaltyActions.filter((p) => p !== pid)
-        : [...prev.penaltyActions, pid],
-      deductPoints: pid === "deduct_score" && prev.penaltyActions.includes(pid) ? "" : prev.deductPoints,
-    }))
-  }
-
-  const studentFullName = `${student.title.name}${student.firstName} ${student.lastName}`
-
-  return (
-    <div className="wizard-body">
-      <StudentMiniCard student={student} />
-      <h2 className="step-heading" style={{ marginTop: 20 }}>สัญญาทัณฑ์บน</h2>
-      <p className="step-sub">เลือกผู้ปกครองลงนาม และกำหนดบทลงโทษหากทำผิดซ้ำ</p>
-
-      {/* Guardian selection */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-          เลือกผู้ปกครองลงนาม <span style={{ color: "var(--rose)", marginLeft: 2 }}>*</span>
-        </div>
-        {student.guardians.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--ink-4)", textAlign: "center", padding: "12px 0" }}>ไม่มีข้อมูลผู้ปกครองในระบบ</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {student.guardians.map((g, idx) => {
-              const sel = bondData.selectedGuardianIndex === idx
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setBondData((prev) => ({ ...prev, selectedGuardianIndex: idx }))}
-                  style={{
-                    display: "flex", alignItems: "flex-start", gap: 10,
-                    padding: "12px 14px", borderRadius: 8, textAlign: "left",
-                    border: `2px solid ${sel ? "var(--amber)" : "var(--rule-soft)"}`,
-                    background: sel ? "color-mix(in srgb, var(--amber) 8%, white)" : "transparent",
-                    cursor: "pointer", transition: "border-color 0.15s, background 0.15s",
-                  }}
-                >
-                  <div style={{
-                    marginTop: 2, width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
-                    border: `2px solid ${sel ? "var(--amber)" : "var(--rule)"}`,
-                    background: sel ? "var(--amber)" : "transparent",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    {sel && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "white" }} />}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{g.firstName} {g.lastName}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 2 }}>
-                      {g.relation.name}{g.phone ? ` · ${g.phone}` : ""}
-                    </div>
-                  </div>
-                  {sel && (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--amber)", background: "color-mix(in srgb, var(--amber) 12%, white)", padding: "2px 8px", borderRadius: 99, flexShrink: 0 }}>
-                      เลือกแล้ว
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Bond info summary */}
-      <div style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 20, marginBottom: 20 }}>
-        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>ข้อมูลในสัญญา</div>
-        <div className="info-row"><span className="info-label">ผู้ปกครอง</span><span className="info-value">{selectedGuardian ? `${selectedGuardian.firstName} ${selectedGuardian.lastName}` : "—"}</span></div>
-        <div className="info-row"><span className="info-label">ความสัมพันธ์</span><span className="info-value">{selectedGuardian?.relation.name ?? "—"}</span></div>
-        <div className="info-row"><span className="info-label">นักเรียน</span><span className="info-value">{studentFullName}</span></div>
-        <div className="info-row"><span className="info-label">ชั้น / เลขประจำตัว</span><span className="info-value">{student.gradeLevel}/{student.classRoom} · {student.studentCode}</span></div>
-        {formData.detail && (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 4 }}>รายละเอียดความผิด</div>
-            <div style={{ fontSize: 13, color: "var(--ink-2)", background: "color-mix(in srgb, var(--amber) 6%, white)", borderRadius: 6, padding: "8px 12px", lineHeight: 1.6 }}>
-              {formData.detail}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Penalty actions */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-          บทลงโทษหากทำผิดซ้ำ <span style={{ color: "var(--rose)", marginLeft: 2 }}>* เลือกอย่างน้อย 1</span>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {BOND_PENALTY_OPTIONS.map((opt) => {
-            const checked = bondData.penaltyActions.includes(opt.id)
-            return (
-              <label
-                key={opt.id}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "10px 14px", borderRadius: 8, cursor: "pointer",
-                  border: `1.5px solid ${checked ? "var(--amber)" : "var(--rule-soft)"}`,
-                  background: checked ? "color-mix(in srgb, var(--amber) 8%, white)" : "transparent",
-                  transition: "border-color 0.15s, background 0.15s",
-                }}
-              >
-                <div style={{
-                  width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                  border: `2px solid ${checked ? "var(--amber)" : "var(--rule)"}`,
-                  background: checked ? "var(--amber)" : "transparent",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  {checked && <Check size={11} color="#fff" />}
-                </div>
-                <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={() => togglePenalty(opt.id)} />
-                <span style={{ fontSize: 13.5, color: "var(--ink)", flex: 1 }}>{opt.label}</span>
-                {opt.id === "deduct_score" && checked && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-                    <input
-                      type="number" min={1} max={100}
-                      value={bondData.deductPoints}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => setBondData((prev) => ({ ...prev, deductPoints: e.target.value }))}
-                      placeholder="0"
-                      className="ks-input"
-                      style={{ width: 72, height: 34, textAlign: "center" }}
-                    />
-                    <span style={{ fontSize: 12, color: "var(--ink-3)" }}>คะแนน</span>
-                  </div>
-                )}
-              </label>
-            )
-          })}
-        </div>
-      </div>
-
-      <div>
-        <FieldLabel>ชื่อพยาน</FieldLabel>
-        <input
-          type="text"
-          className="ks-input"
-          value={bondData.witnessName}
-          onChange={(e) => setBondData((prev) => ({ ...prev, witnessName: e.target.value }))}
-          placeholder="ชื่อ-นามสกุลพยาน (ถ้ามี)"
-        />
-      </div>
-
-      <div className="wizard-actions">
-        <button onClick={onBack} className="btn btn-secondary"><ChevronLeft size={14} /> ย้อนกลับ</button>
-        <button onClick={onNext} disabled={!isValid} className="btn btn-primary" style={{ opacity: isValid ? 1 : 0.5 }}>
-          ถัดไป — ลงนาม <ChevronRight size={14} />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Step 5: Signatures ─────────────────────────────────────────────────────────
-
-interface Step5Props {
   student: Student
   signatureData: SignatureFormData
   setSignatureData: React.Dispatch<React.SetStateAction<SignatureFormData>>
@@ -1108,7 +879,7 @@ interface Step5Props {
   onNext: () => void
 }
 
-function Step5Signature({ student, signatureData, setSignatureData, onBack, onNext }: Step5Props) {
+function Step4Signature({ student, signatureData, setSignatureData, onBack, onNext }: Step4Props) {
   const advisor = student.advisors.find((a) => a.slot === 1)?.teacher
   const guardian = student.guardians[0]
 
@@ -1309,21 +1080,19 @@ function TeacherSigSelect({ label, role, selectedId, onSelect }: {
   )
 }
 
-// ── Step 6: Confirm ────────────────────────────────────────────────────────────
+// ── Step 5: Confirm ────────────────────────────────────────────────────────────
 
-interface Step6Props {
+interface Step5ConfirmProps {
   student: Student
   formData: StatementFormData
   measureData: MeasureFormData
-  bondData: BondFormData
-  showBondStep: boolean
   saving: boolean
   saveError: string | null
   onBack: () => void
   onSubmit: () => void
 }
 
-function Step6Confirm({ student, formData, measureData, bondData, showBondStep, saving, saveError, onBack, onSubmit }: Step6Props) {
+function Step5Confirm({ student, formData, measureData, saving, saveError, onBack, onSubmit }: Step5ConfirmProps) {
   function formatThaiDateTime(dt: string) {
     if (!dt) return "—"
     const [datePart, timePart] = dt.split("T")
@@ -1347,8 +1116,10 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
         <div className="info-row"><span className="info-label">ภาคเรียน / ปีการศึกษา</span><span className="info-value">{formData.semesterLabel} / {formData.academicYearLabel}</span></div>
         <div className="info-row"><span className="info-label">หมวดการผิดระเบียบ</span><span className="info-value">{formData.violationCategoryLabel}</span></div>
         <div className="info-row"><span className="info-label">วันที่เกิดเหตุ</span><span className="info-value">{formatThaiDateTime(formData.incidentDateTime)}</span></div>
-        <div className="info-row"><span className="info-label">สถานที่</span><span className="info-value">{formData.location}</span></div>
-        <div className="info-row"><span className="info-label">ผู้บันทึก</span><span className="info-value">{formData.recorder}</span></div>
+        <div className="info-row"><span className="info-label">สถานที่</span><span className="info-value">{formData.location || "—"}</span></div>
+        {formData.advisor1Name && <div className="info-row"><span className="info-label">ครูที่ปรึกษาคนที่ 1</span><span className="info-value">{formData.advisor1Name}</span></div>}
+        {formData.advisor2Name && <div className="info-row"><span className="info-label">ครูที่ปรึกษาคนที่ 2</span><span className="info-value">{formData.advisor2Name}</span></div>}
+        {formData.recorder && <div className="info-row"><span className="info-label">ผู้บันทึก</span><span className="info-value">{formData.recorder}</span></div>}
         {formData.subject && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 4 }}>เรื่อง</div>
@@ -1378,36 +1149,6 @@ function Step6Confirm({ student, formData, measureData, bondData, showBondStep, 
           <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)", background: "var(--surface-2)", borderRadius: 6, padding: "6px 10px" }}>{measureData.notes}</div>
         )}
       </div>
-
-      {showBondStep && (
-        <div style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 20, marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>ทัณฑ์บน</div>
-          {bondData.selectedGuardianIndex !== null && student.guardians[bondData.selectedGuardianIndex] && (() => {
-            const g = student.guardians[bondData.selectedGuardianIndex!]
-            return (
-              <>
-                <div className="info-row"><span className="info-label">ผู้ปกครองลงนาม</span><span className="info-value">{g.firstName} {g.lastName}</span></div>
-                <div className="info-row"><span className="info-label">ความสัมพันธ์</span><span className="info-value">{g.relation.name}</span></div>
-              </>
-            )
-          })()}
-          {bondData.penaltyActions.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 4 }}>บทลงโทษหากทำผิดซ้ำ</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {BOND_PENALTY_OPTIONS.filter((o) => bondData.penaltyActions.includes(o.id)).map((o) => (
-                  <span key={o.id} className="measure-tag" style={{ borderColor: "var(--amber)", color: "var(--amber)" }}>
-                    {o.label}{o.id === "deduct_score" && bondData.deductPoints ? ` ${bondData.deductPoints} คะแนน` : ""}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {bondData.witnessName && (
-            <div className="info-row" style={{ marginTop: 8 }}><span className="info-label">พยาน</span><span className="info-value">{bondData.witnessName}</span></div>
-          )}
-        </div>
-      )}
 
       {saveError && (
         <div style={{ padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)", marginBottom: 16 }}>

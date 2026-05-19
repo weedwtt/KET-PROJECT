@@ -66,7 +66,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const pdfData: StatementPdfData = {
     id: record.id,
     recordDate: record.recordDate.toISOString(),
-    recordedBy: record.recordedBy,
+    recordedBy: record.recordedBy ?? "",
     subject: record.subject,
     content: record.content,
     incidentAt: record.incidentAt?.toISOString() ?? null,

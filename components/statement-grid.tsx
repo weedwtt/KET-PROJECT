@@ -11,7 +11,7 @@ type Statement = {
   semester: number
   academicYear: number
   violationCategory: string
-  recordedBy: string
+  recordedBy: string | null
   status: string
   student: {
     studentCode: string

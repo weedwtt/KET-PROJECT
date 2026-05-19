@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search, ChevronLeft, User, Check, ChevronRight } from "lucide-react"
+import { toast } from "sonner"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -210,11 +211,14 @@ export default function BondNewPage() {
       if (!res.ok) {
         const err = await res.json()
         setSaveError(err.error ?? "เกิดข้อผิดพลาด")
+        toast.error(err.error ?? "เกิดข้อผิดพลาด")
         return
       }
+      toast.success("บันทึกทัณฑ์บนสำเร็จ")
       router.push("/record/bond")
     } catch {
       setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ")
     } finally {
       setSaving(false)
     }

@@ -293,7 +293,9 @@ model StatementRecord {
   incidentAt DateTime? @map("incident_at")
   location   String?   @db.VarChar(200)
 
-  recordedBy String @db.VarChar(100) @map("recorded_by")
+  advisor1Name String? @db.VarChar(200) @map("advisor1_name")
+  advisor2Name String? @db.VarChar(200) @map("advisor2_name")
+  recordedBy   String? @db.VarChar(200) @map("recorded_by")
 
   // ────── Step 4: มาตรการ ──────
   /// รหัสมาตรการพิจารณา เช่น ["notify_parent", "invite_parent"]

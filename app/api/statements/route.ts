@@ -15,6 +15,8 @@ export async function POST(request: NextRequest) {
       detail,
       incidentDateTime,
       location,
+      advisor1Name,
+      advisor2Name,
       recorder,
       // Step 4
       considerationMeasures,
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
       gradeHeadTeacherId,
     } = body
 
-    if (!studentId || !semesterId || !academicYearId || !violationCategoryId || !subject || !detail || !recorder) {
+    if (!studentId || !semesterId || !academicYearId || !violationCategoryId || !subject || !detail) {
       return Response.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 })
     }
 
@@ -48,7 +50,9 @@ export async function POST(request: NextRequest) {
         content: detail,
         incidentAt,
         location: location ?? null,
-        recordedBy: recorder,
+        advisor1Name: advisor1Name || null,
+        advisor2Name: advisor2Name || null,
+        recordedBy: recorder || null,
         // Step 4
         considerationMeasures: Array.isArray(considerationMeasures) ? considerationMeasures : [],
         resultMeasures: Array.isArray(resultMeasures) ? resultMeasures : [],

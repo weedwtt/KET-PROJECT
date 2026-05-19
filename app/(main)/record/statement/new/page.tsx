@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search, ChevronRight, ChevronLeft, User, Check } from "lucide-react"
 import { DatePicker } from "@/components/ui/date-picker"
+import { toast } from "sonner"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -87,11 +88,12 @@ type IncidentFormData = {
   violationCategoryLabel: string
   violationSubCategoryId: string
   violationSubCategoryLabel: string
-  course: string
   behavior: string
   incidentDate: string
   incidentTime: string
   location: string
+  advisor1Name: string
+  advisor2Name: string
   recorder: string
 }
 
@@ -140,9 +142,9 @@ export default function NewStatementPage() {
     academicYearId: "", academicYearLabel: "",
     violationCategoryId: "", violationCategoryLabel: "",
     violationSubCategoryId: "", violationSubCategoryLabel: "",
-    course: "", behavior: "",
+    behavior: "",
     incidentDate: "", incidentTime: "",
-    location: "", recorder: "",
+    location: "", advisor1Name: "", advisor2Name: "", recorder: "",
   })
 
   const [measures, setMeasures] = useState<MeasureFormData>({
@@ -227,7 +229,7 @@ export default function NewStatementPage() {
       ? `${incident.incidentDate}T${incident.incidentTime || "00:00"}`
       : ""
 
-    const subject = incident.course.trim() || incident.behavior.trim().slice(0, 200)
+    const subject = incident.behavior.trim().slice(0, 200)
 
     try {
       const res = await fetch("/api/statements", {
@@ -243,7 +245,9 @@ export default function NewStatementPage() {
           detail: incident.behavior,
           incidentDateTime: incidentDateTime || null,
           location: incident.location || null,
-          recorder: incident.recorder,
+          advisor1Name: incident.advisor1Name || null,
+          advisor2Name: incident.advisor2Name || null,
+          recorder: incident.recorder || null,
           considerationMeasures,
           resultMeasures,
           measureNotes,
@@ -258,11 +262,14 @@ export default function NewStatementPage() {
       if (!res.ok) {
         const err = await res.json()
         setSaveError(err.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่")
+        toast.error(err.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่")
         return
       }
+      toast.success("บันทึกถ้อยคำสำเร็จ")
       router.push("/record/statement")
     } catch {
       setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่")
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่")
     } finally {
       setSaving(false)
     }
@@ -394,6 +401,7 @@ function Step0Student({
   isValid, onNext,
 }: Step0Props) {
   const advisor1 = selected?.advisors.find((a) => a.slot === 1)?.teacher
+  const advisor2 = selected?.advisors.find((a) => a.slot === 2)?.teacher
 
   function teacherName(t: { title: { name: string }; firstName: string; lastName: string }) {
     return `${t.title.name}${t.firstName} ${t.lastName}`
@@ -494,9 +502,14 @@ function Step0Student({
             </div>
             <div>
               <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.07em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 4 }}>ครูที่ปรึกษา</div>
-              <div style={{ fontSize: 13.5, fontWeight: 500 }}>
-                {advisor1 ? teacherName(advisor1) : "—"}
-              </div>
+              {advisor1 ? (
+                <div style={{ fontSize: 13.5, fontWeight: 500 }}>{teacherName(advisor1)}</div>
+              ) : (
+                <div style={{ fontSize: 13.5, fontWeight: 500 }}>—</div>
+              )}
+              {advisor2 && (
+                <div style={{ fontSize: 13.5, fontWeight: 500, marginTop: 2 }}>{teacherName(advisor2)}</div>
+              )}
             </div>
             <div>
               <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.07em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 4 }}>ชั้น / เลขที่</div>
@@ -594,19 +607,21 @@ function Step1Incident({
   }
 
   const isValid =
-    !!data.violationCategoryId && !!data.behavior.trim() &&
-    !!data.incidentDate && !!data.recorder.trim()
+    !!data.violationCategoryId && !!data.behavior.trim() && !!data.incidentDate
 
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
-  const defaultRecorder = advisor1
-    ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}`
-    : ""
+  const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
 
-  // Pre-fill recorder from advisor on mount
+  function advisorName(t: { title: { name: string }; firstName: string; lastName: string }) {
+    return `${t.title.name}${t.firstName} ${t.lastName}`
+  }
+
+  // Pre-fill advisor names on mount
   useEffect(() => {
-    if (!data.recorder && defaultRecorder) {
-      upd({ recorder: defaultRecorder })
-    }
+    const updates: Partial<IncidentFormData> = {}
+    if (!data.advisor1Name && advisor1) updates.advisor1Name = advisorName(advisor1)
+    if (!data.advisor2Name && advisor2) updates.advisor2Name = advisorName(advisor2)
+    if (Object.keys(updates).length > 0) upd(updates)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -658,16 +673,6 @@ function Step1Incident({
           </div>
 
           <div>
-            <FieldLabel>วิชา / กิจกรรมที่เกี่ยวข้อง</FieldLabel>
-            <input
-              className="ks-input"
-              value={data.course}
-              onChange={(e) => upd({ course: e.target.value })}
-              placeholder="เช่น คณิตศาสตร์ (ค23101)"
-            />
-          </div>
-
-          <div>
             <FieldLabel required>รายละเอียดพฤติกรรม</FieldLabel>
             <textarea
               className="ks-textarea"
@@ -712,8 +717,29 @@ function Step1Incident({
             </div>
           </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div>
+              <FieldLabel>ครูที่ปรึกษาคนที่ 1</FieldLabel>
+              <input
+                className="ks-input"
+                value={data.advisor1Name}
+                onChange={(e) => upd({ advisor1Name: e.target.value })}
+                placeholder="ชื่อ-นามสกุลครูที่ปรึกษา"
+              />
+            </div>
+            <div>
+              <FieldLabel>ครูที่ปรึกษาคนที่ 2</FieldLabel>
+              <input
+                className="ks-input"
+                value={data.advisor2Name}
+                onChange={(e) => upd({ advisor2Name: e.target.value })}
+                placeholder="ชื่อ-นามสกุลครูที่ปรึกษา"
+              />
+            </div>
+          </div>
+
           <div>
-            <FieldLabel required>ผู้บันทึก</FieldLabel>
+            <FieldLabel>ผู้บันทึก</FieldLabel>
             <input
               className="ks-input"
               value={data.recorder}

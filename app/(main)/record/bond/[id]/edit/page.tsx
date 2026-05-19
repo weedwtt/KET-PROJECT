@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Check, User } from "lucide-react"
+import { toast } from "sonner"
 
 type Guardian = {
   id: number
@@ -196,11 +197,14 @@ export default function BondEditPage() {
       if (!res.ok) {
         const err = await res.json()
         setSaveError(err.error ?? "เกิดข้อผิดพลาด")
+        toast.error(err.error ?? "เกิดข้อผิดพลาด")
         return
       }
+      toast.success("บันทึกการแก้ไขทัณฑ์บนสำเร็จ")
       router.push(`/record/bond/${id}`)
     } catch {
       setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ")
     } finally {
       setSaving(false)
     }

@@ -6,13 +6,14 @@ import Link from "next/link"
 import {
   ChevronLeft, CheckCircle2, ShieldCheck, Check, User,
 } from "lucide-react"
+import { toast } from "sonner"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type StatementDetail = {
   id: number
   recordDate: string
-  recordedBy: string
+  recordedBy: string | null
   status: string
   approvedAt: string | null
   subject: string
@@ -117,11 +118,14 @@ export default function ApproveDetailPage() {
       if (!res.ok) {
         const err = await res.json()
         setApproveError(err.error ?? "เกิดข้อผิดพลาด")
+        toast.error(err.error ?? "เกิดข้อผิดพลาด")
         return
       }
+      toast.success("อนุมัติบันทึกถ้อยคำสำเร็จ")
       router.push("/dashboard/approve")
     } catch {
       setApproveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ")
     } finally {
       setApproving(false)
     }
