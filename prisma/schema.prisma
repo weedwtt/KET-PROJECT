@@ -435,6 +435,9 @@ model BondRecord {
   viceDirectorSignature String? @db.Text @map("vice_director_signature")
   directorSignature    String? @db.Text @map("director_signature")
 
+  advisor1Name         String? @db.VarChar(200) @map("advisor1_name")
+  advisor2Name         String? @db.VarChar(200) @map("advisor2_name")
+
   approvedByTeacherId  Int?     @map("approved_by_teacher_id")
   approvedByTeacher    Teacher? @relation("BondApprovedBy", fields: [approvedByTeacherId], references: [id])
   approvedAt           DateTime? @map("approved_at")

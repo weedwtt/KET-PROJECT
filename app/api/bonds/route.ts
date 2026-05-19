@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       violationDetail,
       measureDeductScore, measureDeductPoints,
       measureActivity, measureSuspension, measureTransfer,
+      advisor1Name, advisor2Name,
       recorder,
       headTeacherId,
       disciplineTeacherId,
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       viceDirectorSignature, directorSignature,
     } = body
 
-    if (!studentId || !contractDate || !guardianName || !violationDetail || !recorder) {
+    if (!studentId || !contractDate || !guardianName || !violationDetail) {
       return Response.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 })
     }
 
@@ -106,7 +107,9 @@ export async function POST(request: NextRequest) {
         measureActivity: !!measureActivity,
         measureSuspension: !!measureSuspension,
         measureTransfer: !!measureTransfer,
-        recorder,
+        advisor1Name: advisor1Name || null,
+        advisor2Name: advisor2Name || null,
+        recorder: recorder || "",
         status: "active",
         headTeacherId: headTeacherId ? Number(headTeacherId) : null,
         disciplineTeacherId: disciplineTeacherId ? Number(disciplineTeacherId) : null,
