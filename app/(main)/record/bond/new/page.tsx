@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Search, ChevronLeft, User, Check, ChevronRight } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight, User, Check } from "lucide-react"
 import { toast } from "sonner"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -50,9 +50,13 @@ type TeacherOption = {
   signatureUrl: string | null
 }
 
+type SemesterItem = { id: number; name: string; value: number }
+type AcademicYearItem = { id: number; year: number }
+
 type BondFormData = {
   contractDate: string
-  // Guardian
+  semesterId: string
+  academicYearId: string
   guardianId: number | null
   guardianName: string
   guardianRelation: string
@@ -65,33 +69,45 @@ type BondFormData = {
   addressSubDistrict: string
   addressDistrict: string
   addressProvince: string
-  // Violation
   violationDetail: string
-  // Measures
   measureDeductScore: boolean
   measureDeductPoints: string
   measureActivity: boolean
   measureSuspension: boolean
   measureTransfer: boolean
-  // Recorder
   recorder: string
-  // Teachers (dropdown)
   headTeacherId: number | null
   disciplineTeacherId: number | null
 }
+
+// ── Steps config ───────────────────────────────────────────────────────────────
+
+const STEPS = [
+  { num: "01", label: "นักเรียน",            en: "STUDENT"   },
+  { num: "02", label: "ผู้ปกครองและที่อยู่", en: "GUARDIAN"  },
+  { num: "03", label: "รายละเอียดความผิด",   en: "VIOLATION" },
+  { num: "04", label: "มาตรการ",             en: "MEASURES"  },
+  { num: "05", label: "ลายเซ็นและยืนยัน",   en: "SIGNATURES"},
+]
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function BondNewPage() {
   const router = useRouter()
+  const [step, setStep] = useState(0)
+
   const [query, setQuery] = useState("")
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<Student[] | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [student, setStudent] = useState<Student | null>(null)
+  const [semesters, setSemesters] = useState<SemesterItem[]>([])
+  const [academicYears, setAcademicYears] = useState<AcademicYearItem[]>([])
+  const [loadingSem, setLoadingSem] = useState(false)
 
   const [form, setForm] = useState<BondFormData>({
     contractDate: new Date().toISOString().slice(0, 10),
+    semesterId: "", academicYearId: "",
     guardianId: null, guardianName: "", guardianRelation: "", guardianPhone: "",
     addressHouseNo: "", addressMoo: "", addressVillage: "", addressRoad: "",
     addressSoi: "", addressSubDistrict: "", addressDistrict: "", addressProvince: "",
@@ -102,15 +118,31 @@ export default function BondNewPage() {
     headTeacherId: null, disciplineTeacherId: null,
   })
 
-  // Signatures
   const [guardianSig, setGuardianSig] = useState("")
   const [studentSig, setStudentSig] = useState("")
   const [advisorSig, setAdvisorSig] = useState("")
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
+  useEffect(() => {
+    setLoadingSem(true)
+    Promise.all([
+      fetch("/api/master/semesters").then((r) => r.json()),
+      fetch("/api/master/academic-years").then((r) => r.json()),
+    ]).then(([sem, ay]) => {
+      setSemesters(sem)
+      setAcademicYears(ay)
+      setLoadingSem(false)
+    }).catch(() => setLoadingSem(false))
+  }, [])
+
   function upd(fields: Partial<BondFormData>) {
     setForm((p) => ({ ...p, ...fields }))
+  }
+
+  function goStep(n: number) {
+    setStep(n)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   async function handleSearch(e: React.FormEvent) {
@@ -143,7 +175,6 @@ export default function BondNewPage() {
     setStudent(s)
     setQuery("")
     setResults(null)
-    // Auto-fill recorder from advisor1
     const advisor1 = s.advisors.find((a) => a.slot === 1)?.teacher
     if (advisor1) {
       upd({ recorder: `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}` })
@@ -168,11 +199,8 @@ export default function BondNewPage() {
     })
   }
 
-  const isValid =
-    !!student && !!form.contractDate && !!form.guardianName && !!form.violationDetail && !!form.recorder
-
   async function handleSubmit() {
-    if (!student || !isValid) return
+    if (!student) return
     setSaving(true)
     setSaveError(null)
     try {
@@ -182,6 +210,8 @@ export default function BondNewPage() {
         body: JSON.stringify({
           studentId: student.id,
           contractDate: form.contractDate,
+          semesterId: form.semesterId || null,
+          academicYearId: form.academicYearId || null,
           guardianId: form.guardianId,
           guardianName: form.guardianName,
           guardianRelation: form.guardianRelation,
@@ -226,6 +256,10 @@ export default function BondNewPage() {
 
   const advisor1 = student?.advisors.find((a) => a.slot === 1)?.teacher
 
+  const step0Valid = !!student && !!form.contractDate && !!form.semesterId && !!form.academicYearId && !!form.recorder
+  const step1Valid = !!form.guardianName
+  const step2Valid = !!form.violationDetail
+
   return (
     <div className="ks-page" style={{ maxWidth: 900 }}>
       <div className="page-header">
@@ -241,306 +275,459 @@ export default function BondNewPage() {
         <Link href="/record/bond" className="btn btn-ghost btn-sm">ยกเลิก</Link>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <WizardStepper currentStep={step} />
 
-        {/* § 01 — Student */}
-        <Section marker="01" title="ค้นหาและเลือกนักเรียน">
-          <div style={{ marginBottom: 16 }}>
-            <FieldLabel>ค้นหานักเรียน</FieldLabel>
-            <form onSubmit={handleSearch} style={{ display: "flex", gap: 10 }}>
-              <div style={{ flex: 1, position: "relative" }}>
-                <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--ink-3)" }} />
-                <input
-                  className="ks-input"
-                  style={{ paddingLeft: 42 }}
-                  value={query}
-                  onChange={(e) => { setQuery(e.target.value); if (!e.target.value) setStudent(null) }}
-                  placeholder="เช่น 30412 · ปวีณ์ธิดา · ม.4/2"
-                  disabled={searching}
-                />
+      {step === 0 && (
+        <StepStudent
+          query={query} setQuery={setQuery}
+          searching={searching} results={results} searchError={searchError}
+          onSearch={handleSearch} onSelectResult={selectStudent}
+          student={student} onClearStudent={() => setStudent(null)}
+          semesters={semesters} academicYears={academicYears} loadingSem={loadingSem}
+          form={form} upd={upd}
+          isValid={step0Valid}
+          onNext={() => goStep(1)}
+        />
+      )}
+
+      {step === 1 && student && (
+        <StepGuardian
+          student={student}
+          form={form} upd={upd}
+          onSelectGuardian={selectGuardian}
+          isValid={step1Valid}
+          onBack={() => goStep(0)} onNext={() => goStep(2)}
+        />
+      )}
+
+      {step === 2 && student && (
+        <StepViolation
+          student={student}
+          violationDetail={form.violationDetail}
+          onChange={(v) => upd({ violationDetail: v })}
+          isValid={step2Valid}
+          onBack={() => goStep(1)} onNext={() => goStep(3)}
+        />
+      )}
+
+      {step === 3 && student && (
+        <StepMeasures
+          student={student}
+          form={form} upd={upd}
+          onBack={() => goStep(2)} onNext={() => goStep(4)}
+        />
+      )}
+
+      {step === 4 && student && (
+        <StepSignatures
+          student={student} advisor1={advisor1 ?? null}
+          form={form} upd={upd}
+          guardianSig={guardianSig} setGuardianSig={setGuardianSig}
+          studentSig={studentSig} setStudentSig={setStudentSig}
+          advisorSig={advisorSig} setAdvisorSig={setAdvisorSig}
+          saving={saving} saveError={saveError}
+          onBack={() => goStep(3)} onSubmit={handleSubmit}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Stepper ────────────────────────────────────────────────────────────────────
+
+function WizardStepper({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="wizard-stepper">
+      <div className="wizard-frame">
+        {STEPS.map((s, i) => {
+          const state = i < currentStep ? "complete" : i === currentStep ? "current" : ""
+          return (
+            <div key={s.num} className={`wizard-step ${state}`}>
+              <div className="step-tick" />
+              <div className="step-meta">
+                <span className="step-num">
+                  {i < currentStep ? <Check size={12} /> : s.num}
+                </span>
+                <span style={{ fontSize: 10, letterSpacing: "0.07em", color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>{s.en}</span>
               </div>
-              <button type="submit" className="btn btn-primary" disabled={!query.trim() || searching}>
-                {searching ? <SpinIcon /> : <Search size={14} />} ค้นหา
-              </button>
-            </form>
-            {searchError && (
-              <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
-                {searchError}
-              </div>
-            )}
-          </div>
+              <span className="step-label">{s.label}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--rule-soft)", fontSize: 12, color: "var(--ink-3)" }}>
+        <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.06em" }}>
+          ขั้นตอน {currentStep + 1} จาก {STEPS.length}
+        </span>
+        <span style={{ display: "flex", gap: 14 }}>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--sage)", borderRadius: 2, marginRight: 5 }} />เสร็จแล้ว</span>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--indigo)", borderRadius: 2, marginRight: 5 }} />ปัจจุบัน</span>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--rule-2)", borderRadius: 2, marginRight: 5 }} />ยังไม่ถึง</span>
+        </span>
+      </div>
+    </div>
+  )
+}
 
-          {results && results.length > 1 && !student && (
-            <div style={{ border: "1px solid var(--rule)", borderRadius: "var(--radius)", marginBottom: 16, overflow: "hidden" }}>
-              {results.map((s) => (
-                <button key={s.id} onClick={() => selectStudent(s)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "none", border: "none", borderBottom: "1px solid var(--rule-soft)", cursor: "pointer", textAlign: "left" }}>
-                  <User size={15} style={{ color: "var(--indigo)" }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 500, fontSize: 14 }}>{s.title.name}{s.firstName} {s.lastName}</div>
-                    <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>{s.studentCode} · {s.gradeLevel}/{s.classRoom}</div>
-                  </div>
-                  <ChevronRight size={14} style={{ color: "var(--ink-4)" }} />
-                </button>
-              ))}
-            </div>
-          )}
+// ── Student summary badge (reused in steps 1–4) ────────────────────────────────
 
-          {student && (
-            <div style={{ background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 44, height: 44, background: "var(--indigo)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <User size={20} color="#fff" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 16 }}>{student.title.name}{student.firstName} {student.lastName}</div>
-                <div style={{ fontSize: 12.5, color: "var(--indigo-ink)", fontFamily: "var(--font-mono)" }}>
-                  {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}
-                </div>
-                {advisor1 && (
-                  <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 2 }}>
-                    ครูที่ปรึกษา: {advisor1.title.name}{advisor1.firstName} {advisor1.lastName}
-                  </div>
-                )}
-              </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => { setStudent(null); setQuery("") }}>เปลี่ยน</button>
-            </div>
-          )}
-        </Section>
-
-        {/* § 02 — Contract info */}
-        <Section marker="02" title="ข้อมูลสัญญาและผู้ปกครอง">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
-            <div>
-              <FieldLabel required>วันที่ทำสัญญา</FieldLabel>
-              <input
-                className="ks-input"
-                type="date"
-                value={form.contractDate}
-                onChange={(e) => upd({ contractDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <FieldLabel required>ผู้บันทึก</FieldLabel>
-              <input
-                className="ks-input"
-                value={form.recorder}
-                onChange={(e) => upd({ recorder: e.target.value })}
-                placeholder="ชื่อผู้บันทึก"
-              />
-            </div>
-          </div>
-
-          {/* Guardian selection */}
-          {student && student.guardians.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <FieldLabel>เลือกผู้ปกครอง</FieldLabel>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-                {student.guardians.map((g) => {
-                  const sel = form.guardianId === g.id
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => selectGuardian(g)}
-                      className={sel ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
-                    >
-                      {g.firstName} {g.lastName} ({g.relation.name})
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
-            <div>
-              <FieldLabel required>ชื่อผู้ปกครอง</FieldLabel>
-              <input className="ks-input" value={form.guardianName} onChange={(e) => upd({ guardianName: e.target.value })} placeholder="ชื่อ-นามสกุล" />
-            </div>
-            <div>
-              <FieldLabel>ความสัมพันธ์</FieldLabel>
-              <input className="ks-input" value={form.guardianRelation} onChange={(e) => upd({ guardianRelation: e.target.value })} placeholder="เช่น มารดา" />
-            </div>
-            <div>
-              <FieldLabel>โทรศัพท์</FieldLabel>
-              <input className="ks-input" value={form.guardianPhone} onChange={(e) => upd({ guardianPhone: e.target.value })} placeholder="08x-xxx-xxxx" />
-            </div>
-          </div>
-
-          <div className="divider-label" style={{ marginTop: 8 }}>ที่อยู่ผู้ปกครอง</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
-            <div>
-              <FieldLabel>บ้านเลขที่</FieldLabel>
-              <input className="ks-input" value={form.addressHouseNo} onChange={(e) => upd({ addressHouseNo: e.target.value })} />
-            </div>
-            <div>
-              <FieldLabel>หมู่</FieldLabel>
-              <input className="ks-input" value={form.addressMoo} onChange={(e) => upd({ addressMoo: e.target.value })} />
-            </div>
-            <div>
-              <FieldLabel>หมู่บ้าน</FieldLabel>
-              <input className="ks-input" value={form.addressVillage} onChange={(e) => upd({ addressVillage: e.target.value })} />
-            </div>
-            <div>
-              <FieldLabel>ซอย</FieldLabel>
-              <input className="ks-input" value={form.addressSoi} onChange={(e) => upd({ addressSoi: e.target.value })} />
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
-            <div>
-              <FieldLabel>ถนน</FieldLabel>
-              <input className="ks-input" value={form.addressRoad} onChange={(e) => upd({ addressRoad: e.target.value })} />
-            </div>
-            <div>
-              <FieldLabel>ตำบล</FieldLabel>
-              <input className="ks-input" value={form.addressSubDistrict} onChange={(e) => upd({ addressSubDistrict: e.target.value })} />
-            </div>
-            <div>
-              <FieldLabel>อำเภอ</FieldLabel>
-              <input className="ks-input" value={form.addressDistrict} onChange={(e) => upd({ addressDistrict: e.target.value })} />
-            </div>
-            <div>
-              <FieldLabel>จังหวัด</FieldLabel>
-              <input className="ks-input" value={form.addressProvince} onChange={(e) => upd({ addressProvince: e.target.value })} />
-            </div>
-          </div>
-        </Section>
-
-        {/* § 03 — Violation */}
-        <Section marker="03" title="รายละเอียดความผิด">
-          <div>
-            <FieldLabel required>รายละเอียดการกระทำผิด</FieldLabel>
-            <textarea
-              className="ks-textarea"
-              value={form.violationDetail}
-              onChange={(e) => upd({ violationDetail: e.target.value })}
-              placeholder="ระบุพฤติกรรมที่กระทำผิดและรายละเอียดที่เกี่ยวข้อง"
-              rows={5}
-              style={{ resize: "vertical" }}
-            />
-          </div>
-        </Section>
-
-        {/* § 04 — Measures */}
-        <Section marker="04" title="มาตรการที่จะดำเนินการหากทำผิดซ้ำ">
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <MeasureCheck
-              checked={form.measureDeductScore}
-              onChange={(v) => upd({ measureDeductScore: v })}
-              label="ตัดคะแนนความประพฤติ"
-            >
-              {form.measureDeductScore && (
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-                  <input
-                    className="ks-input"
-                    type="number" min={1} max={100}
-                    style={{ width: 80, height: 32 }}
-                    value={form.measureDeductPoints}
-                    onChange={(e) => upd({ measureDeductPoints: e.target.value })}
-                    placeholder="0"
-                  />
-                  <span style={{ fontSize: 13, color: "var(--ink-2)" }}>คะแนน</span>
-                </div>
-              )}
-            </MeasureCheck>
-            <MeasureCheck
-              checked={form.measureActivity}
-              onChange={(v) => upd({ measureActivity: v })}
-              label="ทำกิจกรรมค่ายปรับพฤติกรรม"
-            />
-            <MeasureCheck
-              checked={form.measureSuspension}
-              onChange={(v) => upd({ measureSuspension: v })}
-              label="พักการเรียน"
-            />
-            <MeasureCheck
-              checked={form.measureTransfer}
-              onChange={(v) => upd({ measureTransfer: v })}
-              label="ย้ายสถานศึกษา"
-            />
-          </div>
-        </Section>
-
-        {/* § 05 — Signatures */}
-        <Section marker="05" title="ลายเซ็น">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 20 }}>
-            <SigPad
-              label="ผู้ปกครอง"
-              name={form.guardianName || "ผู้ปกครอง"}
-              value={guardianSig}
-              onChange={setGuardianSig}
-              onClear={() => setGuardianSig("")}
-            />
-            <SigPad
-              label="นักเรียน"
-              name={student ? `${student.title.name}${student.firstName} ${student.lastName}` : "นักเรียน"}
-              value={studentSig}
-              onChange={setStudentSig}
-              onClear={() => setStudentSig("")}
-            />
-            <SigPad
-              label="ครูที่ปรึกษา"
-              name={advisor1 ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}` : "ครูที่ปรึกษา"}
-              value={advisorSig}
-              onChange={setAdvisorSig}
-              onClear={() => setAdvisorSig("")}
-            />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-            <TeacherSigSelect
-              label="หัวหน้าระดับ"
-              role="หัวหน้าระดับชั้น"
-              selectedId={form.headTeacherId}
-              onSelect={(id) => upd({ headTeacherId: id })}
-            />
-            <TeacherSigSelect
-              label="ครูฝ่ายปกครอง"
-              role="ครูฝ่ายปกครอง"
-              selectedId={form.disciplineTeacherId}
-              onSelect={(id) => upd({ disciplineTeacherId: id })}
-            />
-          </div>
-
-        </Section>
-
-        {/* Submit */}
-        {saveError && (
-          <div style={{ padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
-            {saveError}
-          </div>
-        )}
-
-        <div className="wizard-actions" style={{ background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: "var(--radius-lg)", padding: "20px 24px" }}>
-          <Link href="/record/bond" className="btn btn-secondary">
-            <ChevronLeft size={14} /> ยกเลิก
-          </Link>
-          <div className="right">
-            <button
-              className="btn btn-primary"
-              onClick={handleSubmit}
-              disabled={!isValid || saving}
-              style={{ opacity: isValid ? 1 : 0.5, background: "var(--sage, #059669)" }}
-            >
-              {saving ? <><SpinIcon /> กำลังบันทึก...</> : <><Check size={14} /> บันทึกสัญญาทัณฑ์บน</>}
-            </button>
-          </div>
+function StudentBadge({ student }: { student: Student }) {
+  const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
+  return (
+    <div style={{ background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+      <div style={{ width: 38, height: 38, background: "var(--indigo)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <User size={18} color="#fff" />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 14.5 }}>{student.title.name}{student.firstName} {student.lastName}</div>
+        <div style={{ fontSize: 12, color: "var(--indigo-ink)", fontFamily: "var(--font-mono)" }}>
+          {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom}
+          {advisor1 && <> · ครูที่ปรึกษา: {advisor1.title.name}{advisor1.firstName} {advisor1.lastName}</>}
         </div>
       </div>
     </div>
   )
 }
 
-// ── Section wrapper ────────────────────────────────────────────────────────────
+// ── Step 0: Student ────────────────────────────────────────────────────────────
 
-function Section({ marker, title, children }: { marker: string; title: string; children: React.ReactNode }) {
+function StepStudent({
+  query, setQuery, searching, results, searchError, onSearch, onSelectResult,
+  student, onClearStudent,
+  semesters, academicYears, loadingSem,
+  form, upd,
+  isValid, onNext,
+}: {
+  query: string; setQuery: (v: string) => void
+  searching: boolean; results: Student[] | null; searchError: string | null
+  onSearch: (e: React.FormEvent) => void; onSelectResult: (s: Student) => void
+  student: Student | null; onClearStudent: () => void
+  semesters: SemesterItem[]; academicYears: AcademicYearItem[]; loadingSem: boolean
+  form: BondFormData; upd: (f: Partial<BondFormData>) => void
+  isValid: boolean; onNext: () => void
+}) {
   return (
-    <div className="ks-card">
-      <div style={{ padding: "18px 24px 0" }}>
-        <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.12em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 4 }}>§ {marker}</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 20 }}>{title}</div>
+    <div className="wizard-body">
+      <h2 className="step-heading">ค้นหาและเลือกนักเรียน</h2>
+      <p className="step-sub">พิมพ์รหัสนักเรียน ชื่อ-สกุล หรือชั้นเรียน เพื่อค้นหา</p>
+
+      {/* Search */}
+      <div style={{ marginBottom: 20 }}>
+        <FieldLabel>ค้นหา</FieldLabel>
+        <form onSubmit={onSearch} style={{ display: "flex", gap: 10 }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--ink-3)" }} />
+            <input
+              className="ks-input"
+              style={{ paddingLeft: 42 }}
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); if (!e.target.value) onClearStudent() }}
+              placeholder="เช่น 30412 · ปวีณ์ธิดา · ม.4/2"
+              disabled={searching}
+              autoFocus={!student}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={!query.trim() || searching}>
+            {searching ? <SpinIcon /> : <Search size={14} />} ค้นหา
+          </button>
+        </form>
+        {searchError && (
+          <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)" }}>
+            {searchError}
+          </div>
+        )}
       </div>
-      <div style={{ padding: "0 24px 24px" }}>{children}</div>
+
+      {results && results.length > 1 && !student && (
+        <div style={{ border: "1px solid var(--rule)", borderRadius: "var(--radius)", marginBottom: 20, overflow: "hidden", background: "var(--surface-2)" }}>
+          {results.map((s) => (
+            <button key={s.id} onClick={() => onSelectResult(s)}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "none", border: "none", borderBottom: "1px solid var(--rule-soft)", cursor: "pointer", textAlign: "left" }}>
+              <div style={{ width: 36, height: 36, background: "var(--indigo-wash)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <User size={15} style={{ color: "var(--indigo)" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500, fontSize: 14 }}>{s.title.name}{s.firstName} {s.lastName}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>{s.studentCode} · {s.gradeLevel}/{s.classRoom}</div>
+              </div>
+              <ChevronRight size={14} style={{ color: "var(--ink-4)" }} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {student && (
+        <div className="ks-card" style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", padding: 20, gap: 16, alignItems: "center" }}>
+            <div style={{ width: 48, height: 48, background: "var(--indigo)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <User size={20} color="#fff" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                <span style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: "var(--ink-3)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                  STUDENT · {student.studentCode}
+                </span>
+                <span className="chip chip-approved" style={{ height: 20, fontSize: 11 }}>ตรงกัน</span>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.005em" }}>{student.title.name}{student.firstName} {student.lastName}</div>
+              <div style={{ fontSize: 13, color: "var(--ink-2)", marginTop: 2 }}>ชั้น {student.gradeLevel}/{student.classRoom} · เลขที่ {student.classNumber}</div>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={onClearStudent}>เปลี่ยน</button>
+          </div>
+        </div>
+      )}
+
+      {/* Contract date + semester + year + recorder */}
+      <div style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>
+          วันที่และภาคเรียน
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div>
+            <FieldLabel required>วันที่ทำสัญญา</FieldLabel>
+            <input className="ks-input" type="date" value={form.contractDate} onChange={(e) => upd({ contractDate: e.target.value })} />
+          </div>
+          <div>
+            <FieldLabel required>ผู้บันทึก</FieldLabel>
+            <input className="ks-input" value={form.recorder} onChange={(e) => upd({ recorder: e.target.value })} placeholder="ชื่อผู้บันทึก" />
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div>
+            <FieldLabel required>ภาคเรียน</FieldLabel>
+            {loadingSem ? (
+              <div style={{ height: 38, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
+            ) : (
+              <select className="ks-select" value={form.semesterId} onChange={(e) => upd({ semesterId: e.target.value })}>
+                <option value="" disabled>เลือกภาคเรียน</option>
+                {semesters.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            )}
+          </div>
+          <div>
+            <FieldLabel required>ปีการศึกษา</FieldLabel>
+            {loadingSem ? (
+              <div style={{ height: 38, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
+            ) : (
+              <select className="ks-select" value={form.academicYearId} onChange={(e) => upd({ academicYearId: e.target.value })}>
+                <option value="" disabled>เลือกปีการศึกษา</option>
+                {academicYears.map((a) => <option key={a.id} value={a.id}>{a.year}</option>)}
+              </select>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="wizard-actions">
+        <div />
+        <button className="btn btn-primary" onClick={onNext} disabled={!isValid} style={{ opacity: isValid ? 1 : 0.5 }}>
+          ถัดไป — ผู้ปกครอง <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 1: Guardian ───────────────────────────────────────────────────────────
+
+function StepGuardian({
+  student, form, upd, onSelectGuardian, isValid, onBack, onNext,
+}: {
+  student: Student; form: BondFormData; upd: (f: Partial<BondFormData>) => void
+  onSelectGuardian: (g: Guardian) => void
+  isValid: boolean; onBack: () => void; onNext: () => void
+}) {
+  return (
+    <div className="wizard-body">
+      <StudentBadge student={student} />
+      <h2 className="step-heading">ข้อมูลผู้ปกครองและที่อยู่</h2>
+      <p className="step-sub">กรอกข้อมูลผู้ปกครองที่เข้าทำสัญญา หากมีข้อมูลในระบบสามารถเลือกได้เลย</p>
+
+      {student.guardians.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <FieldLabel>เลือกผู้ปกครองจากระบบ</FieldLabel>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {student.guardians.map((g) => {
+              const sel = form.guardianId === g.id
+              return (
+                <button key={g.id} type="button" onClick={() => onSelectGuardian(g)}
+                  className={sel ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}>
+                  {g.firstName} {g.lastName} ({g.relation.name})
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div>
+          <FieldLabel required>ชื่อผู้ปกครอง</FieldLabel>
+          <input className="ks-input" value={form.guardianName} onChange={(e) => upd({ guardianName: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+        </div>
+        <div>
+          <FieldLabel>ความสัมพันธ์</FieldLabel>
+          <input className="ks-input" value={form.guardianRelation} onChange={(e) => upd({ guardianRelation: e.target.value })} placeholder="เช่น มารดา" />
+        </div>
+        <div>
+          <FieldLabel>โทรศัพท์</FieldLabel>
+          <input className="ks-input" value={form.guardianPhone} onChange={(e) => upd({ guardianPhone: e.target.value })} placeholder="08x-xxx-xxxx" />
+        </div>
+      </div>
+
+      <div className="divider-label" style={{ marginTop: 8 }}>ที่อยู่ผู้ปกครอง</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div><FieldLabel>บ้านเลขที่</FieldLabel><input className="ks-input" value={form.addressHouseNo} onChange={(e) => upd({ addressHouseNo: e.target.value })} /></div>
+        <div><FieldLabel>หมู่</FieldLabel><input className="ks-input" value={form.addressMoo} onChange={(e) => upd({ addressMoo: e.target.value })} /></div>
+        <div><FieldLabel>หมู่บ้าน</FieldLabel><input className="ks-input" value={form.addressVillage} onChange={(e) => upd({ addressVillage: e.target.value })} /></div>
+        <div><FieldLabel>ซอย</FieldLabel><input className="ks-input" value={form.addressSoi} onChange={(e) => upd({ addressSoi: e.target.value })} /></div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+        <div><FieldLabel>ถนน</FieldLabel><input className="ks-input" value={form.addressRoad} onChange={(e) => upd({ addressRoad: e.target.value })} /></div>
+        <div><FieldLabel>ตำบล</FieldLabel><input className="ks-input" value={form.addressSubDistrict} onChange={(e) => upd({ addressSubDistrict: e.target.value })} /></div>
+        <div><FieldLabel>อำเภอ</FieldLabel><input className="ks-input" value={form.addressDistrict} onChange={(e) => upd({ addressDistrict: e.target.value })} /></div>
+        <div><FieldLabel>จังหวัด</FieldLabel><input className="ks-input" value={form.addressProvince} onChange={(e) => upd({ addressProvince: e.target.value })} /></div>
+      </div>
+
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack}><ChevronLeft size={14} /> ย้อนกลับ</button>
+        <button className="btn btn-primary" onClick={onNext} disabled={!isValid} style={{ opacity: isValid ? 1 : 0.5 }}>
+          ถัดไป — รายละเอียดความผิด <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 2: Violation ──────────────────────────────────────────────────────────
+
+function StepViolation({
+  student, violationDetail, onChange, isValid, onBack, onNext,
+}: {
+  student: Student; violationDetail: string; onChange: (v: string) => void
+  isValid: boolean; onBack: () => void; onNext: () => void
+}) {
+  return (
+    <div className="wizard-body">
+      <StudentBadge student={student} />
+      <h2 className="step-heading">รายละเอียดการกระทำผิด</h2>
+      <p className="step-sub">ระบุพฤติกรรมที่กระทำผิดและรายละเอียดที่เกี่ยวข้องอย่างครบถ้วน</p>
+
+      <div style={{ marginBottom: 20 }}>
+        <FieldLabel required>รายละเอียดการกระทำผิด</FieldLabel>
+        <textarea
+          className="ks-textarea"
+          value={violationDetail}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="ระบุพฤติกรรมที่กระทำผิดและรายละเอียดที่เกี่ยวข้อง"
+          rows={6}
+          style={{ resize: "vertical" }}
+          autoFocus
+        />
+      </div>
+
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack}><ChevronLeft size={14} /> ย้อนกลับ</button>
+        <button className="btn btn-primary" onClick={onNext} disabled={!isValid} style={{ opacity: isValid ? 1 : 0.5 }}>
+          ถัดไป — มาตรการ <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 3: Measures ───────────────────────────────────────────────────────────
+
+function StepMeasures({
+  student, form, upd, onBack, onNext,
+}: {
+  student: Student; form: BondFormData; upd: (f: Partial<BondFormData>) => void
+  onBack: () => void; onNext: () => void
+}) {
+  return (
+    <div className="wizard-body">
+      <StudentBadge student={student} />
+      <h2 className="step-heading">มาตรการที่จะดำเนินการหากทำผิดซ้ำ</h2>
+      <p className="step-sub">เลือกมาตรการที่จะใช้หากนักเรียนกระทำผิดซ้ำในอนาคต</p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        <MeasureCheck checked={form.measureDeductScore} onChange={(v) => upd({ measureDeductScore: v })} label="ตัดคะแนนความประพฤติ">
+          {form.measureDeductScore && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+              <input className="ks-input" type="number" min={1} max={100} style={{ width: 80, height: 32 }}
+                value={form.measureDeductPoints} onChange={(e) => upd({ measureDeductPoints: e.target.value })} placeholder="0" />
+              <span style={{ fontSize: 13, color: "var(--ink-2)" }}>คะแนน</span>
+            </div>
+          )}
+        </MeasureCheck>
+        <MeasureCheck checked={form.measureActivity} onChange={(v) => upd({ measureActivity: v })} label="ทำกิจกรรมค่ายปรับพฤติกรรม" />
+        <MeasureCheck checked={form.measureSuspension} onChange={(v) => upd({ measureSuspension: v })} label="พักการเรียน" />
+        <MeasureCheck checked={form.measureTransfer} onChange={(v) => upd({ measureTransfer: v })} label="ย้ายสถานศึกษา" />
+      </div>
+
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack}><ChevronLeft size={14} /> ย้อนกลับ</button>
+        <button className="btn btn-primary" onClick={onNext}>
+          ถัดไป — ลายเซ็น <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 4: Signatures ─────────────────────────────────────────────────────────
+
+function StepSignatures({
+  student, advisor1, form, upd,
+  guardianSig, setGuardianSig,
+  studentSig, setStudentSig,
+  advisorSig, setAdvisorSig,
+  saving, saveError,
+  onBack, onSubmit,
+}: {
+  student: Student
+  advisor1: { title: { name: string }; firstName: string; lastName: string } | null
+  form: BondFormData; upd: (f: Partial<BondFormData>) => void
+  guardianSig: string; setGuardianSig: (v: string) => void
+  studentSig: string; setStudentSig: (v: string) => void
+  advisorSig: string; setAdvisorSig: (v: string) => void
+  saving: boolean; saveError: string | null
+  onBack: () => void; onSubmit: () => void
+}) {
+  return (
+    <div className="wizard-body">
+      <StudentBadge student={student} />
+      <h2 className="step-heading">ลายเซ็นและยืนยัน</h2>
+      <p className="step-sub">ลงนามในส่วนที่เกี่ยวข้อง แล้วกดบันทึกสัญญาทัณฑ์บน</p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
+        <SigPad label="ผู้ปกครอง" name={form.guardianName || "ผู้ปกครอง"} value={guardianSig} onChange={setGuardianSig} onClear={() => setGuardianSig("")} />
+        <SigPad label="นักเรียน" name={`${student.title.name}${student.firstName} ${student.lastName}`} value={studentSig} onChange={setStudentSig} onClear={() => setStudentSig("")} />
+        <SigPad
+          label="ครูที่ปรึกษา"
+          name={advisor1 ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}` : "ครูที่ปรึกษา"}
+          value={advisorSig} onChange={setAdvisorSig} onClear={() => setAdvisorSig("")}
+        />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+        <TeacherSigSelect label="หัวหน้าระดับ" role="หัวหน้าระดับชั้น" selectedId={form.headTeacherId} onSelect={(id) => upd({ headTeacherId: id })} />
+        <TeacherSigSelect label="ครูฝ่ายปกครอง" role="ครูฝ่ายปกครอง" selectedId={form.disciplineTeacherId} onSelect={(id) => upd({ disciplineTeacherId: id })} />
+      </div>
+
+      {saveError && (
+        <div style={{ padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)", marginBottom: 16 }}>
+          {saveError}
+        </div>
+      )}
+
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={onBack} disabled={saving}><ChevronLeft size={14} /> ย้อนกลับ</button>
+        <button className="btn btn-primary" onClick={onSubmit} disabled={saving}
+          style={{ background: "var(--sage, #059669)" }}>
+          {saving ? <><SpinIcon /> กำลังบันทึก...</> : <><Check size={14} /> บันทึกสัญญาทัณฑ์บน</>}
+        </button>
+      </div>
     </div>
   )
 }
@@ -551,19 +738,9 @@ function MeasureCheck({ checked, onChange, label, children }: {
   checked: boolean; onChange: (v: boolean) => void; label: string; children?: React.ReactNode
 }) {
   return (
-    <div style={{
-      padding: "14px 18px",
-      border: `1px solid ${checked ? "var(--indigo)" : "var(--rule)"}`,
-      borderRadius: "var(--radius)",
-      background: checked ? "var(--indigo-wash)" : "var(--surface)",
-    }}>
+    <div style={{ padding: "14px 18px", border: `1px solid ${checked ? "var(--indigo)" : "var(--rule)"}`, borderRadius: "var(--radius)", background: checked ? "var(--indigo-wash)" : "var(--surface)" }}>
       <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-        <div style={{
-          width: 20, height: 20, borderRadius: 4, flexShrink: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: checked ? "var(--indigo)" : "transparent",
-          border: `2px solid ${checked ? "var(--indigo)" : "var(--rule-2)"}`,
-        }}>
+        <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: checked ? "var(--indigo)" : "transparent", border: `2px solid ${checked ? "var(--indigo)" : "var(--rule-2)"}` }}>
           {checked && <Check size={12} color="#fff" />}
         </div>
         <input type="checkbox" style={{ display: "none" }} checked={checked} onChange={(e) => onChange(e.target.checked)} />
@@ -625,8 +802,7 @@ function SigPad({ label, name, value, onChange, onClear }: {
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
         <button type="button" className="btn btn-secondary btn-sm" onClick={clear}>ล้าง</button>
         {!value && (
-          <button type="button" className="btn btn-primary btn-sm"
-            onClick={() => onChange(canvasRef.current!.toDataURL("image/png"))}>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => onChange(canvasRef.current!.toDataURL("image/png"))}>
             ยืนยันลายเซ็น
           </button>
         )}

@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
         ...INCLUDE_STUDENT,
         headTeacher: { select: { id: true, firstName: true, lastName: true, title: { select: { name: true } }, signatureUrl: true } },
         disciplineTeacher: { select: { id: true, firstName: true, lastName: true, title: { select: { name: true } }, signatureUrl: true } },
+        semester: { select: { value: true } },
+        academicYear: { select: { year: true } },
       },
       orderBy: { createdAt: "desc" },
       skip,
@@ -58,6 +60,8 @@ export async function POST(request: NextRequest) {
     const {
       studentId,
       contractDate,
+      semesterId,
+      academicYearId,
       guardianId,
       guardianName,
       guardianRelation,
@@ -82,6 +86,8 @@ export async function POST(request: NextRequest) {
       data: {
         studentId: Number(studentId),
         contractDate: new Date(contractDate),
+        semesterId: semesterId ? Number(semesterId) : null,
+        academicYearId: academicYearId ? Number(academicYearId) : null,
         guardianId: guardianId ? Number(guardianId) : null,
         guardianName,
         guardianRelation: guardianRelation ?? "",

@@ -49,6 +49,7 @@ async function getPendingBonds() {
         contractDate: true,
         guardianName: true,
         recorder: true,
+        viceDirectorSignature: true,
         student: {
           select: {
             studentCode: true,
@@ -59,10 +60,17 @@ async function getPendingBonds() {
             title: { select: { name: true } },
           },
         },
+        semester: { select: { value: true } },
+        academicYear: { select: { year: true } },
       },
       orderBy: { contractDate: "desc" },
     })
-    return rows.map((r) => ({ ...r, contractDate: r.contractDate.toISOString() }))
+    return rows.map((r) => ({
+      ...r,
+      contractDate: r.contractDate.toISOString(),
+      semester: r.semester ?? null,
+      academicYear: r.academicYear ?? null,
+    }))
   } catch {
     return []
   }

@@ -64,7 +64,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!existing) return Response.json({ error: "ไม่พบรายการ" }, { status: 404 })
 
   const {
-    contractDate, guardianId, guardianName, guardianRelation, guardianPhone,
+    contractDate, semesterId, academicYearId,
+    guardianId, guardianName, guardianRelation, guardianPhone,
     addressHouseNo, addressMoo, addressVillage, addressRoad, addressSoi,
     addressSubDistrict, addressDistrict, addressProvince,
     violationDetail, measureDeductScore, measureDeductPoints,
@@ -77,6 +78,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     where: { id: Number(id) },
     data: {
       contractDate: contractDate ? new Date(contractDate) : undefined,
+      semesterId: semesterId !== undefined ? (semesterId ? Number(semesterId) : null) : undefined,
+      academicYearId: academicYearId !== undefined ? (academicYearId ? Number(academicYearId) : null) : undefined,
       guardianId: guardianId !== undefined ? (guardianId ? Number(guardianId) : null) : undefined,
       guardianName, guardianRelation,
       guardianPhone: guardianPhone || null,
