@@ -250,7 +250,7 @@ export default function BondEditPage() {
         return
       }
       toast.success("บันทึกการแก้ไขทัณฑ์บนสำเร็จ")
-      router.push(`/record/bond/${id}`)
+      router.push("/record/bond")
     } catch {
       setSaveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
       toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ")
@@ -441,7 +441,7 @@ function StepStudentEdit({
         <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>
           ข้อมูลสัญญา
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
           <div>
             <FieldLabel required>วันที่ทำสัญญา</FieldLabel>
             <input className="ks-input" type="date" value={form.contractDate} onChange={(e) => upd({ contractDate: e.target.value })} />
@@ -467,14 +467,6 @@ function StepStudentEdit({
                 {academicYears.map((a) => <option key={a.id} value={a.id}>{a.year}</option>)}
               </select>
             )}
-          </div>
-          <div>
-            <FieldLabel>สถานะ</FieldLabel>
-            <select className="ks-select" value={form.status} onChange={(e) => upd({ status: e.target.value })}>
-              <option value="active">มีผลบังคับ</option>
-              <option value="expired">ครบกำหนด</option>
-              <option value="closed">ปิดแล้ว</option>
-            </select>
           </div>
         </div>
       </div>
