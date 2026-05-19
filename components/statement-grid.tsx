@@ -11,7 +11,7 @@ type Statement = {
   semester: number
   academicYear: number
   violationCategory: string
-  recordedBy: string
+  recordedBy: string | null
   status: string
   student: {
     studentCode: string
@@ -97,8 +97,8 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
               <th style={{ width: 130 }}>วันที่</th>
               <th>นักเรียน</th>
               <th>หมวดการผิดระเบียบ</th>
-              <th style={{ width: 130 }}>สถานะ</th>
               <th>ผู้บันทึก</th>
+              <th style={{ width: 130 }}>สถานะ</th>
               <th className="col-actions">การจัดการ</th>
             </tr>
           </thead>
@@ -129,12 +129,12 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                     </div>
                   </td>
                   <td>{row.violationCategory}</td>
+                  <td style={{ color: "var(--ink-2)" }}>{row.recordedBy}</td>
                   <td>
                     <span className={`chip chip-${row.status === "approved" ? "approved" : "pending"}`}>
                       {row.status === "approved" ? "อนุมัติแล้ว" : "รออนุมัติ"}
                     </span>
                   </td>
-                  <td style={{ color: "var(--ink-2)" }}>{row.recordedBy}</td>
                   <td className="col-actions">
                     <Link href={`/record/statement/${row.id}`} className="btn btn-ghost btn-sm btn-icon" title="ดู">
                       <Eye size={14} />

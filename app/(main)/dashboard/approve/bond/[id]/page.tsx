@@ -150,7 +150,7 @@ export default function BondApproveDetailPage() {
           </div>
         </div>
         <span className={`chip ${isSigned ? "chip-approved" : "chip-pending"}`}>
-          {isSigned ? "ลงนามแล้ว" : "รอลงนาม"}
+          {isSigned ? "อนุมัติแล้ว" : "รออนุมัติ"}
         </span>
       </div>
 
@@ -300,7 +300,7 @@ export default function BondApproveDetailPage() {
                       disabled={!me}
                       style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
                     >
-                      <ShieldCheck size={14} /> ลงนามบันทึกทัณฑ์บนนี้
+                      <ShieldCheck size={14} /> อนุมัติบันทึกทัณฑ์บนนี้
                     </button>
                   </>
                 ) : (
@@ -367,7 +367,7 @@ export default function BondApproveDetailPage() {
               <div className="info-row" style={{ borderBottom: 0 }}>
                 <span className="info-label">สถานะ</span>
                 <span className={`chip ${isSigned ? "chip-approved" : "chip-pending"}`} style={{ fontSize: 11 }}>
-                  {isSigned ? "ลงนามแล้ว" : "รอลงนาม"}
+                  {isSigned ? "อนุมัติแล้ว" : "รออนุมัติ"}
                 </span>
               </div>
             </div>

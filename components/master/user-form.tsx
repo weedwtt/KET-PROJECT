@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
 import { SignaturePad } from "@/components/ui/signature-pad"
 
 type TeacherTitle = { id: number; name: string }
@@ -177,10 +178,13 @@ export function UserForm({ mode, initialData, backUrl = "/dashboard/master/users
         throw new Error(data.error ?? "เกิดข้อผิดพลาด")
       }
 
+      toast.success(mode === "create" ? "เพิ่มผู้ใช้สำเร็จ" : "บันทึกการแก้ไขสำเร็จ")
       router.push(backUrl)
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด")
+      const msg = err instanceof Error ? err.message : "เกิดข้อผิดพลาด"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { SignaturePad } from "@/components/ui/signature-pad"
+import { toast } from "sonner"
 
 type TeacherTitle = { id: number; name: string }
 
@@ -120,10 +121,13 @@ export function TeacherForm({ initialData, mode, backUrl = "/dashboard/master/te
         throw new Error(data.error ?? "เกิดข้อผิดพลาด")
       }
 
+      toast.success(mode === "create" ? "เพิ่มครูสำเร็จ" : "บันทึกการแก้ไขสำเร็จ")
       router.push(backUrl)
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด")
+      const msg = err instanceof Error ? err.message : "เกิดข้อผิดพลาด"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

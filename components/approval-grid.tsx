@@ -9,6 +9,7 @@ type Bond = {
   contractDate: string
   guardianName: string
   recorder: string
+  viceDirectorSignature: string | null
   student: {
     studentCode: string
     firstName: string
@@ -17,6 +18,8 @@ type Bond = {
     classRoom: number
     title: { name: string }
   }
+  semester: { value: number } | null
+  academicYear: { year: number } | null
 }
 
 type Statement = {
@@ -25,7 +28,7 @@ type Statement = {
   semester: number
   academicYear: number
   violationCategory: string
-  recordedBy: string
+  recordedBy: string | null
   status: string
   student: {
     studentCode: string
@@ -210,22 +213,25 @@ export function ApprovalGrid({ data, bonds = [] }: { data: Statement[]; bonds?: 
             <table className="ks-table">
               <thead>
                 <tr>
-                  <th style={{ width: 120 }}>วันที่/รหัส</th>
+                  <th style={{ width: 120 }}>วันที่</th>
                   <th>นักเรียน</th>
                   <th>ผู้ปกครอง</th>
                   <th>ผู้บันทึก</th>
+                  <th style={{ width: 150 }}>สถานะ</th>
                   <th className="col-actions">การจัดการ</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredBonds.length === 0 ? (
-                  <tr><td colSpan={5}><div className="empty-state">{bondSearch ? "ไม่พบรายการที่ค้นหา" : "ไม่มีรายการทัณฑ์บนที่รอลงนาม"}</div></td></tr>
+                  <tr><td colSpan={6}><div className="empty-state">{bondSearch ? "ไม่พบรายการที่ค้นหา" : "ไม่มีรายการทัณฑ์บนที่รอลงนาม"}</div></td></tr>
                 ) : (
                   filteredBonds.map((b) => (
                     <tr key={b.id} className="clickable" onClick={() => window.location.href = `/dashboard/approve/bond/${b.id}`}>
                       <td>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{new Date(b.contractDate).toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "numeric" })}</div>
-                        <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>BK-{String(b.id).padStart(4, "0")}</div>
+                        <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                          {b.semester && b.academicYear ? `${b.semester.value}/${b.academicYear.year}` : "—"}
+                        </div>
                       </td>
                       <td>
                         <div style={{ fontWeight: 500 }}>{b.student.title.name}{b.student.firstName} {b.student.lastName}</div>
@@ -233,9 +239,10 @@ export function ApprovalGrid({ data, bonds = [] }: { data: Statement[]; bonds?: 
                       </td>
                       <td>{b.guardianName}</td>
                       <td style={{ color: "var(--ink-2)" }}>{b.recorder}</td>
+                      <td><span className="chip chip-pending">รออนุมัติ</span></td>
                       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                         <Link href={`/dashboard/approve/bond/${b.id}`} className="btn btn-primary btn-sm">
-                          ลงนาม <ArrowRight size={12} />
+                          พิจารณา <ArrowRight size={12} />
                         </Link>
                       </td>
                     </tr>

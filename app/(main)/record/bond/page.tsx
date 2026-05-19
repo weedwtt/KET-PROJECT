@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
-import { Search, Plus, FileText, Eye, Pencil, Trash2 } from "lucide-react"
+import { Search, Plus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 
 type BondStudent = {
   studentCode: string
@@ -34,6 +34,8 @@ type BondRecord = {
   viceDirectorSignature: string | null
   directorSignature: string | null
   student: BondStudent
+  semester: { value: number } | null
+  academicYear: { year: number } | null
 }
 
 
@@ -42,17 +44,6 @@ function formatThaiDate(iso: string) {
   return d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })
 }
 
-function sigCount(r: BondRecord) {
-  let count = 0
-  if (r.guardianSignature) count++
-  if (r.studentSignature) count++
-  if (r.advisorSignature) count++
-  if (r.headTeacher) count++
-  if (r.disciplineTeacher) count++
-  if (r.viceDirectorSignature) count++
-  if (r.directorSignature) count++
-  return count
-}
 
 export default function BondListPage() {
   const [q, setQ] = useState("")
@@ -130,114 +121,118 @@ export default function BondListPage() {
       </div>
 
       {/* Table */}
-      <div className="ks-card">
-        <div className="ks-card-header">
-          <div>
-            <div className="eyebrow">รายการทั้งหมด</div>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>{loading ? "กำลังโหลด..." : `${total} รายการ`}</div>
-          </div>
-        </div>
+      <div className="ks-card" style={{ overflow: "hidden" }}>
+        <table className="ks-table">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>นักเรียน</th>
+              <th>ผู้ปกครอง</th>
+              <th>มาตรการ</th>
+              <th>สถานะ</th>
+              <th className="col-actions">การจัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={6}>
+                  <div className="empty-state">กำลังโหลด...</div>
+                </td>
+              </tr>
+            ) : records.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <div className="empty-state">
+                    {q ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีบันทึกทัณฑ์บน"}
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              records.map((r) => {
+                const measures: string[] = []
+                if (r.measureDeductScore) measures.push(`ตัดคะแนน${r.measureDeductPoints ? ` ${r.measureDeductPoints}` : ""}`)
+                if (r.measureActivity) measures.push("กิจกรรม")
+                if (r.measureSuspension) measures.push("พักเรียน")
+                if (r.measureTransfer) measures.push("ย้าย")
 
-        {loading ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "var(--ink-3)" }}>กำลังโหลด...</div>
-        ) : records.length === 0 ? (
-          <div style={{ padding: "48px 0", textAlign: "center", color: "var(--ink-3)" }}>
-            <FileText size={36} style={{ margin: "0 auto 12px", display: "block", opacity: 0.3 }} />
-            <div style={{ fontWeight: 500 }}>ยังไม่มีบันทึกทัณฑ์บน</div>
-            <div style={{ fontSize: 13, marginTop: 6 }}>กดปุ่ม "สร้างสัญญาใหม่" เพื่อเริ่มต้น</div>
-          </div>
-        ) : (
-          <>
-            <table className="ks-table">
-              <thead>
-                <tr>
-                  <th>วันที่/รหัส</th>
-                  <th>นักเรียน</th>
-                  <th>ผู้ปกครอง</th>
-                  <th>มาตรการ</th>
-                  <th>สถานะ</th>
-                  <th className="col-actions">การจัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((r) => {
-                  const measures: string[] = []
-                  if (r.measureDeductScore) measures.push(`ตัดคะแนน${r.measureDeductPoints ? ` ${r.measureDeductPoints}` : ""}`)
-                  if (r.measureActivity) measures.push("กิจกรรม")
-                  if (r.measureSuspension) measures.push("พักเรียน")
-                  if (r.measureTransfer) measures.push("ย้าย")
-                  const sigs = sigCount(r)
-
-                  return (
-                    <tr key={r.id}>
-                      <td>
-                        <div style={{ fontSize: 13, fontWeight: 500 }}>{formatThaiDate(r.contractDate)}</div>
-                        <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>BK-{String(r.id).padStart(4, "0")}</div>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 500, fontSize: 13.5 }}>
-                          {r.student.title.name}{r.student.firstName} {r.student.lastName}
+                return (
+                  <tr key={r.id}>
+                    <td>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{formatThaiDate(r.contractDate)}</div>
+                      <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                        {r.semester && r.academicYear ? `${r.semester.value}/${r.academicYear.year}` : "—"}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500, fontSize: 13.5 }}>
+                        {r.student.title.name}{r.student.firstName} {r.student.lastName}
+                      </div>
+                      <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                        {r.student.studentCode} · {r.student.gradeLevel}/{r.student.classRoom}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: 13.5 }}>{r.guardianName}</div>
+                      <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{r.guardianRelation}</div>
+                    </td>
+                    <td>
+                      {measures.length === 0 ? (
+                        <span style={{ color: "var(--ink-4)", fontSize: 13 }}>—</span>
+                      ) : (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                          {measures.map((m) => (
+                            <span key={m} className="measure-tag" style={{ fontSize: 11 }}>
+                              <span className="dot" />{m}
+                            </span>
+                          ))}
                         </div>
-                        <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                          {r.student.studentCode} · {r.student.gradeLevel}/{r.student.classRoom}
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontSize: 13.5 }}>{r.guardianName}</div>
-                        <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{r.guardianRelation}</div>
-                      </td>
-                      <td>
-                        {measures.length === 0 ? (
-                          <span style={{ color: "var(--ink-4)", fontSize: 13 }}>—</span>
-                        ) : (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                            {measures.map((m) => (
-                              <span key={m} className="measure-tag" style={{ fontSize: 11 }}>
-                                <span className="dot" />{m}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        <span className={`chip chip-${r.directorSignature ? "approved" : "pending"}`}>
-                          {r.directorSignature ? "อนุมัติแล้ว" : "รออนุมัติ"}
-                        </span>
-                      </td>
-                      <td className="col-actions">
-                        <Link href={`/record/bond/${r.id}`} className="btn btn-ghost btn-sm btn-icon" title="ดู">
-                          <Eye size={14} />
+                      )}
+                    </td>
+                    <td>
+                      <span className={`chip chip-${r.directorSignature ? "approved" : "pending"}`}>
+                        {r.directorSignature ? "อนุมัติแล้ว" : "รออนุมัติ"}
+                      </span>
+                    </td>
+                    <td className="col-actions">
+                      <Link href={`/record/bond/${r.id}`} className="btn btn-ghost btn-sm btn-icon" title="ดู">
+                        <Eye size={14} />
+                      </Link>
+                      {!r.directorSignature && (
+                        <Link href={`/record/bond/${r.id}/edit`} className="btn btn-ghost btn-sm btn-icon" title="แก้ไข">
+                          <Pencil size={14} />
                         </Link>
-                        {!r.directorSignature && (
-                          <Link href={`/record/bond/${r.id}/edit`} className="btn btn-ghost btn-sm btn-icon" title="แก้ไข">
-                            <Pencil size={14} />
-                          </Link>
-                        )}
-                        <button
-                          className="btn btn-ghost btn-sm btn-icon"
-                          title="ลบ"
-                          style={{ color: "var(--rose)" }}
-                          onClick={() => setConfirmDeleteId(r.id)}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div style={{ padding: "16px 20px", display: "flex", justifyContent: "center", gap: 8, borderTop: "1px solid var(--rule-soft)" }}>
-                <button className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>ก่อนหน้า</button>
-                <span style={{ fontSize: 13, color: "var(--ink-3)", alignSelf: "center" }}>หน้า {page} / {totalPages}</span>
-                <button className="btn btn-ghost btn-sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>ถัดไป</button>
-              </div>
+                      )}
+                      <button
+                        className="btn btn-ghost btn-sm btn-icon"
+                        title="ลบ"
+                        style={{ color: "var(--rose)" }}
+                        onClick={() => setConfirmDeleteId(r.id)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })
             )}
-          </>
-        )}
+          </tbody>
+        </table>
+
+        <div className="pagination">
+          <span style={{ flex: 1 }}>
+            แสดง <span className="mono">{total === 0 ? 0 : (page - 1) * 15 + 1}–{Math.min(page * 15, total)}</span> จาก <span className="mono">{total}</span> รายการ
+          </span>
+          <button className={`page-btn ${page === 1 ? "disabled" : ""}`} onClick={() => page > 1 && setPage(page - 1)}>
+            <ChevronLeft size={12} />
+          </button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+            <button key={p} className={`page-btn ${p === page ? "active" : ""}`} onClick={() => setPage(p)}>{p}</button>
+          ))}
+          <button className={`page-btn ${page === totalPages ? "disabled" : ""}`} onClick={() => page < totalPages && setPage(page + 1)}>
+            <ChevronRight size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Delete confirmation dialog */}

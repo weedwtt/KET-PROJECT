@@ -3,6 +3,7 @@ import { Noto_Sans_Thai, IBM_Plex_Mono, IBM_Plex_Serif } from "next/font/google"
 import { SessionProvider } from "next-auth/react"
 import NextTopLoader from "nextjs-toploader"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "sonner"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SessionProvider>
             <NextTopLoader color="#3b82f6" showSpinner={false} height={2} />
+            <Toaster richColors position="top-right" />
             {children}
           </SessionProvider>
         </ThemeProvider>

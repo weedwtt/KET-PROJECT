@@ -232,6 +232,7 @@ model Semester {
   name             String            @unique @db.VarChar(50)
   value            Int               @unique
   statementRecords StatementRecord[]
+  bondRecords      BondRecord[]
 
   @@map("semesters")
 }
@@ -240,6 +241,7 @@ model AcademicYear {
   id               Int               @id @default(autoincrement())
   year             Int               @unique
   statementRecords StatementRecord[]
+  bondRecords      BondRecord[]
 
   @@map("academic_years")
 }
@@ -293,7 +295,9 @@ model StatementRecord {
   incidentAt DateTime? @map("incident_at")
   location   String?   @db.VarChar(200)
 
-  recordedBy String @db.VarChar(100) @map("recorded_by")
+  advisor1Name String? @db.VarChar(200) @map("advisor1_name")
+  advisor2Name String? @db.VarChar(200) @map("advisor2_name")
+  recordedBy   String? @db.VarChar(200) @map("recorded_by")
 
   // ────── Step 4: มาตรการ ──────
   /// รหัสมาตรการพิจารณา เช่น ["notify_parent", "invite_parent"]
@@ -381,6 +385,11 @@ model BondRecord {
   student   Student @relation(fields: [studentId], references: [id])
 
   contractDate DateTime @map("contract_date")
+
+  semesterId     Int?         @map("semester_id")
+  semester       Semester?    @relation(fields: [semesterId], references: [id])
+  academicYearId Int?         @map("academic_year_id")
+  academicYear   AcademicYear? @relation(fields: [academicYearId], references: [id])
 
   /// ข้อมูลผู้ปกครอง (denormalized เพื่อให้แก้ไขได้หลัง auto-fill)
   guardianId       Int?    @map("guardian_id")
