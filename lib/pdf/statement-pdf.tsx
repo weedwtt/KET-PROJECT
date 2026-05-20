@@ -427,7 +427,7 @@ export function StatementPdf({ record }: { record: StatementPdfData }) {
               <View style={s.opinionSignUnder} />
             </View>
             <Text style={s.opinionName}>(นายวิสูตร ยอดสุข)</Text>
-            <Text style={s.opinionPos}>ผู้อำนวยการโรงเรียนบางพลีราษฎร์บำรุง</Text>
+            <Text style={s.opinionPos}>ผู้อำนวยการโรงเรียนบางพลีราษฎร์บำรุง </Text>
           </View>
         </View>
 
