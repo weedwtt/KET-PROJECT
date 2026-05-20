@@ -142,8 +142,8 @@ export default function StatementDetailPage() {
               <Pencil size={14} />แก้ไข
             </Link>
           )}
-          <a href={`/api/statements/${id}/export-word`} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
-            <FileText size={14} />ดาวน์โหลด Word
+          <a href={`/api/statements/${id}/export-pdf`} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            <FileText size={14} />Export PDF
           </a>
         </div>
       </div>
