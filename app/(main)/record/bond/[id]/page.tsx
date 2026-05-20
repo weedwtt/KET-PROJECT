@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Pencil } from "lucide-react"
+import { ChevronLeft, FileText, Pencil } from "lucide-react"
 
 type BondDetail = {
   id: number
@@ -149,6 +149,9 @@ export default function BondDetailPage() {
               <Pencil size={14} />แก้ไข
             </Link>
           )}
+          <a href={`/api/bonds/${id}/export-pdf`} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            <FileText size={14} />Export PDF
+          </a>
         </div>
       </div>
 

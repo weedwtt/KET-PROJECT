@@ -27,9 +27,6 @@ export async function GET(req: NextRequest) {
     measureActivity,
     measureSuspension,
     measureTransfer,
-    sigGuardian,
-    sigStudent,
-    sigAdvisor,
     academicYears,
     semesters,
   ] = await Promise.all([
@@ -58,9 +55,6 @@ export async function GET(req: NextRequest) {
     db.bondRecord.count({ where: { ...where, measureActivity: true } }),
     db.bondRecord.count({ where: { ...where, measureSuspension: true } }),
     db.bondRecord.count({ where: { ...where, measureTransfer: true } }),
-    db.bondRecord.count({ where: { ...where, guardianSignature: { not: null } } }),
-    db.bondRecord.count({ where: { ...where, studentSignature: { not: null } } }),
-    db.bondRecord.count({ where: { ...where, advisorSignature: { not: null } } }),
     db.academicYear.findMany({ orderBy: { year: "desc" } }),
     db.semester.findMany({ orderBy: { value: "asc" } }),
   ])
@@ -138,12 +132,6 @@ export async function GET(req: NextRequest) {
       activity: measureActivity,
       suspension: measureSuspension,
       transfer: measureTransfer,
-    },
-    signatureStats: {
-      guardian: sigGuardian,
-      student: sigStudent,
-      advisor: sigAdvisor,
-      total,
     },
     academicYears,
     semesters,
