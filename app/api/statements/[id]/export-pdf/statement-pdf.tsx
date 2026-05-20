@@ -11,7 +11,7 @@ import fs from "fs"
 function fixThai(s: string) {
   return s.replace(/ำ/g, "ํา")
 }
-function Text({ children, ...props }: React.ComponentProps<typeof PdfText>) {
+function Text({ children, ...props }: React.ComponentProps<typeof PdfText> & { children?: React.ReactNode }) {
   const fixed = typeof children === "string" ? fixThai(children) : children
   return <PdfText {...props}>{fixed}</PdfText>
 }
