@@ -26,12 +26,6 @@ export interface BondStatsData {
     suspension: number
     transfer: number
   }
-  signatureStats: {
-    guardian: number
-    student: number
-    advisor: number
-    total: number
-  }
   academicYears: { id: number; year: number }[]
   semesters: { id: number; name: string; value: number }[]
 }
@@ -276,89 +270,36 @@ function MonthlyTrendChart({ data, mounted }: { data: BondStatsData["monthlyTren
   )
 }
 
-// ─── Penalty Measures chart ──────────────────────────────────────
-function MeasuresChart({
-  measures, total, mounted,
-}: { measures: BondStatsData["measures"]; total: number; mounted: boolean }) {
-  const items = [
-    { key: "deductScore", label: "ตัดคะแนน", count: measures.deductScore, color: "#dc2626" },
-    { key: "suspension", label: "พักการเรียน", count: measures.suspension, color: "#7c3aed" },
-    { key: "activity", label: "ทำกิจกรรม", count: measures.activity, color: "#d97706" },
-    { key: "transfer", label: "ย้ายสถานศึกษา", count: measures.transfer, color: "#64748b" },
-  ]
-  const max = Math.max(...items.map((m) => m.count), 1)
-
-  return (
-    <div className="ks-card" style={{ padding: "22px 24px", height: "100%", boxSizing: "border-box" }}>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.1em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 3 }}>
-          04 · มาตรการ
-        </div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>มาตรการหากทำผิดซ้ำ</div>
-        <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 2 }}>จำนวนทัณฑ์บนที่ระบุมาตรการแต่ละประเภท</div>
-      </div>
-      {total === 0 ? (
-        <div style={{ color: "var(--ink-4)", fontSize: 13 }}>ไม่มีข้อมูล</div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {items.map((item, i) => {
-            const pct = total > 0 ? (item.count / total) * 100 : 0
-            return (
-              <div key={item.key}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 2, background: item.color, flexShrink: 0, display: "inline-block" }} />
-                    <span style={{ fontSize: 13, color: "var(--ink-2)" }}>{item.label}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-                      <AnimCount to={item.count} mounted={mounted} />
-                    </span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--ink-4)" }}>
-                      {pct.toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-                <div style={{ height: 8, background: "var(--surface-2)", borderRadius: 99 }}>
-                  <div style={{
-                    height: "100%", borderRadius: 99, background: item.color,
-                    width: mounted && max > 0 ? `${(item.count / max) * 100}%` : "0%",
-                    transition: `width 0.7s cubic-bezier(0.4,0,0.2,1) ${0.05 + i * 0.1}s`,
-                    opacity: 0.88,
-                  }} />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Grade + Signature section ───────────────────────────────────
-function GradeAndSigSection({
-  byGradeLevel, signatureStats, mounted,
-}: { byGradeLevel: BondStatsData["byGradeLevel"]; signatureStats: BondStatsData["signatureStats"]; mounted: boolean }) {
+// ─── Grade level + Measure type analysis ─────────────────────────
+function GradeAndMeasureSection({
+  byGradeLevel, measures, total, mounted,
+}: {
+  byGradeLevel: BondStatsData["byGradeLevel"]
+  measures: BondStatsData["measures"]
+  total: number
+  mounted: boolean
+}) {
   const maxGrade = Math.max(...byGradeLevel.map((g) => g.count), 1)
-  const { guardian, student, advisor, total } = signatureStats
-  const sigItems = [
-    { label: "ลายเซ็นผู้ปกครอง", count: guardian, color: TEAL },
-    { label: "ลายเซ็นนักเรียน", count: student, color: "#2563eb" },
-    { label: "ลายเซ็นครูที่ปรึกษา", count: advisor, color: "#7c3aed" },
+  const gradeColors = ["#0d9488", "#0891b2", "#2563eb", "#7c3aed", "#ec4899", "#d97706"]
+  const measureItems = [
+    { label: "ตัดคะแนน", count: measures.deductScore, color: "#dc2626" },
+    { label: "พักการเรียน", count: measures.suspension, color: "#7c3aed" },
+    { label: "ทำกิจกรรม", count: measures.activity, color: "#d97706" },
+    { label: "ย้ายสถานศึกษา", count: measures.transfer, color: "#64748b" },
   ]
+  const maxMeasure = Math.max(...measureItems.map((m) => m.count), 1)
 
   return (
     <div className="ks-card" style={{ padding: "22px 24px" }}>
       <div style={{ marginBottom: 22 }}>
         <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.1em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 3 }}>
-          05 · การกระจายและลายเซ็น
+          04 · ระดับชั้นและมาตรการ
         </div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>ระดับชั้นและความสมบูรณ์ของเอกสาร</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>วิเคราะห์ตามระดับชั้นและประเภทมาตรการหากทำผิดซ้ำ</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-        {/* Grade level */}
+        {/* Left: grade level */}
         <div>
           <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.08em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 16 }}>
             ทัณฑ์บนตามระดับชั้น
@@ -367,31 +308,37 @@ function GradeAndSigSection({
             <div style={{ color: "var(--ink-4)", fontSize: 13 }}>ไม่มีข้อมูล</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-              {byGradeLevel.map((g, i) => (
-                <div key={g.gradeLevel} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, fontSize: 12.5, fontWeight: 600, color: "var(--ink-2)", flexShrink: 0 }}>
-                    {g.gradeLevel}
+              {byGradeLevel.map((g, i) => {
+                const pct = total > 0 ? (g.count / total) * 100 : 0
+                return (
+                  <div key={g.gradeLevel} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 32, fontSize: 12.5, fontWeight: 600, color: "var(--ink-2)", flexShrink: 0 }}>
+                      {g.gradeLevel}
+                    </div>
+                    <div style={{ flex: 1, height: 22, background: "var(--surface-2)", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{
+                        width: mounted ? `${(g.count / maxGrade) * 100}%` : "0%",
+                        height: "100%", background: gradeColors[i % gradeColors.length]!, borderRadius: 4, opacity: 0.85,
+                        transition: `width 0.6s cubic-bezier(0.4,0,0.2,1) ${i * 0.08}s`,
+                      }} />
+                    </div>
+                    <div style={{ width: 26, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--ink-2)", flexShrink: 0 }}>
+                      {g.count}
+                    </div>
+                    <div style={{ width: 36, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--ink-4)", flexShrink: 0 }}>
+                      {pct.toFixed(0)}%
+                    </div>
                   </div>
-                  <div style={{ flex: 1, height: 22, background: "var(--surface-2)", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{
-                      width: mounted ? `${(g.count / maxGrade) * 100}%` : "0%",
-                      height: "100%", background: TEAL, borderRadius: 4, opacity: 0.82,
-                      transition: `width 0.6s cubic-bezier(0.4,0,0.2,1) ${i * 0.08}s`,
-                    }} />
-                  </div>
-                  <div style={{ width: 26, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--ink-2)", flexShrink: 0 }}>
-                    {g.count}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
 
-        {/* Signature completion */}
+        {/* Right: measure type */}
         <div>
           <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.08em", color: "var(--ink-3)", textTransform: "uppercase", marginBottom: 4 }}>
-            ความสมบูรณ์ลายเซ็น
+            ประเภทมาตรการหากทำผิดซ้ำ
           </div>
           <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 16 }}>
             จาก {total} รายการทั้งหมด
@@ -400,15 +347,18 @@ function GradeAndSigSection({
             <div style={{ color: "var(--ink-4)", fontSize: 13 }}>ไม่มีข้อมูล</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {sigItems.map((s, i) => {
-                const pct = total > 0 ? (s.count / total) * 100 : 0
+              {measureItems.map((m, i) => {
+                const pct = total > 0 ? (m.count / total) * 100 : 0
                 return (
-                  <div key={s.label}>
+                  <div key={m.label}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-                      <span style={{ fontSize: 13, color: "var(--ink-2)" }}>{s.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: 2, background: m.color, flexShrink: 0, display: "inline-block" }} />
+                        <span style={{ fontSize: 13, color: "var(--ink-2)" }}>{m.label}</span>
+                      </div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-                          <AnimCount to={s.count} mounted={mounted} />
+                          <AnimCount to={m.count} mounted={mounted} />
                         </span>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--ink-4)" }}>
                           / {pct.toFixed(0)}%
@@ -417,8 +367,8 @@ function GradeAndSigSection({
                     </div>
                     <div style={{ height: 8, background: "var(--surface-2)", borderRadius: 99 }}>
                       <div style={{
-                        height: "100%", borderRadius: 99, background: s.color,
-                        width: mounted ? `${pct}%` : "0%",
+                        height: "100%", borderRadius: 99, background: m.color,
+                        width: mounted ? `${(m.count / maxMeasure) * 100}%` : "0%",
                         transition: `width 0.7s cubic-bezier(0.4,0,0.2,1) ${0.1 + i * 0.12}s`,
                         opacity: 0.85,
                       }} />
@@ -621,15 +571,14 @@ export function BondReportCharts({ initialData }: { initialData: BondStatsData }
         <MonthlyTrendChart data={data.monthlyTrend} mounted={mounted} />
       </div>
 
-      {/* Measures + Semester */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24, alignItems: "start" }}>
-        <MeasuresChart measures={data.measures} total={data.total} mounted={mounted} />
+      {/* Semester */}
+      <div style={{ marginBottom: 24 }}>
         <SemesterChart data={data.bySemester} mounted={mounted} />
       </div>
 
-      {/* Grade level + Signature completion */}
+      {/* Grade level + Measure type */}
       <div style={{ marginBottom: 24 }}>
-        <GradeAndSigSection byGradeLevel={data.byGradeLevel} signatureStats={data.signatureStats} mounted={mounted} />
+        <GradeAndMeasureSection byGradeLevel={data.byGradeLevel} measures={data.measures} total={data.total} mounted={mounted} />
       </div>
 
       {/* Top students */}
