@@ -227,6 +227,14 @@ model StudentAdvisor {
 
 // ─── Discipline Master Tables ──────────────────────────────────────────────────
 
+/// ผู้บันทึก — รายชื่อผู้บันทึกถ้อยคำนักเรียน
+model Recorder {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(200)
+
+  @@map("recorders")
+}
+
 model Semester {
   id               Int               @id @default(autoincrement())
   name             String            @unique @db.VarChar(50)
@@ -316,6 +324,9 @@ model StatementRecord {
 
   gradeHeadTeacherId Int?     @map("grade_head_teacher_id")
   gradeHeadTeacher   Teacher? @relation("GradeHeadTeacher", fields: [gradeHeadTeacherId], references: [id])
+
+  /// ลายเซ็นสดของหัวหน้าระดับชั้น (data URL) — ใช้เมื่อเซ็นสด ณ ที่เกิดเหตุ แทนการดึงจากระบบ
+  gradeHeadSignature String? @db.Text @map("grade_head_signature")
 
   // ────── Step 5 (Bond): ทัณฑ์บน ──────
   bond StatementBond?
@@ -430,6 +441,8 @@ model BondRecord {
   advisorSignature     String? @db.Text @map("advisor_signature")
   headTeacherId        Int?    @map("head_teacher_id")
   headTeacher          Teacher? @relation("BondHeadTeacher", fields: [headTeacherId], references: [id])
+  /// ลายเซ็นสดของหัวหน้าระดับชั้น (data URL) — ใช้เมื่อเซ็นสด ณ ที่เกิดเหตุ
+  headTeacherSignature String? @db.Text @map("head_teacher_signature")
   disciplineTeacherId  Int?    @map("discipline_teacher_id")
   disciplineTeacher    Teacher? @relation("BondDisciplineTeacher", fields: [disciplineTeacherId], references: [id])
   viceDirectorSignature String? @db.Text @map("vice_director_signature")

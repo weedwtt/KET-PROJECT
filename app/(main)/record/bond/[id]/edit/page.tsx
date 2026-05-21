@@ -118,6 +118,7 @@ export default function BondEditPage() {
   const [guardianSig, setGuardianSig] = useState("")
   const [studentSig, setStudentSig] = useState("")
   const [advisorSig, setAdvisorSig] = useState("")
+  const [headTeacherSig, setHeadTeacherSig] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -151,6 +152,7 @@ export default function BondEditPage() {
         setGuardianSig(data.guardianSignature ?? "")
         setStudentSig(data.studentSignature ?? "")
         setAdvisorSig(data.advisorSignature ?? "")
+        setHeadTeacherSig(data.headTeacherSignature ?? "")
         setForm({
           contractDate: data.contractDate ? data.contractDate.slice(0, 10) : "",
           semesterId: data.semesterId ? String(data.semesterId) : "",
@@ -237,6 +239,7 @@ export default function BondEditPage() {
           recorder: form.recorder,
           status: form.status,
           headTeacherId: form.headTeacherId,
+          headTeacherSignature: headTeacherSig || null,
           disciplineTeacherId: form.disciplineTeacherId,
           guardianSignature: guardianSig || null,
           studentSignature: studentSig || null,
@@ -260,6 +263,8 @@ export default function BondEditPage() {
   }
 
   const advisor1 = student?.advisors.find((a) => a.slot === 1)?.teacher
+  const advisor2 = student?.advisors.find((a) => a.slot === 2)?.teacher
+  const advisorNames = [advisor1, advisor2].filter(Boolean).map((t) => `${t!.title.name}${t!.firstName} ${t!.lastName}`).join(" | ") || "ครูที่ปรึกษา"
 
   const step0Valid = !!form.contractDate && !!form.semesterId && !!form.academicYearId
   const step1Valid = !!form.guardianName
@@ -332,11 +337,12 @@ export default function BondEditPage() {
 
       {step === 4 && (
         <StepSignatures
-          student={student} advisor1={advisor1 ?? null}
+          student={student} advisorNames={advisorNames}
           form={form} upd={upd}
           guardianSig={guardianSig} setGuardianSig={setGuardianSig}
           studentSig={studentSig} setStudentSig={setStudentSig}
           advisorSig={advisorSig} setAdvisorSig={setAdvisorSig}
+          headTeacherSig={headTeacherSig} setHeadTeacherSig={setHeadTeacherSig}
           saving={saving} saveError={saveError}
           onBack={() => goStep(3)} onSubmit={handleSubmit}
         />
@@ -385,6 +391,8 @@ function WizardStepper({ currentStep }: { currentStep: number }) {
 
 function StudentBadge({ student }: { student: Student }) {
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
+  const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
+  const advisorDisplay = [advisor1, advisor2].filter(Boolean).map((t) => `${t!.title.name}${t!.firstName} ${t!.lastName}`).join(" | ")
   return (
     <div style={{ background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
       <div style={{ width: 38, height: 38, background: "var(--indigo)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -394,7 +402,7 @@ function StudentBadge({ student }: { student: Student }) {
         <div style={{ fontWeight: 600, fontSize: 14.5 }}>{student.title.name}{student.firstName} {student.lastName}</div>
         <div style={{ fontSize: 12, color: "var(--indigo-ink)", fontFamily: "var(--font-mono)" }}>
           {student.studentCode} · ชั้น {student.gradeLevel}/{student.classRoom}
-          {advisor1 && <> · ครูที่ปรึกษา: {advisor1.title.name}{advisor1.firstName} {advisor1.lastName}</>}
+          {advisorDisplay && <> · ครูที่ปรึกษา: {advisorDisplay}</>}
         </div>
       </div>
     </div>
@@ -597,6 +605,15 @@ function StepMeasures({
   student: Student; form: BondFormData; upd: (f: Partial<BondFormData>) => void
   onBack: () => void; onNext: () => void
 }) {
+  const [recorders, setRecorders] = useState<{ id: number; name: string }[]>([])
+
+  useEffect(() => {
+    fetch("/api/master/recorders")
+      .then((r) => r.json())
+      .then(setRecorders)
+      .catch(() => {})
+  }, [])
+
   return (
     <div className="wizard-body">
       <StudentBadge student={student} />
@@ -633,7 +650,16 @@ function StepMeasures({
           </div>
           <div>
             <FieldLabel>ผู้บันทึก</FieldLabel>
-            <input className="ks-input" value={form.recorder} onChange={(e) => upd({ recorder: e.target.value })} placeholder="ชื่อ-นามสกุล" />
+            <select
+              className="ks-select"
+              value={form.recorder}
+              onChange={(e) => upd({ recorder: e.target.value })}
+            >
+              <option value="">— เลือกผู้บันทึก —</option>
+              {recorders.map((r) => (
+                <option key={r.id} value={r.name}>{r.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -651,19 +677,21 @@ function StepMeasures({
 // ── Step 4: Signatures ─────────────────────────────────────────────────────────
 
 function StepSignatures({
-  student, advisor1, form, upd,
+  student, advisorNames, form, upd,
   guardianSig, setGuardianSig,
   studentSig, setStudentSig,
   advisorSig, setAdvisorSig,
+  headTeacherSig, setHeadTeacherSig,
   saving, saveError,
   onBack, onSubmit,
 }: {
   student: Student
-  advisor1: { title: { name: string }; firstName: string; lastName: string } | null
+  advisorNames: string
   form: BondFormData; upd: (f: Partial<BondFormData>) => void
   guardianSig: string; setGuardianSig: (v: string) => void
   studentSig: string; setStudentSig: (v: string) => void
   advisorSig: string; setAdvisorSig: (v: string) => void
+  headTeacherSig: string; setHeadTeacherSig: (v: string) => void
   saving: boolean; saveError: string | null
   onBack: () => void; onSubmit: () => void
 }) {
@@ -674,18 +702,24 @@ function StepSignatures({
       <p className="step-sub">ตรวจสอบลายเซ็นและกดบันทึกเพื่อยืนยันการแก้ไข</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
-        <SigPad label="ผู้ปกครอง" name={form.guardianName || "ผู้ปกครอง"} value={guardianSig} onChange={setGuardianSig} onClear={() => setGuardianSig("")} />
-        <SigPad label="นักเรียน" name={`${student.title.name}${student.firstName} ${student.lastName}`} value={studentSig} onChange={setStudentSig} onClear={() => setStudentSig("")} />
+        <SigPad label="ลายเซ็นนักเรียน" name={`${student.title.name}${student.firstName} ${student.lastName}`} value={studentSig} onChange={setStudentSig} onClear={() => setStudentSig("")} />
+        <SigPad label="ลายเซ็นผู้ปกครอง" value={guardianSig} onChange={setGuardianSig} onClear={() => setGuardianSig("")} />
         <SigPad
-          label="ครูที่ปรึกษา"
-          name={advisor1 ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}` : "ครูที่ปรึกษา"}
+          label="ลายเซ็นครูที่ปรึกษา"
+          name={advisorNames}
           value={advisorSig} onChange={setAdvisorSig} onClear={() => setAdvisorSig("")}
         />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-        <TeacherSigSelect label="หัวหน้าระดับ" role="หัวหน้าระดับชั้น" selectedId={form.headTeacherId} onSelect={(id) => upd({ headTeacherId: id })} />
-        <TeacherSigSelect label="ครูฝ่ายปกครอง" role="ครูฝ่ายปกครอง" selectedId={form.disciplineTeacherId} onSelect={(id) => upd({ disciplineTeacherId: id })} />
+        <TeacherSigSelect label="ลายเซ็นครูฝ่ายปกครอง" role="ครูฝ่ายปกครอง" selectedId={form.disciplineTeacherId} onSelect={(id) => upd({ disciplineTeacherId: id })} />
+        <GradeHeadSigSection
+          selectedId={form.headTeacherId}
+          onSelect={(id) => { upd({ headTeacherId: id }); setHeadTeacherSig("") }}
+          liveSignature={headTeacherSig}
+          onLiveSign={(url) => { setHeadTeacherSig(url); upd({ headTeacherId: null }) }}
+          onLiveClear={() => setHeadTeacherSig("")}
+        />
       </div>
 
       {saveError && (
@@ -726,7 +760,7 @@ function MeasureCheck({ checked, onChange, label, children }: {
 // ── SigPad ─────────────────────────────────────────────────────────────────────
 
 function SigPad({ label, name, value, onChange, onClear }: {
-  label: string; name: string; value: string
+  label: string; name?: string; value: string
   onChange: (url: string) => void; onClear: () => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -780,39 +814,77 @@ function SigPad({ label, name, value, onChange, onClear }: {
         )}
         {value && <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "var(--sage)" }}><Check size={12} /> บันทึกแล้ว</span>}
       </div>
-      <div style={{ marginTop: 6, fontSize: 13, fontWeight: 500 }}>{name}</div>
+      {name && <div style={{ marginTop: 6, fontSize: 13, fontWeight: 500 }}>{name}</div>}
+    </div>
+  )
+}
+
+// ── GradeHeadSigSection ────────────────────────────────────────────────────────
+
+function GradeHeadSigSection({
+  selectedId, onSelect, liveSignature, onLiveSign, onLiveClear,
+}: {
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+  liveSignature: string
+  onLiveSign: (url: string) => void
+  onLiveClear: () => void
+}) {
+  const [mode, setMode] = useState<"system" | "live">(liveSignature ? "live" : "system")
+
+  function switchToSystem() { setMode("system"); onLiveClear() }
+  function switchToLive() { setMode("live"); onSelect(null) }
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>รูปแบบลายเซ็น</span>
+        {(selectedId || liveSignature) && <span style={{ color: "var(--sage)" }}>● เลือกแล้ว</span>}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, background: "var(--surface-2)", borderRadius: "var(--radius)", padding: 3, width: "fit-content" }}>
+        {(["system", "live"] as const).map((m) => (
+          <button key={m} type="button" onClick={m === "system" ? switchToSystem : switchToLive}
+            style={{ padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none", cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
+              background: mode === m ? "var(--surface)" : "transparent",
+              color: mode === m ? "var(--ink)" : "var(--ink-3)",
+              boxShadow: mode === m ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            }}>
+            {m === "system" ? "ดึงจากระบบ" : "เซ็นสด"}
+          </button>
+        ))}
+      </div>
+      {mode === "system"
+        ? <TeacherSigSelectInner role="หัวหน้าระดับชั้น" selectedId={selectedId} onSelect={onSelect} />
+        : <SigPad label="ลายเซ็นหัวหน้าระดับชั้น" value={liveSignature} onChange={onLiveSign} onClear={onLiveClear} />
+      }
     </div>
   )
 }
 
 // ── TeacherSigSelect ───────────────────────────────────────────────────────────
 
-function TeacherSigSelect({ label, role, selectedId, onSelect }: {
-  label: string; role: string; selectedId: number | null; onSelect: (id: number | null) => void
+function TeacherSigSelectInner({ role, selectedId, onSelect }: {
+  role: string; selectedId: number | null; onSelect: (id: number | null) => void
 }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
-  const [loadingTeachers, setLoadingTeachers] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch(`/api/teachers/by-role?role=${encodeURIComponent(role)}`)
       .then((r) => r.json())
-      .then((data) => { setTeachers(data); setLoadingTeachers(false) })
-      .catch(() => setLoadingTeachers(false))
+      .then((data) => { setTeachers(data); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [role])
 
   const selected = teachers.find((t) => t.id === selectedId)
 
   return (
-    <div>
-      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-        <span>{label}</span>
-        {selected && <span style={{ color: "var(--sage)" }}>● เลือกแล้ว</span>}
-      </div>
-      {loadingTeachers ? (
+    <>
+      {loading ? (
         <div style={{ height: 38, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
       ) : (
         <select className="ks-select" value={selectedId ?? ""} onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}>
-          <option value="">เลือก{label}</option>
+          <option value="">เลือก{role}</option>
           {teachers.map((t) => (
             <option key={t.id} value={t.id}>{t.title.name}{t.firstName} {t.lastName}</option>
           ))}
@@ -826,6 +898,19 @@ function TeacherSigSelect({ label, role, selectedId, onSelect }: {
           <span className="sig-name">{selected.title.name}{selected.firstName} {selected.lastName}</span>
         </div>
       )}
+    </>
+  )
+}
+
+function TeacherSigSelect({ label, role, selectedId, onSelect }: {
+  label: string; role: string; selectedId: number | null; onSelect: (id: number | null) => void
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
+        <span>{label}</span>
+      </div>
+      <TeacherSigSelectInner role={role} selectedId={selectedId} onSelect={onSelect} />
     </div>
   )
 }

@@ -138,6 +138,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     advisorSignature,
     disciplineTeacherId,
     gradeHeadTeacherId,
+    gradeHeadSignature,
   } = body
 
   // Bond: upsert if provided, delete if removed
@@ -189,6 +190,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       advisorSignature: advisorSignature !== undefined ? (advisorSignature || null) : undefined,
       disciplineTeacherId: disciplineTeacherId !== undefined ? (disciplineTeacherId ? Number(disciplineTeacherId) : null) : undefined,
       gradeHeadTeacherId: gradeHeadTeacherId !== undefined ? (gradeHeadTeacherId ? Number(gradeHeadTeacherId) : null) : undefined,
+      gradeHeadSignature: gradeHeadSignature !== undefined ? (gradeHeadSignature || null) : undefined,
       ...bondUpdate,
     },
   })

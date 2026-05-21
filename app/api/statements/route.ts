@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       advisorSignature,
       disciplineTeacherId,
       gradeHeadTeacherId,
+      gradeHeadSignature,
     } = body
 
     if (!studentId || !semesterId || !academicYearId || !violationCategoryId || !subject || !detail) {
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
         advisorSignature: advisorSignature || null,
         disciplineTeacherId: disciplineTeacherId ? Number(disciplineTeacherId) : null,
         gradeHeadTeacherId: gradeHeadTeacherId ? Number(gradeHeadTeacherId) : null,
+        gradeHeadSignature: gradeHeadSignature || null,
         // Step 5 Bond (created inline via nested write)
         ...(bond && bond.guardianId
           ? {

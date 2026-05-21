@@ -36,6 +36,7 @@ type BondDetail = {
   approvedByTeacher: { id: number; firstName: string; lastName: string; title: { name: string } } | null
   approvedAt: string | null
   headTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
+  headTeacherSignature: string | null
   disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
   student: {
     id: number
@@ -81,8 +82,8 @@ function sigCount(r: BondDetail) {
   if (r.guardianSignature) n++
   if (r.studentSignature) n++
   if (r.advisorSignature) n++
-  if (r.headTeacher) n++
-  if (r.disciplineTeacher) n++
+  if (r.headTeacherSignature || r.headTeacher?.signatureUrl) n++
+  if (r.disciplineTeacher?.signatureUrl) n++
   if (r.viceDirectorSignature) n++
   if (r.directorSignature) n++
   return n
@@ -112,6 +113,8 @@ export default function BondDetailPage() {
 
   const isSigned = !!record.directorSignature
   const advisor1 = record.student.advisors.find((a) => a.slot === 1)?.teacher
+  const advisor2 = record.student.advisors.find((a) => a.slot === 2)?.teacher
+  const advisorNames = [advisor1, advisor2].filter(Boolean).map((t) => `${t!.title.name}${t!.firstName} ${t!.lastName}`).join(" | ") || "—"
   const sigs = sigCount(record)
 
   const measures: string[] = []
@@ -185,8 +188,8 @@ export default function BondDetailPage() {
               {record.student.guardians[0] && (
                 <InfoRow label="ผู้ปกครอง (ระบบ)" value={`${record.student.guardians[0].firstName} ${record.student.guardians[0].lastName}`} />
               )}
-              {advisor1 && (
-                <InfoRow label="ครูที่ปรึกษา" value={`${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}`} />
+              {(advisor1 || advisor2) && (
+                <InfoRow label="ครูที่ปรึกษา" value={advisorNames} />
               )}
             </div>
           </div>
@@ -251,39 +254,34 @@ export default function BondDetailPage() {
             <div className="ks-card-pad">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
                 <SigBox
-                  label="ผู้ปกครอง"
-                  name={record.guardianName}
-                  dataUrl={record.guardianSignature}
-                />
-                <SigBox
-                  label="นักเรียน"
+                  label="ลายเซ็นนักเรียน"
                   name={`${record.student.title.name}${record.student.firstName} ${record.student.lastName}`}
                   dataUrl={record.studentSignature}
                 />
                 <SigBox
-                  label="ครูที่ปรึกษา"
-                  name={advisor1 ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}` : "—"}
+                  label="ลายเซ็นผู้ปกครอง"
+                  dataUrl={record.guardianSignature}
+                />
+                <SigBox
+                  label="ลายเซ็นครูที่ปรึกษา"
+                  name={advisorNames}
                   dataUrl={record.advisorSignature}
                 />
               </div>
-              {(record.headTeacher || record.disciplineTeacher) && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
-                  {record.headTeacher && (
-                    <SigBox
-                      label="หัวหน้าระดับ"
-                      name={`${record.headTeacher.title.name}${record.headTeacher.firstName} ${record.headTeacher.lastName}`}
-                      dataUrl={record.headTeacher.signatureUrl}
-                    />
-                  )}
-                  {record.disciplineTeacher && (
-                    <SigBox
-                      label="ครูฝ่ายปกครอง"
-                      name={`${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}`}
-                      dataUrl={record.disciplineTeacher.signatureUrl}
-                    />
-                  )}
-                </div>
-              )}
+              <div style={{ borderTop: "1px solid var(--rule-soft)", margin: "4px 0 16px" }} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
+                <SigBox
+                  label="ลายเซ็นหัวหน้าระดับชั้น"
+                  name={record.headTeacher ? `${record.headTeacher.title.name}${record.headTeacher.firstName} ${record.headTeacher.lastName}` : ""}
+                  dataUrl={record.headTeacherSignature ?? record.headTeacher?.signatureUrl ?? null}
+                  isLive={!!record.headTeacherSignature}
+                />
+                <SigBox
+                  label="ลายเซ็นครูฝ่ายปกครอง"
+                  name={record.disciplineTeacher ? `${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}` : ""}
+                  dataUrl={record.disciplineTeacher?.signatureUrl ?? null}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -335,9 +333,15 @@ function InfoRow({ label, value, mono }: { label: string; value: string; mono?: 
   )
 }
 
-function SigBox({ label, name, dataUrl }: { label: string; name?: string; dataUrl: string | null }) {
+function SigBox({ label, name, dataUrl, isLive }: { label: string; name?: string; dataUrl: string | null; isLive?: boolean }) {
   return (
     <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        <span>{label}</span>
+        {isLive && (
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--indigo-wash)", color: "var(--indigo)", fontWeight: 500 }}>เซ็นสด</span>
+        )}
+      </div>
       <div
         className="sig-display"
         style={{
@@ -350,7 +354,7 @@ function SigBox({ label, name, dataUrl }: { label: string; name?: string; dataUr
           : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
         <div className="sig-name">{label}</div>
       </div>
-      {name && <div style={{ fontSize: 12.5, marginTop: 8 }}>{name}</div>}
+      {name && <div style={{ fontSize: 12.5, marginTop: 8, fontWeight: 500 }}>{name}</div>}
     </div>
   )
 }
