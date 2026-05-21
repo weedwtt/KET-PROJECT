@@ -913,9 +913,8 @@ function Step3Signatures({
   onSubmit: () => void
 }) {
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
-  const advisorName = advisor1
-    ? `${advisor1.title.name}${advisor1.firstName} ${advisor1.lastName}`
-    : "ครูที่ปรึกษา"
+  const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
+  const advisorName = [advisor1, advisor2].filter(Boolean).map((t) => `${t!.title.name}${t!.firstName} ${t!.lastName}`).join(" | ") || "ครูที่ปรึกษา"
 
   const guardian = student.guardians[0]
   const guardianName = guardian ? `${guardian.firstName} ${guardian.lastName}` : "ผู้ปกครอง"
