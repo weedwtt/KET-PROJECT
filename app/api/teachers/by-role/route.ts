@@ -1,12 +1,12 @@
 import { db as prisma } from "@/lib/db"
-import { TeacherRole } from "@/lib/generated/prisma/client"
+import { Prisma, TeacherRole } from "@/lib/generated/prisma/client"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const role = searchParams.get("role")
 
-  let where: Parameters<typeof prisma.teacher.findMany>[0]["where"]
+  let where: Prisma.TeacherWhereInput | undefined
   if (role === "หัวหน้าระดับชั้น") {
     where = { gradeHeadLevel: { not: null } }
   } else if (role && Object.values(TeacherRole).includes(role as TeacherRole)) {
