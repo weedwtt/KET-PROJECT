@@ -48,6 +48,11 @@ type TeacherOption = {
   lastName: string
   title: { name: string }
   signatureUrl: string | null
+  gradeHeadLevel: string | null
+}
+
+const GRADE_HEAD_LEVEL_LABEL: Record<string, string> = {
+  M1: "ม.1", M2: "ม.2", M3: "ม.3", M4: "ม.4", M5: "ม.5", M6: "ม.6",
 }
 
 type SemesterItem = { id: number; name: string; value: number }
@@ -838,7 +843,7 @@ function GradeHeadSigSection({
   return (
     <div>
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>รูปแบบลายเซ็น</span>
+        <span>ลายเซ็นหัวหน้าระดับ</span>
         {(selectedId || liveSignature) && <span style={{ color: "var(--sage)" }}>● เลือกแล้ว</span>}
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 12, background: "var(--surface-2)", borderRadius: "var(--radius)", padding: 3, width: "fit-content" }}>
@@ -885,9 +890,12 @@ function TeacherSigSelectInner({ role, selectedId, onSelect }: {
       ) : (
         <select className="ks-select" value={selectedId ?? ""} onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}>
           <option value="">เลือก{role}</option>
-          {teachers.map((t) => (
-            <option key={t.id} value={t.id}>{t.title.name}{t.firstName} {t.lastName}</option>
-          ))}
+          {teachers.map((t) => {
+            const gradeLabel = t.gradeHeadLevel ? ` (${GRADE_HEAD_LEVEL_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel})` : ""
+            return (
+              <option key={t.id} value={t.id}>{t.title.name}{t.firstName} {t.lastName}{gradeLabel}</option>
+            )
+          })}
         </select>
       )}
       {selected && (
