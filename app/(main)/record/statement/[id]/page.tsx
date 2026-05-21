@@ -21,6 +21,7 @@ type StatementDetail = {
   studentSignature: string | null
   guardianSignature: string | null
   advisorSignature: string | null
+  gradeHeadSignature: string | null
   semester: { id: number; name: string; value: number }
   academicYear: { id: number; year: number }
   violationCategory: { id: number; name: string }
@@ -121,6 +122,8 @@ export default function StatementDetailPage() {
 
   const isApproved = record.status === "approved"
   const advisor1 = record.student.advisors.find((a) => a.slot === 1)?.teacher
+  const advisor2 = record.student.advisors.find((a) => a.slot === 2)?.teacher
+  const advisorNames = [advisor1, advisor2].filter(Boolean).map((t) => `${t!.title?.name ?? ""}${t!.firstName} ${t!.lastName}`).join(" | ") || "—"
 
   return (
     <div className="ks-page">
@@ -181,8 +184,8 @@ export default function StatementDetailPage() {
               {record.student.guardians[0] && (
                 <InfoRow label="ผู้ปกครอง" value={`${record.student.guardians[0].firstName} ${record.student.guardians[0].lastName}`} />
               )}
-              {advisor1 && (
-                <InfoRow label="ครูที่ปรึกษา" value={`${advisor1.title?.name}${advisor1.firstName} ${advisor1.lastName}`} />
+              {(advisor1 || advisor2) && (
+                <InfoRow label="ครูที่ปรึกษา" value={advisorNames} />
               )}
               <InfoRow label="ภาคเรียน / ปีการศึกษา" value={`${record.semester.name} / ${record.academicYear.year}`} />
             </div>
@@ -267,24 +270,37 @@ export default function StatementDetailPage() {
                 <div className="ks-card-title">ลายเซ็น</div>
               </div>
             </div>
-            <div className="ks-card-pad" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-              {[
-                { label: "นักเรียน", name: `${record.student.title?.name}${record.student.firstName} ${record.student.lastName}`, url: record.studentSignature },
-                { label: "ผู้ปกครอง", name: record.student.guardians[0] ? `${record.student.guardians[0].firstName} ${record.student.guardians[0].lastName}` : "—", url: record.guardianSignature },
-                { label: "ครูที่ปรึกษา", name: advisor1 ? `${advisor1.title?.name}${advisor1.firstName} ${advisor1.lastName}` : "—", url: record.advisorSignature },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="sig-display">
-                    {s.url
-                      ? <img src={s.url} alt="signature" style={{ height: "80%", objectFit: "contain" }} />
-                      : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>
-                    }
-                    <div className="sig-name">{s.label}</div>
-                  </div>
-                  <div style={{ fontSize: 12.5, marginTop: 8 }}>{s.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>{formatThaiDate(record.recordDate)}</div>
-                </div>
-              ))}
+            <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* Row 1: นักเรียน · ผู้ปกครอง · ครูที่ปรึกษา */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+                {[
+                  { label: "นักเรียน", name: `${record.student.title?.name}${record.student.firstName} ${record.student.lastName}`, url: record.studentSignature },
+                  { label: "ผู้ปกครอง", name: record.student.guardians[0] ? `${record.student.guardians[0].firstName} ${record.student.guardians[0].lastName}` : "", url: record.guardianSignature },
+                  { label: "ครูที่ปรึกษา", name: advisorNames, url: record.advisorSignature },
+                ].map((s) => (
+                  <SigDisplayBox key={s.label} label={s.label} name={s.name} url={s.url} date={record.recordDate} />
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div style={{ borderTop: "1px solid var(--rule-soft)" }} />
+
+              {/* Row 2: ครูฝ่ายปกครอง · หัวหน้าระดับชั้น */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <SigDisplayBox
+                  label="ครูฝ่ายปกครอง"
+                  name={record.disciplineTeacher ? `${record.disciplineTeacher.title?.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}` : ""}
+                  url={record.disciplineTeacher?.signatureUrl ?? null}
+                  date={record.recordDate}
+                />
+                <SigDisplayBox
+                  label="หัวหน้าระดับชั้น"
+                  name={record.gradeHeadTeacher ? `${record.gradeHeadTeacher.title?.name}${record.gradeHeadTeacher.firstName} ${record.gradeHeadTeacher.lastName}` : ""}
+                  url={record.gradeHeadSignature ?? record.gradeHeadTeacher?.signatureUrl ?? null}
+                  date={record.recordDate}
+                  isLive={!!record.gradeHeadSignature}
+                />
+              </div>
             </div>
           </div>
 
@@ -334,6 +350,30 @@ export default function StatementDetailPage() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function SigDisplayBox({ label, name, url, date, isLive }: {
+  label: string; name: string; url: string | null; date: string; isLive?: boolean
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        <span>§ {label}</span>
+        {isLive && (
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--indigo-wash)", color: "var(--indigo)", fontWeight: 500 }}>เซ็นสด</span>
+        )}
+      </div>
+      <div className="sig-display" style={{ borderColor: url ? "var(--sage)" : undefined, background: url ? "var(--sage-wash, #f0fdf4)" : undefined }}>
+        {url
+          ? <img src={url} alt="signature" style={{ maxHeight: "80%", maxWidth: "100%", objectFit: "contain" }} />
+          : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>
+        }
+        <div className="sig-name">{label}</div>
+      </div>
+      {name && <div style={{ fontSize: 12.5, marginTop: 8, fontWeight: 500 }}>{name}</div>}
+      <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)", marginTop: 2 }}>{formatThaiDate(date)}</div>
     </div>
   )
 }

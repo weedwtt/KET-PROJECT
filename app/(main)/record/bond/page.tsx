@@ -129,6 +129,7 @@ export default function BondListPage() {
               <th>นักเรียน</th>
               <th>ผู้ปกครอง</th>
               <th>มาตรการ</th>
+              <th>ผู้บันทึก</th>
               <th>สถานะ</th>
               <th className="col-actions">การจัดการ</th>
             </tr>
@@ -136,13 +137,13 @@ export default function BondListPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <div className="empty-state">กำลังโหลด...</div>
                 </td>
               </tr>
             ) : records.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <div className="empty-state">
                     {q ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีบันทึกทัณฑ์บน"}
                   </div>
@@ -188,6 +189,9 @@ export default function BondListPage() {
                           ))}
                         </div>
                       )}
+                    </td>
+                    <td>
+                      <div style={{ fontSize: 13.5 }}>{r.recorder || <span style={{ color: "var(--ink-4)" }}>—</span>}</div>
                     </td>
                     <td>
                       <span className={`chip chip-${r.directorSignature ? "approved" : "pending"}`}>

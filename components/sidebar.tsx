@@ -189,6 +189,7 @@ export function Sidebar({ userName, role }: SidebarProps) {
                   { href: "/dashboard/master/academic-year",           label: "ปีการศึกษา" },
                   { href: "/dashboard/master/violation-category",      label: "หมวดการผิดระเบียบ" },
                   { href: "/dashboard/master/violation-sub-category",  label: "หมวดย่อยการผิดระเบียบ" },
+                  { href: "/dashboard/master/recorders",               label: "ผู้บันทึก" },
                 ].map(({ href, label }) => (
                   <Link
                     key={href}
