@@ -1,4 +1,6 @@
-﻿import { db } from "@/lib/db"
+﻿export const dynamic = 'force-dynamic'
+
+import { db } from "@/lib/db"
 import { Calendar } from "lucide-react"
 import { MasterTable } from "@/components/master/master-table"
 

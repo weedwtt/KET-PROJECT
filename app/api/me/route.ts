@@ -13,6 +13,7 @@ export async function GET() {
       firstName: true,
       lastName: true,
       role: true,
+      gradeHeadLevel: true,
       signatureUrl: true,
       title: { select: { name: true } },
       delegateFor: {

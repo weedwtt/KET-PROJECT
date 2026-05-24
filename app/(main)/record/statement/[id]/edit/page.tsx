@@ -941,7 +941,7 @@ function Step4Signature({ student, signatureData, setSignatureData, onBack, onNe
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
         <TeacherSigSelect
-          label="ครูฝ่ายปกครอง" role="ครูฝ่ายปกครอง"
+          label="ครูฝ่ายปกครอง" role="DISCIPLINE"
           selectedId={signatureData.disciplineTeacherId}
           onSelect={(id) => setSignatureData((p) => ({ ...p, disciplineTeacherId: id }))}
         />
@@ -1125,8 +1125,8 @@ function GradeHeadSigSection({
 
 // ── TeacherSigSelect ───────────────────────────────────────────────────────────
 
-function TeacherSigSelectInner({ role, selectedId, onSelect }: {
-  role: string; selectedId: number | null
+function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
+  role: string; label?: string; selectedId: number | null
   onSelect: (id: number | null) => void
 }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
@@ -1153,7 +1153,7 @@ function TeacherSigSelectInner({ role, selectedId, onSelect }: {
           value={selectedId ?? ""}
           onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}
         >
-          <option value="">เลือก{role}</option>
+          <option value="">เลือก{label ?? role}</option>
           {teachers.map((t) => {
             const gradeLabel = t.gradeHeadLevel ? ` (${GRADE_HEAD_LEVEL_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel})` : ""
             return (
@@ -1183,7 +1183,7 @@ function TeacherSigSelect({ label, role, selectedId, onSelect }: {
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
         <span>§ ลายเซ็น{label}</span>
       </div>
-      <TeacherSigSelectInner role={role} selectedId={selectedId} onSelect={onSelect} />
+      <TeacherSigSelectInner role={role} label={label} selectedId={selectedId} onSelect={onSelect} />
     </div>
   )
 }

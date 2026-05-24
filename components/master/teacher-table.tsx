@@ -9,6 +9,7 @@ const ROLE_LABEL: Record<string, string> = {
   DIRECTOR: "ผอ.",
   VICE_DIRECTOR: "รองผอ.",
   TEACHER: "ครู",
+  DISCIPLINE: "ฝ่ายปกครอง",
   ADMIN: "admin",
 }
 
@@ -32,9 +33,8 @@ type Props = {
   teachers: TeacherRow[]
 }
 
-export function TeacherTable({ teachers: initial }: Props) {
+export function TeacherTable({ teachers }: Props) {
   const router = useRouter()
-  const [teachers, setTeachers] = useState(initial)
   const [deleting, setDeleting] = useState<number | null>(null)
 
   async function handleDelete(id: number) {
@@ -47,7 +47,6 @@ export function TeacherTable({ teachers: initial }: Props) {
         alert(data.error ?? "ไม่สามารถลบได้")
         return
       }
-      setTeachers((prev) => prev.filter((t) => t.id !== id))
       router.refresh()
     } finally {
       setDeleting(null)

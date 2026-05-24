@@ -9,6 +9,7 @@ const ROLE_LABEL: Record<string, string> = {
   DIRECTOR: "ผอ.",
   VICE_DIRECTOR: "รองผอ.",
   TEACHER: "ครู",
+  DISCIPLINE: "ฝ่ายปกครอง",
   ADMIN: "admin",
 }
 
@@ -34,9 +35,8 @@ type Props = {
   users: UserRow[]
 }
 
-export function UserTable({ users: initial }: Props) {
+export function UserTable({ users }: Props) {
   const router = useRouter()
-  const [users, setUsers] = useState(initial)
   const [deleting, setDeleting] = useState<number | null>(null)
 
   async function handleDelete(id: number) {
@@ -49,7 +49,6 @@ export function UserTable({ users: initial }: Props) {
         alert(data.error ?? "ไม่สามารถลบได้")
         return
       }
-      setUsers((prev) => prev.filter((u) => u.id !== id))
       router.refresh()
     } finally {
       setDeleting(null)

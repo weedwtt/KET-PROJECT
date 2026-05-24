@@ -1,4 +1,6 @@
-﻿import Link from "next/link"
+﻿export const dynamic = 'force-dynamic'
+
+import Link from "next/link"
 import { db } from "@/lib/db"
 import { StatementGrid } from "@/components/statement-grid"
 import { Plus, Filter, Download } from "lucide-react"
@@ -15,6 +17,7 @@ export default async function StatementListPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
 
   const where = {
+    status: { not: "approved" as const },
     ...(search
       ? {
           OR: [

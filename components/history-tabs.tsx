@@ -100,6 +100,7 @@ export function HistoryTabs({
     if (newSearch) params.set("search", newSearch)
     if (newPage > 1) params.set("page", String(newPage))
     router.push(`${pathname}${params.toString() ? `?${params}` : ""}`)
+    router.refresh()
   }
 
   function switchTab(newTab: Tab) {

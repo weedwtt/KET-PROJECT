@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { db } from "@/lib/db"
 import { UserPen } from "lucide-react"
 import { MasterTable } from "@/components/master/master-table"

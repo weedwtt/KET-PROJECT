@@ -110,6 +110,7 @@ enum TeacherRole {
   VICE_DIRECTOR @map("VICE_DIRECTOR")
   TEACHER       @map("TEACHER")
   ADMIN         @map("ADMIN")
+  DISCIPLINE    @map("DISCIPLINE")
 }
 
 /// ระดับชั้นที่ครูดูแล (ใช้สำหรับหัวหน้าระดับชั้น)

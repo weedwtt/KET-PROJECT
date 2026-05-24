@@ -54,6 +54,7 @@ export function ViolationSubCategoryTable({ data, categories, total, page, total
     if (cat) params.set("categoryId", cat)
     const qs = params.toString()
     router.push(`${pathname}${qs ? `?${qs}` : ""}`)
+    router.refresh()
   }
 
   function onSearchChange(val: string) {

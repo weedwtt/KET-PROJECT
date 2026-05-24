@@ -1,4 +1,6 @@
-﻿import { db } from "@/lib/db"
+﻿export const dynamic = 'force-dynamic'
+
+import { db } from "@/lib/db"
 import Link from "next/link"
 import { Users, Plus } from "lucide-react"
 import { TeacherTable } from "@/components/master/teacher-table"

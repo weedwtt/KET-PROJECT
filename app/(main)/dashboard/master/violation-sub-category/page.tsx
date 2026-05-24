@@ -1,4 +1,6 @@
-﻿import { db } from "@/lib/db"
+﻿export const dynamic = 'force-dynamic'
+
+import { db } from "@/lib/db"
 import { Layers } from "lucide-react"
 import { ViolationSubCategoryTable } from "@/components/master/violation-sub-category-table"
 

@@ -965,7 +965,7 @@ function Step3Signatures({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
         <TeacherSigSelect
           label="ครูฝ่ายปกครอง"
-          role="ครูฝ่ายปกครอง"
+          role="DISCIPLINE"
           selectedId={data.disciplineTeacherId}
           onSelect={(id) => setData((p) => ({ ...p, disciplineTeacherId: id }))}
         />
@@ -1146,6 +1146,7 @@ function GradeHeadSigSection({
           role="หัวหน้าระดับชั้น"
           selectedId={selectedId}
           onSelect={onSelect}
+          hideSignature
         />
       ) : (
         <SigPad
@@ -1161,9 +1162,10 @@ function GradeHeadSigSection({
 
 // ── TeacherSigSelect ───────────────────────────────────────────────────────────
 
-function TeacherSigSelectInner({ role, selectedId, onSelect }: {
-  role: string; selectedId: number | null
+function TeacherSigSelectInner({ role, label, selectedId, onSelect, hideSignature }: {
+  role: string; label?: string; selectedId: number | null
   onSelect: (id: number | null) => void
+  hideSignature?: boolean
 }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -1189,7 +1191,7 @@ function TeacherSigSelectInner({ role, selectedId, onSelect }: {
           value={selectedId ?? ""}
           onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}
         >
-          <option value="">เลือก{role}</option>
+          <option value="">เลือก{label ?? role}</option>
           {teachers.map((t) => {
             const gradeLabel = t.gradeHeadLevel ? ` (${GRADE_HEAD_LEVEL_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel})` : ""
             return (
@@ -1198,12 +1200,27 @@ function TeacherSigSelectInner({ role, selectedId, onSelect }: {
           })}
         </select>
       )}
-      {selected && (
+      {!hideSignature && selected && (
         <div className="sig-display" style={{ marginTop: 10, borderColor: selected.signatureUrl ? "var(--sage)" : undefined }}>
           {selected.signatureUrl
             ? <img src={selected.signatureUrl} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
             : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ยังไม่มีลายเซ็นในระบบ</span>}
           <span className="sig-name">{selected.title.name}{selected.firstName} {selected.lastName}</span>
+        </div>
+      )}
+      {hideSignature && selected && (
+        <div style={{
+          marginTop: 10, padding: "10px 14px",
+          background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)",
+          borderRadius: "var(--radius)", fontSize: 13,
+        }}>
+          <div style={{ fontWeight: 600, color: "var(--indigo)", marginBottom: 2 }}>
+            {selected.title.name}{selected.firstName} {selected.lastName}
+            {selected.gradeHeadLevel ? ` (${GRADE_HEAD_LEVEL_LABEL[selected.gradeHeadLevel] ?? selected.gradeHeadLevel})` : ""}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--indigo-ink)" }}>
+            จะได้รับแบบฟอร์มเพื่ออนุมัติและลงลายเซ็นก่อนส่งต่อให้ผู้อำนวยการ
+          </div>
         </div>
       )}
     </>
@@ -1219,7 +1236,7 @@ function TeacherSigSelect({ label, role, selectedId, onSelect }: {
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
         <span>§ ลายเซ็น{label}</span>
       </div>
-      <TeacherSigSelectInner role={role} selectedId={selectedId} onSelect={onSelect} />
+      <TeacherSigSelectInner role={role} label={label} selectedId={selectedId} onSelect={onSelect} />
     </div>
   )
 }
