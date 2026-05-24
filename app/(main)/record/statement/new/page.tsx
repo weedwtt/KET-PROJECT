@@ -335,6 +335,7 @@ export default function NewStatementPage() {
           data={sigData} setData={setSigData}
           saving={saving} saveError={saveError}
           onBack={() => setStep(2)} onSubmit={handleSubmit}
+          notifyParent={measures.consider.notify && !measures.consider.invite}
         />
       )}
     </div>
@@ -907,7 +908,7 @@ function CheckRow({
 // ── Step 3: Signatures ─────────────────────────────────────────────────────────
 
 function Step3Signatures({
-  student, data, setData, saving, saveError, onBack, onSubmit,
+  student, data, setData, saving, saveError, onBack, onSubmit, notifyParent,
 }: {
   student: Student
   data: SignatureFormData
@@ -916,6 +917,7 @@ function Step3Signatures({
   saveError: string | null
   onBack: () => void
   onSubmit: () => void
+  notifyParent: boolean
 }) {
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
   const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
@@ -935,7 +937,7 @@ function Step3Signatures({
       <h2 className="step-heading" style={{ marginTop: 20 }}>ลายเซ็นทุกฝ่าย</h2>
       <p className="step-sub">ทุกฝ่ายลงลายมือชื่อในช่องที่กำหนด แล้วกด "ยืนยันลายเซ็น"</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: notifyParent ? "1fr 1fr" : "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
         <SigPad
           label="นักเรียน"
           name={studentName}
@@ -943,12 +945,14 @@ function Step3Signatures({
           onChange={(v) => setSig("studentSignature", v)}
           onClear={() => setSig("studentSignature", "")}
         />
-        <SigPad
-          label="ผู้ปกครอง"
-          value={data.guardianSignature}
-          onChange={(v) => setSig("guardianSignature", v)}
-          onClear={() => setSig("guardianSignature", "")}
-        />
+        {!notifyParent && (
+          <SigPad
+            label="ผู้ปกครอง"
+            value={data.guardianSignature}
+            onChange={(v) => setSig("guardianSignature", v)}
+            onClear={() => setSig("guardianSignature", "")}
+          />
+        )}
         <SigPad
           label="ครูที่ปรึกษา"
           name={advisorName}

@@ -345,6 +345,7 @@ export default function EditStatementPage() {
           setSignatureData={setSignatureData}
           onBack={handleBack}
           onNext={() => setStep(4)}
+          notifyParent={measureData.selected.includes("notify_parent") && !measureData.selected.includes("invite_parent")}
         />
       )}
       {step === 4 && (
@@ -890,9 +891,10 @@ interface Step4Props {
   setSignatureData: React.Dispatch<React.SetStateAction<SignatureFormData>>
   onBack: () => void
   onNext: () => void
+  notifyParent: boolean
 }
 
-function Step4Signature({ student, signatureData, setSignatureData, onBack, onNext }: Step4Props) {
+function Step4Signature({ student, signatureData, setSignatureData, onBack, onNext, notifyParent }: Step4Props) {
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
   const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
   const guardian = student.guardians[0]
@@ -914,19 +916,21 @@ function Step4Signature({ student, signatureData, setSignatureData, onBack, onNe
       <h2 className="step-heading" style={{ marginTop: 20 }}>ลายเซ็นทุกฝ่าย</h2>
       <p className="step-sub">ทุกฝ่ายลงลายมือชื่อในช่องที่กำหนด แล้วกด "ยืนยันลายเซ็น"</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: notifyParent ? "1fr 1fr" : "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
         <SigPad
           label="นักเรียน" name={studentName}
           value={signatureData.studentSignature}
           onChange={(v) => setSig("studentSignature", v)}
           onClear={() => setSig("studentSignature", "")}
         />
-        <SigPad
-          label="ผู้ปกครอง"
-          value={signatureData.guardianSignature}
-          onChange={(v) => setSig("guardianSignature", v)}
-          onClear={() => setSig("guardianSignature", "")}
-        />
+        {!notifyParent && (
+          <SigPad
+            label="ผู้ปกครอง"
+            value={signatureData.guardianSignature}
+            onChange={(v) => setSig("guardianSignature", v)}
+            onClear={() => setSig("guardianSignature", "")}
+          />
+        )}
         <SigPad
           label="ครูที่ปรึกษา" name={advisorName}
           value={signatureData.advisorSignature}

@@ -93,6 +93,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       approvedByTeacher: {
         select: { firstName: true, lastName: true, signatureUrl: true, title: { select: { name: true } } },
       },
+      signatureTeacher: {
+        select: { firstName: true, lastName: true, signatureUrl: true, title: { select: { name: true } } },
+      },
     },
   })
 
@@ -157,7 +160,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     advisorSignatureUrl: record.advisorSignature ?? null,
     gradeHeadSignatureUrl: record.gradeHeadTeacher?.signatureUrl ?? null,
     disciplineTeacherSignatureUrl: record.disciplineTeacher?.signatureUrl ?? null,
-    approvedBySignatureUrl: record.approvedByTeacher?.signatureUrl ?? null,
+    approvedBySignatureUrl: (record.signatureTeacher ?? record.approvedByTeacher)?.signatureUrl ?? null,
     directorSignatureUrl: director?.signatureUrl ?? null,
     viceDirectorSignatureUrl: viceDirector?.signatureUrl ?? null,
   }

@@ -1,4 +1,4 @@
-﻿import { auth } from "@/auth"
+import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { ApprovalGrid } from "@/components/approval-grid"
@@ -79,8 +79,23 @@ async function getPendingBonds() {
 export default async function ApprovePage() {
   const session = await auth()
   const role = session?.user?.role
+  const teacherId = session?.user?.teacherId
 
-  if (role !== "DIRECTOR" && role !== "VICE_DIRECTOR" && role !== "ADMIN") redirect("/dashboard")
+  const isApprover = role === "DIRECTOR" || role === "VICE_DIRECTOR" || role === "ADMIN"
+
+  let isDelegate = false
+  if (!isApprover && teacherId) {
+    const delegateCount = await db.approvalDelegate.count({ where: { delegateId: teacherId } })
+    isDelegate = delegateCount > 0
+  }
+
+  if (!isApprover && !isDelegate) redirect("/dashboard")
+
+  const myRoleLabel =
+    role === "DIRECTOR" ? "ผอ." :
+    role === "VICE_DIRECTOR" ? "รองผอ." :
+    role === "ADMIN" ? "admin" :
+    "ผู้รับมอบอำนาจ"
 
   const [statements, bonds] = await Promise.all([
     getPendingStatements(),
@@ -92,7 +107,6 @@ export default async function ApprovePage() {
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            
             <span>ฝ่ายปกครอง · รายการรออนุมัติ</span>
           </div>
           <h1>รออนุมัติ</h1>
@@ -105,7 +119,7 @@ export default async function ApprovePage() {
           { marker: "01", eyebrow: "QUEUE", num: statements.length + bonds.length, label: "ทั้งหมดที่รอ" },
           { marker: "02", eyebrow: "TODAY", num: "—", label: "รอจากวันนี้" },
           { marker: "03", eyebrow: "OVERDUE", num: "—", label: "เกินกำหนด (>24 ชม.)" },
-          { marker: "04", eyebrow: "MY ROLE", num: role === "DIRECTOR" ? "ผอ." : "รองผอ.", label: "ระดับการอนุมัติ" },
+          { marker: "04", eyebrow: "MY ROLE", num: myRoleLabel, label: "ระดับการอนุมัติ" },
         ].map((s) => (
           <div key={s.marker} className="stat-card">
             <div className="stat-eyebrow"><span>{s.eyebrow}</span><span style={{ color: "var(--ink-4)" }}>{s.marker}</span></div>

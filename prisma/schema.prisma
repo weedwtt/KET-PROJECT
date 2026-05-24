@@ -167,10 +167,13 @@ model Teacher {
   disciplineStatements   StatementRecord[] @relation("DisciplineTeacher")
   gradeHeadStatements    StatementRecord[] @relation("GradeHeadTeacher")
   approvedStatements     StatementRecord[] @relation("ApprovedBy")
+  signatureStatements    StatementRecord[] @relation("SignatureTeacher")
   bondHeadTeacher        BondRecord[]      @relation("BondHeadTeacher")
   bondDisciplineTeacher  BondRecord[]      @relation("BondDisciplineTeacher")
   bondApprovals          BondRecord[]      @relation("BondApprovedBy")
   user                   User?
+  delegatedTo            ApprovalDelegate[] @relation("PrincipalDelegates")
+  delegateFor            ApprovalDelegate[] @relation("TeacherDelegates")
 
   @@index([firstName, lastName], map: "idx_teacher_name")
 
@@ -336,6 +339,9 @@ model StatementRecord {
   status              String   @default("pending") @db.VarChar(20)
   approvedByTeacherId Int?     @map("approved_by_teacher_id")
   approvedByTeacher   Teacher? @relation("ApprovedBy", fields: [approvedByTeacherId], references: [id])
+  /// ครูที่ใช้ลายเซ็นในเอกสาร (อาจต่างจาก approvedByTeacher เมื่อผู้รับมอบอำนาจอนุมัติแทน)
+  signatureTeacherId  Int?     @map("signature_teacher_id")
+  signatureTeacher    Teacher? @relation("SignatureTeacher", fields: [signatureTeacherId], references: [id])
   approvedAt          DateTime? @map("approved_at")
 
   @@index([studentId], map: "idx_statement_student")
@@ -382,6 +388,25 @@ model StatementBond {
   witnessName String? @db.VarChar(200) @map("witness_name")
 
   @@map("statement_bonds")
+}
+
+// ─── Approval Delegates ───────────────────────────────────────────────────────
+
+/// ผู้รับมอบอำนาจอนุมัติแทน — ผอ/รองผอ มอบสิทธิ์อนุมัติให้ครูคนอื่นได้
+model ApprovalDelegate {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  /// ผอ/รองผอ ที่มอบอำนาจ
+  principalId Int      @map("principal_id")
+  principal   Teacher  @relation("PrincipalDelegates", fields: [principalId], references: [id], onDelete: Cascade)
+
+  /// ครูที่ได้รับมอบอำนาจให้อนุมัติแทน
+  delegateId  Int      @map("delegate_id")
+  delegate    Teacher  @relation("TeacherDelegates", fields: [delegateId], references: [id], onDelete: Cascade)
+
+  @@unique([principalId, delegateId])
+  @@map("approval_delegates")
 }
 
 // ─── Bond Record (standalone) ─────────────────────────────────────────────────
