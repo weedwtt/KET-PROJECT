@@ -7,7 +7,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params
   const user = await db.user.findUnique({
     where: { id: Number(id) },
-    include: { teacher: { include: { title: true } } },
+    include: {
+      teacher: {
+        include: {
+          title: true,
+          delegatedTo: {
+            include: {
+              delegate: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  title: { select: { name: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   if (!user) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 })
   const { passwordHash: _, ...safe } = user
@@ -18,7 +36,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params
   const body = await req.json()
 
-  const { username, password, teacherId, ...teacherData } = body
+  const { username, password, teacherId, delegateTeacherIds, ...teacherData } = body
 
   const existingUser = await db.user.findUnique({ where: { id: Number(id) } })
   if (!existingUser) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 })
@@ -68,6 +86,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         })
       : Promise.resolve(),
   ])
+
+  // Reconcile delegates (DIRECTOR / VICE_DIRECTOR only)
+  if (teacherId && Array.isArray(delegateTeacherIds)) {
+    const isDirectorOrVice = teacherData.role === "DIRECTOR" || teacherData.role === "VICE_DIRECTOR"
+    await db.approvalDelegate.deleteMany({ where: { principalId: Number(teacherId) } })
+    if (isDirectorOrVice && delegateTeacherIds.length > 0) {
+      await db.approvalDelegate.createMany({
+        data: (delegateTeacherIds as number[]).map((did) => ({
+          principalId: Number(teacherId),
+          delegateId: did,
+        })),
+        skipDuplicates: true,
+      })
+    }
+  }
 
   const { passwordHash: _, ...safe } = updatedUser
   return NextResponse.json(safe)

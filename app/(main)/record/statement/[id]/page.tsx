@@ -39,6 +39,7 @@ type StatementDetail = {
   disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
   gradeHeadTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
   approvedByTeacher: { id: number; firstName: string; lastName: string; signatureUrl: string | null; title: { name: string } } | null
+  signatureTeacher: { id: number; firstName: string; lastName: string; signatureUrl: string | null; title: { name: string } } | null
 }
 
 type Approver = { id: number; firstName: string; lastName: string; role: string | null; title: { name: string } }
@@ -124,6 +125,7 @@ export default function StatementDetailPage() {
   const advisor1 = record.student.advisors.find((a) => a.slot === 1)?.teacher
   const advisor2 = record.student.advisors.find((a) => a.slot === 2)?.teacher
   const advisorNames = [advisor1, advisor2].filter(Boolean).map((t) => `${t!.title?.name ?? ""}${t!.firstName} ${t!.lastName}`).join(" | ") || "—"
+  const showGuardianSig = !(record.considerationMeasures.includes("notify_parent") && !record.considerationMeasures.includes("invite_parent"))
 
   return (
     <div className="ks-page">
@@ -271,11 +273,11 @@ export default function StatementDetailPage() {
               </div>
             </div>
             <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              {/* Row 1: นักเรียน · ผู้ปกครอง · ครูที่ปรึกษา */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+              {/* Row 1: นักเรียน · [ผู้ปกครอง] · ครูที่ปรึกษา */}
+              <div style={{ display: "grid", gridTemplateColumns: showGuardianSig ? "1fr 1fr 1fr" : "1fr 1fr", gap: 14 }}>
                 {[
                   { label: "นักเรียน", name: `${record.student.title?.name}${record.student.firstName} ${record.student.lastName}`, url: record.studentSignature },
-                  { label: "ผู้ปกครอง", name: record.student.guardians[0] ? `${record.student.guardians[0].firstName} ${record.student.guardians[0].lastName}` : "", url: record.guardianSignature },
+                  ...(showGuardianSig ? [{ label: "ผู้ปกครอง", name: record.student.guardians[0] ? `${record.student.guardians[0].firstName} ${record.student.guardians[0].lastName}` : "", url: record.guardianSignature }] : []),
                   { label: "ครูที่ปรึกษา", name: advisorNames, url: record.advisorSignature },
                 ].map((s) => (
                   <SigDisplayBox key={s.label} label={s.label} name={s.name} url={s.url} date={record.recordDate} />
@@ -333,12 +335,15 @@ export default function StatementDetailPage() {
               <div style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
                 {formatThaiDateTime(record.approvedAt)}
               </div>
-              {record.approvedByTeacher?.signatureUrl && (
-                <div className="sig-display" style={{ marginTop: 14, borderColor: "var(--sage)", background: "var(--sage-wash, #f0fdf4)" }}>
-                  <img src={record.approvedByTeacher.signatureUrl} alt="ลายเซ็นผู้อนุมัติ" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
-                  <div className="sig-name">{record.approvedByTeacher.title?.name}{record.approvedByTeacher.firstName} {record.approvedByTeacher.lastName}</div>
-                </div>
-              )}
+              {(record.signatureTeacher ?? record.approvedByTeacher)?.signatureUrl && (() => {
+                const sigT = record.signatureTeacher ?? record.approvedByTeacher!
+                return (
+                  <div className="sig-display" style={{ marginTop: 14, borderColor: "var(--sage)", background: "var(--sage-wash, #f0fdf4)" }}>
+                    <img src={sigT.signatureUrl!} alt="ลายเซ็นผู้อนุมัติ" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+                    <div className="sig-name">{sigT.title?.name}{sigT.firstName} {sigT.lastName}</div>
+                  </div>
+                )
+              })()}
             </div>
           )}
 

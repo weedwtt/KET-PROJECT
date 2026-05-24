@@ -35,14 +35,30 @@ export function Sidebar({ userName, role }: SidebarProps) {
   const isActive   = (path: string) => pathname === path || pathname.startsWith(path + "/")
 
   const [pendingCount, setPendingCount] = useState<number | null>(null)
+  const [isDelegateApprover, setIsDelegateApprover] = useState(false)
+  const [isGradeHead, setIsGradeHead] = useState(false)
+
+  // ตรวจสอบว่าเป็นผู้รับมอบอำนาจ หรือหัวหน้าระดับ (สำหรับ role ที่ไม่ใช่ approver/admin)
+  useEffect(() => {
+    if (isApprover || isAdmin) return
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((data) => {
+        setIsDelegateApprover((data?.delegateFor?.length ?? 0) > 0)
+        setIsGradeHead(!!data?.gradeHeadLevel)
+      })
+      .catch(() => {})
+  }, [isApprover, isAdmin])
+
+  const canSeeApproval = isApprover || isAdmin || isDelegateApprover || isGradeHead
 
   useEffect(() => {
-    if (!isApprover && !isAdmin) return
+    if (!canSeeApproval) return
     fetch("/api/statements/pending-count")
       .then((r) => r.json())
       .then((data) => setPendingCount(data.count ?? 0))
       .catch(() => setPendingCount(null))
-  }, [isApprover, isAdmin, pathname])
+  }, [canSeeApproval, pathname])
 
   const initials = userName
     .split(" ")
@@ -112,8 +128,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
           </div>
         )}
 
-        {/* รออนุมัติ — approver + admin */}
-        {(isApprover || isAdmin) && (
+        {/* รออนุมัติ — approver + admin + delegate */}
+        {canSeeApproval && (
           <Link
             href="/dashboard/approve"
             className={`nav-item ${isActive("/dashboard/approve") ? "active" : ""}`}

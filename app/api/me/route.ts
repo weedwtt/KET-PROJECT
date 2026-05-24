@@ -13,8 +13,23 @@ export async function GET() {
       firstName: true,
       lastName: true,
       role: true,
+      gradeHeadLevel: true,
       signatureUrl: true,
       title: { select: { name: true } },
+      delegateFor: {
+        select: {
+          principal: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              signatureUrl: true,
+              title: { select: { name: true } },
+            },
+          },
+        },
+      },
     },
   })
 

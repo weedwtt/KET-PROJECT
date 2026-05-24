@@ -345,6 +345,7 @@ export default function EditStatementPage() {
           setSignatureData={setSignatureData}
           onBack={handleBack}
           onNext={() => setStep(4)}
+          notifyParent={measureData.selected.includes("notify_parent") && !measureData.selected.includes("invite_parent")}
         />
       )}
       {step === 4 && (
@@ -890,9 +891,10 @@ interface Step4Props {
   setSignatureData: React.Dispatch<React.SetStateAction<SignatureFormData>>
   onBack: () => void
   onNext: () => void
+  notifyParent: boolean
 }
 
-function Step4Signature({ student, signatureData, setSignatureData, onBack, onNext }: Step4Props) {
+function Step4Signature({ student, signatureData, setSignatureData, onBack, onNext, notifyParent }: Step4Props) {
   const advisor1 = student.advisors.find((a) => a.slot === 1)?.teacher
   const advisor2 = student.advisors.find((a) => a.slot === 2)?.teacher
   const guardian = student.guardians[0]
@@ -914,19 +916,21 @@ function Step4Signature({ student, signatureData, setSignatureData, onBack, onNe
       <h2 className="step-heading" style={{ marginTop: 20 }}>ลายเซ็นทุกฝ่าย</h2>
       <p className="step-sub">ทุกฝ่ายลงลายมือชื่อในช่องที่กำหนด แล้วกด "ยืนยันลายเซ็น"</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: notifyParent ? "1fr 1fr" : "1fr 1fr 1fr", gap: 20, marginBottom: 24 }}>
         <SigPad
           label="นักเรียน" name={studentName}
           value={signatureData.studentSignature}
           onChange={(v) => setSig("studentSignature", v)}
           onClear={() => setSig("studentSignature", "")}
         />
-        <SigPad
-          label="ผู้ปกครอง"
-          value={signatureData.guardianSignature}
-          onChange={(v) => setSig("guardianSignature", v)}
-          onClear={() => setSig("guardianSignature", "")}
-        />
+        {!notifyParent && (
+          <SigPad
+            label="ผู้ปกครอง"
+            value={signatureData.guardianSignature}
+            onChange={(v) => setSig("guardianSignature", v)}
+            onClear={() => setSig("guardianSignature", "")}
+          />
+        )}
         <SigPad
           label="ครูที่ปรึกษา" name={advisorName}
           value={signatureData.advisorSignature}
@@ -937,7 +941,7 @@ function Step4Signature({ student, signatureData, setSignatureData, onBack, onNe
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
         <TeacherSigSelect
-          label="ครูฝ่ายปกครอง" role="ครูฝ่ายปกครอง"
+          label="ครูฝ่ายปกครอง" role="DISCIPLINE"
           selectedId={signatureData.disciplineTeacherId}
           onSelect={(id) => setSignatureData((p) => ({ ...p, disciplineTeacherId: id }))}
         />
@@ -1121,8 +1125,8 @@ function GradeHeadSigSection({
 
 // ── TeacherSigSelect ───────────────────────────────────────────────────────────
 
-function TeacherSigSelectInner({ role, selectedId, onSelect }: {
-  role: string; selectedId: number | null
+function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
+  role: string; label?: string; selectedId: number | null
   onSelect: (id: number | null) => void
 }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
@@ -1149,7 +1153,7 @@ function TeacherSigSelectInner({ role, selectedId, onSelect }: {
           value={selectedId ?? ""}
           onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}
         >
-          <option value="">เลือก{role}</option>
+          <option value="">เลือก{label ?? role}</option>
           {teachers.map((t) => {
             const gradeLabel = t.gradeHeadLevel ? ` (${GRADE_HEAD_LEVEL_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel})` : ""
             return (
@@ -1179,7 +1183,7 @@ function TeacherSigSelect({ label, role, selectedId, onSelect }: {
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
         <span>§ ลายเซ็น{label}</span>
       </div>
-      <TeacherSigSelectInner role={role} selectedId={selectedId} onSelect={onSelect} />
+      <TeacherSigSelectInner role={role} label={label} selectedId={selectedId} onSelect={onSelect} />
     </div>
   )
 }

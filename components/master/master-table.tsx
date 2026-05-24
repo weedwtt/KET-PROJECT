@@ -58,6 +58,7 @@ export function MasterTable<T extends { id: number }>({
     if (newPage > 1) params.set("page", String(newPage))
     const qs = params.toString()
     router.push(`${pathname}${qs ? `?${qs}` : ""}`)
+    router.refresh()
   }
 
   function onSearchChange(val: string) {

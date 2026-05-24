@@ -39,6 +39,10 @@ export async function POST(request: NextRequest) {
 
     const incidentAt = incidentDateTime ? new Date(incidentDateTime) : null
 
+    // ถ้าเลือกหัวหน้าระดับจากระบบ (ไม่มีลายเซ็นสด) → ส่งให้หัวหน้าระดับอนุมัติก่อน
+    const isSystemGradeHead = !!gradeHeadTeacherId && !gradeHeadSignature
+    const initialStatus = isSystemGradeHead ? "pending_grade_head" : "pending"
+
     const record = await db.statementRecord.create({
       data: {
         studentId: Number(studentId),
@@ -65,6 +69,7 @@ export async function POST(request: NextRequest) {
         disciplineTeacherId: disciplineTeacherId ? Number(disciplineTeacherId) : null,
         gradeHeadTeacherId: gradeHeadTeacherId ? Number(gradeHeadTeacherId) : null,
         gradeHeadSignature: gradeHeadSignature || null,
+        status: initialStatus,
         // Step 5 Bond (created inline via nested write)
         ...(bond && bond.guardianId
           ? {

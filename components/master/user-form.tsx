@@ -1,16 +1,18 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, X } from "lucide-react"
 import { toast } from "sonner"
 import { SignaturePad } from "@/components/ui/signature-pad"
 
 type TeacherTitle = { id: number; name: string }
+type TeacherOption = { id: number; name: string }
 
 const ROLE_OPTIONS = [
   { value: "", label: "— ไม่ระบุ —" },
   { value: "TEACHER", label: "ครู" },
+  { value: "DISCIPLINE", label: "ฝ่ายปกครอง" },
   { value: "DIRECTOR", label: "ผอ." },
   { value: "VICE_DIRECTOR", label: "รองผอ." },
   { value: "ADMIN", label: "admin" },
@@ -27,11 +29,9 @@ const GRADE_HEAD_OPTIONS = [
 ]
 
 type FormData = {
-  // user fields
   username: string
   password: string
   confirmPassword: string
-  // teacher fields
   titleId: string
   firstName: string
   lastName: string
@@ -87,12 +87,57 @@ export function UserForm({ mode, initialData, backUrl = "/dashboard/master/users
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
+  // Delegate state
+  const [delegateTeacherIds, setDelegateTeacherIds] = useState<number[]>([])
+  const [allTeachers, setAllTeachers] = useState<TeacherOption[]>([])
+  const [loadingDelegates, setLoadingDelegates] = useState(false)
+
+  const isDirectorOrVice = form.role === "DIRECTOR" || form.role === "VICE_DIRECTOR"
+  const showDelegateSection = mode === "edit" && isDirectorOrVice && !!initialData?.teacherId
+
   useEffect(() => {
     fetch("/api/master/teacher-titles")
       .then((r) => r.json())
       .then(setTitles)
       .catch(() => {})
   }, [])
+
+  // โหลด delegate ปัจจุบันและรายชื่อครูทั้งหมด เมื่อ section ถูกแสดง
+  useEffect(() => {
+    if (!showDelegateSection) return
+    setLoadingDelegates(true)
+    Promise.all([
+      fetch(`/api/master/users/${initialData!.userId}`)
+        .then((r) => r.json()),
+      fetch("/api/master/users?all=true")
+        .then((r) => r.json()),
+    ]).then(([userData, usersData]) => {
+      const delegates: { delegate: { id: number } }[] = userData.teacher?.delegatedTo ?? []
+      setDelegateTeacherIds(delegates.map((d) => d.delegate.id))
+
+      type UserRow = { username: string; teacherId: number | null; teacher: { id: number; firstName: string; lastName: string; title: { name: string } } | null }
+      const rows: UserRow[] = usersData.rows ?? []
+      setAllTeachers(
+        rows
+          .filter((u) => u.teacherId != null && u.teacherId !== initialData!.teacherId)
+          .map((u) => ({
+            id: u.teacher!.id,
+            name: `${u.username} — ${u.teacher!.title.name}${u.teacher!.firstName} ${u.teacher!.lastName}`,
+          }))
+      )
+      setLoadingDelegates(false)
+    }).catch(() => setLoadingDelegates(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDelegateSection])
+
+  function addDelegate(teacherId: number) {
+    if (!teacherId || delegateTeacherIds.includes(teacherId)) return
+    setDelegateTeacherIds((prev) => [...prev, teacherId])
+  }
+
+  function removeDelegate(teacherId: number) {
+    setDelegateTeacherIds((prev) => prev.filter((id) => id !== teacherId))
+  }
 
   const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
@@ -162,6 +207,8 @@ export function UserForm({ mode, initialData, backUrl = "/dashboard/master/users
               addressDistrict: form.addressDistrict,
               addressProvince: form.addressProvince,
               addressPostalCode: form.addressPostalCode,
+              // ส่ง delegates เฉพาะตอน edit และเป็น DIRECTOR/VICE_DIRECTOR
+              ...(showDelegateSection ? { delegateTeacherIds } : {}),
             }
 
       const url = mode === "edit" && initialData?.userId ? `/api/master/users/${initialData.userId}` : "/api/master/users"
@@ -197,6 +244,8 @@ export function UserForm({ mode, initialData, backUrl = "/dashboard/master/users
       {hint && <span style={{ fontWeight: 400, color: "var(--ink-4)", marginLeft: 4 }}>{hint}</span>}
     </label>
   )
+
+  const availableTeachers = allTeachers.filter((t) => !delegateTeacherIds.includes(t.id))
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -298,6 +347,88 @@ export function UserForm({ mode, initialData, backUrl = "/dashboard/master/users
           </div>
         </div>
       </div>
+
+      {/* ผู้รับมอบอำนาจอนุมัติแทน — แสดงเฉพาะ DIRECTOR/VICE_DIRECTOR ใน edit mode */}
+      {showDelegateSection && (
+        <div className="ks-card">
+          <div className="ks-card-header">
+            <span>ผู้รับมอบอำนาจอนุมัติแทน</span>
+          </div>
+          <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)" }}>
+              กำหนดครูที่สามารถกดอนุมัติบันทึกถ้อยคำแทนคุณได้ ครูเหล่านี้จะเห็นเมนู &quot;รออนุมัติ&quot; ในระบบ
+            </p>
+
+            {loadingDelegates ? (
+              <div style={{ fontSize: 13, color: "var(--ink-3)" }}>กำลังโหลด...</div>
+            ) : (
+              <>
+                {/* รายชื่อ delegate ปัจจุบัน */}
+                <div>
+                  {lbl("ผู้รับมอบอำนาจปัจจุบัน")}
+                  {delegateTeacherIds.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "var(--ink-4)", padding: "8px 0" }}>
+                      ยังไม่ได้กำหนดผู้รับมอบอำนาจ
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {delegateTeacherIds.map((tid) => {
+                        const t = allTeachers.find((x) => x.id === tid)
+                        if (!t) return null
+                        return (
+                          <span
+                            key={tid}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              padding: "4px 10px 4px 12px",
+                              background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)",
+                              borderRadius: 20, fontSize: 13, color: "var(--indigo-ink)",
+                            }}
+                          >
+                            {t.name}
+                            <button
+                              type="button"
+                              onClick={() => removeDelegate(tid)}
+                              style={{
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                width: 16, height: 16, borderRadius: "50%",
+                                background: "var(--indigo)", border: "none", cursor: "pointer",
+                                color: "#fff", padding: 0, flexShrink: 0,
+                              }}
+                            >
+                              <X size={10} />
+                            </button>
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* เพิ่ม delegate */}
+                {availableTeachers.length > 0 && (
+                  <div style={{ maxWidth: 400 }}>
+                    {lbl("เพิ่มผู้รับมอบอำนาจ")}
+                    <select
+                      className="ks-select"
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) addDelegate(Number(e.target.value))
+                        e.target.value = ""
+                      }}
+                    >
+                      <option value="">— เลือกครูที่จะมอบอำนาจ —</option>
+                      {availableTeachers.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ลายเซ็น */}
       <div className="ks-card">

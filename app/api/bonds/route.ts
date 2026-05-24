@@ -23,16 +23,19 @@ export async function GET(request: NextRequest) {
   const limit = 15
   const skip = (page - 1) * limit
 
-  const where = q
-    ? {
-        OR: [
-          { student: { studentCode: { contains: q } } },
-          { student: { firstName: { contains: q } } },
-          { student: { lastName: { contains: q } } },
-          { guardianName: { contains: q } },
-        ],
-      }
-    : {}
+  const where = {
+    directorSignature: null,
+    ...(q
+      ? {
+          OR: [
+            { student: { studentCode: { contains: q } } },
+            { student: { firstName: { contains: q } } },
+            { student: { lastName: { contains: q } } },
+            { guardianName: { contains: q } },
+          ],
+        }
+      : {}),
+  }
 
   const [total, records] = await Promise.all([
     db.bondRecord.count({ where }),

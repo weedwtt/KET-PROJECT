@@ -10,6 +10,7 @@ type TeacherTitle = { id: number; name: string }
 const ROLE_OPTIONS = [
   { value: "", label: "— ไม่ระบุ —" },
   { value: "TEACHER", label: "ครู" },
+  { value: "DISCIPLINE", label: "ฝ่ายปกครอง" },
   { value: "DIRECTOR", label: "ผอ." },
   { value: "VICE_DIRECTOR", label: "รองผอ." },
   { value: "ADMIN", label: "admin" },

@@ -6,7 +6,8 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const search = searchParams.get("search")?.trim() ?? ""
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1)
-  const pageSize = 20
+  const all = searchParams.get("all") === "true"
+  const pageSize = all ? 500 : 20
 
   const where = search
     ? {

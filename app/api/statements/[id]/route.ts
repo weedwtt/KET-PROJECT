@@ -84,6 +84,15 @@ const STATEMENT_INCLUDE = {
       title: { select: { name: true } },
     },
   },
+  signatureTeacher: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      signatureUrl: true,
+      title: { select: { name: true } },
+    },
+  },
 } as const
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

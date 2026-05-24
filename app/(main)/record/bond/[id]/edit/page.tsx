@@ -717,7 +717,7 @@ function StepSignatures({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-        <TeacherSigSelect label="ลายเซ็นครูฝ่ายปกครอง" role="ครูฝ่ายปกครอง" selectedId={form.disciplineTeacherId} onSelect={(id) => upd({ disciplineTeacherId: id })} />
+        <TeacherSigSelect label="ลายเซ็นครูฝ่ายปกครอง" role="DISCIPLINE" selectedId={form.disciplineTeacherId} onSelect={(id) => upd({ disciplineTeacherId: id })} />
         <GradeHeadSigSection
           selectedId={form.headTeacherId}
           onSelect={(id) => { upd({ headTeacherId: id }); setHeadTeacherSig("") }}
@@ -868,8 +868,8 @@ function GradeHeadSigSection({
 
 // ── TeacherSigSelect ───────────────────────────────────────────────────────────
 
-function TeacherSigSelectInner({ role, selectedId, onSelect }: {
-  role: string; selectedId: number | null; onSelect: (id: number | null) => void
+function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
+  role: string; label?: string; selectedId: number | null; onSelect: (id: number | null) => void
 }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -889,7 +889,7 @@ function TeacherSigSelectInner({ role, selectedId, onSelect }: {
         <div style={{ height: 38, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
       ) : (
         <select className="ks-select" value={selectedId ?? ""} onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}>
-          <option value="">เลือก{role}</option>
+          <option value="">เลือก{label ?? role}</option>
           {teachers.map((t) => {
             const gradeLabel = t.gradeHeadLevel ? ` (${GRADE_HEAD_LEVEL_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel})` : ""
             return (
@@ -918,7 +918,7 @@ function TeacherSigSelect({ label, role, selectedId, onSelect }: {
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
         <span>{label}</span>
       </div>
-      <TeacherSigSelectInner role={role} selectedId={selectedId} onSelect={onSelect} />
+      <TeacherSigSelectInner role={role} label={label} selectedId={selectedId} onSelect={onSelect} />
     </div>
   )
 }
