@@ -16,11 +16,8 @@ type BondStudent = {
 type BondRecord = {
   id: number
   contractDate: string
-  guardianName: string
-  guardianRelation: string
   violationDetail: string
   status: string
-  recorder: string
   measureDeductScore: boolean
   measureDeductPoints: number | null
   measureActivity: boolean
@@ -29,8 +26,10 @@ type BondRecord = {
   guardianSignature: string | null
   studentSignature: string | null
   advisorSignature: string | null
-  headTeacher: { id: number; firstName: string; lastName: string; title: { name: string } } | null
-  disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string } } | null
+  headTeacher: { id: number } | null
+  headTeacherSignature: string | null
+  disciplineTeacher: { id: number } | null
+  disciplineTeacherSignature: string | null
   viceDirectorSignature: string | null
   directorSignature: string | null
   student: BondStudent
@@ -122,14 +121,28 @@ export default function BondListPage() {
 
       {/* Table */}
       <div className="ks-card" style={{ overflow: "hidden" }}>
-        <table className="ks-table">
+        <div style={{ overflowX: "auto" }}>
+        <table className="ks-table" style={{ tableLayout: "fixed", width: "100%", minWidth: 990 }}>
+          <colgroup>
+            <col style={{ width: 104 }} />
+            <col style={{ width: 182 }} />
+            <col style={{ width: 104 }} />
+            <col style={{ width: 54 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 70 }} /><col style={{ width: 64 }} /><col style={{ width: 58 }} /><col style={{ width: 50 }} />
+            <col style={{ width: 112 }} />
+            <col style={{ width: 72 }} />
+          </colgroup>
           <thead>
             <tr>
               <th>วันที่</th>
               <th>นักเรียน</th>
-              <th>ผู้ปกครอง</th>
               <th>มาตรการ</th>
-              <th>ผู้บันทึก</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>นักเรียน</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผู้ปกครอง</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูที่ปรึกษา</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูฝ่ายปกครอง</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>หัวหน้าระดับ</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>รองผอ.</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผอ.</th>
               <th>สถานะ</th>
               <th className="col-actions">การจัดการ</th>
             </tr>
@@ -137,13 +150,13 @@ export default function BondListPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={12}>
                   <div className="empty-state">กำลังโหลด...</div>
                 </td>
               </tr>
             ) : records.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={12}>
                   <div className="empty-state">
                     {q ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีบันทึกทัณฑ์บน"}
                   </div>
@@ -174,10 +187,6 @@ export default function BondListPage() {
                       </div>
                     </td>
                     <td>
-                      <div style={{ fontSize: 13.5 }}>{r.guardianName}</div>
-                      <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{r.guardianRelation}</div>
-                    </td>
-                    <td>
                       {measures.length === 0 ? (
                         <span style={{ color: "var(--ink-4)", fontSize: 13 }}>—</span>
                       ) : (
@@ -190,15 +199,33 @@ export default function BondListPage() {
                         </div>
                       )}
                     </td>
-                    <td>
-                      <div style={{ fontSize: 13.5 }}>{r.recorder || <span style={{ color: "var(--ink-4)" }}>—</span>}</div>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.studentSignature} label="นักเรียน" />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.guardianSignature} label="ผู้ปกครอง" />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.advisorSignature} label="ครูที่ปรึกษา" />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.disciplineTeacherSignature} label="ครูฝ่ายปกครอง" />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.headTeacherSignature} label="หัวหน้าระดับ" />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.viceDirectorSignature} label="รองผอ." />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.directorSignature} label="ผอ." />
                     </td>
                     <td>
                       <span className={`chip chip-${r.directorSignature ? "approved" : "pending"}`}>
                         {r.directorSignature ? "อนุมัติแล้ว" : "รออนุมัติ"}
                       </span>
                     </td>
-                    <td className="col-actions">
+                    <td className="col-actions" style={{ paddingRight: 20 }}>
                       <Link href={`/record/bond/${r.id}`} className="btn btn-ghost btn-sm btn-icon" title="ดู">
                         <Eye size={14} />
                       </Link>
@@ -222,6 +249,7 @@ export default function BondListPage() {
             )}
           </tbody>
         </table>
+        </div>
 
         <div className="pagination">
           <span style={{ flex: 1 }}>
@@ -269,5 +297,26 @@ export default function BondListPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function SigDot({ signed, label, disabled = false }: { signed: boolean; label: string; disabled?: boolean }) {
+  const color = disabled ? "#d1d5db" : signed ? "var(--sage, #22c55e)" : "#f59e0b"
+  const title = disabled
+    ? `${label} (ไม่จำเป็น)`
+    : signed
+    ? `${label} · เซ็น/อนุมัติแล้ว`
+    : `${label} · รอเซ็น/อนุมัติ`
+  return (
+    <span
+      title={title}
+      style={{
+        width: 12, height: 12, borderRadius: "50%",
+        background: color,
+        opacity: disabled ? 0.35 : 1,
+        display: "inline-block",
+        cursor: "default",
+      }}
+    />
   )
 }

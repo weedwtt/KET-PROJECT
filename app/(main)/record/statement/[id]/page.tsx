@@ -21,6 +21,7 @@ type StatementDetail = {
   studentSignature: string | null
   guardianSignature: string | null
   advisorSignature: string | null
+  disciplineTeacherSignature: string | null
   gradeHeadSignature: string | null
   semester: { id: number; name: string; value: number }
   academicYear: { id: number; year: number }
@@ -84,6 +85,8 @@ export default function StatementDetailPage() {
   const [selectedApproverId, setSelectedApproverId] = useState("")
   const [approving, setApproving] = useState(false)
   const [approveError, setApproveError] = useState<string | null>(null)
+  const [disciplineApproving, setDisciplineApproving] = useState(false)
+  const [disciplineApproveError, setDisciplineApproveError] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -93,6 +96,17 @@ export default function StatementDetailPage() {
       setRecord(rec); setApprovers(apv); setLoading(false)
     }).catch(() => setLoading(false))
   }, [id])
+
+  async function handleDisciplineApprove() {
+    setDisciplineApproving(true); setDisciplineApproveError(null)
+    try {
+      const res = await fetch(`/api/statements/${id}/discipline-approve`, { method: "POST" })
+      if (!res.ok) { const err = await res.json(); setDisciplineApproveError(err.error ?? "เกิดข้อผิดพลาด"); return }
+      const updated = await fetch(`/api/statements/${id}`).then((r) => r.json())
+      setRecord(updated)
+    } catch { setDisciplineApproveError("เกิดข้อผิดพลาดในการเชื่อมต่อ") }
+    finally { setDisciplineApproving(false) }
+  }
 
   async function handleApprove() {
     if (!selectedApproverId) return
@@ -292,8 +306,9 @@ export default function StatementDetailPage() {
                 <SigDisplayBox
                   label="ครูฝ่ายปกครอง"
                   name={record.disciplineTeacher ? `${record.disciplineTeacher.title?.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}` : ""}
-                  url={record.disciplineTeacher?.signatureUrl ?? null}
+                  url={record.disciplineTeacherSignature ?? record.disciplineTeacher?.signatureUrl ?? null}
                   date={record.recordDate}
+                  isLive={!!record.disciplineTeacherSignature}
                 />
                 <SigDisplayBox
                   label="หัวหน้าระดับชั้น"
@@ -325,6 +340,91 @@ export default function StatementDetailPage() {
 
         {/* Sidebar column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)", position: "sticky", top: 16 }}>
+
+          {/* Parallel signatures pending card */}
+          {record.status === "pending_teacher_signatures" && (
+            <div className="ks-card ks-card-pad" style={{ border: "1px solid var(--periwinkle)", background: "var(--indigo-wash)" }}>
+              <div className="eyebrow" style={{ marginBottom: 12, color: "var(--indigo)" }}>รอลงนาม (ทั้งสองฝ่าย)</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {/* ฝ่ายปกครอง */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                    background: record.disciplineTeacherSignature ? "var(--sage)" : "var(--amber, #f59e0b)",
+                  }} />
+                  <div style={{ flex: 1, fontSize: 13 }}>
+                    <span style={{ fontWeight: 500 }}>ฝ่ายปกครอง</span>
+                    {record.disciplineTeacher && (
+                      <span style={{ color: "var(--ink-3)", marginLeft: 6 }}>
+                        {record.disciplineTeacher.title?.name}{record.disciplineTeacher.firstName} {record.disciplineTeacher.lastName}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, color: record.disciplineTeacherSignature ? "var(--sage)" : "var(--ink-3)" }}>
+                    {record.disciplineTeacherSignature ? "✓ ลงนามแล้ว" : "รอลงนาม"}
+                  </span>
+                </div>
+                {/* หัวหน้าระดับ */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                    background: record.gradeHeadSignature ? "var(--sage)" : "var(--amber, #f59e0b)",
+                  }} />
+                  <div style={{ flex: 1, fontSize: 13 }}>
+                    <span style={{ fontWeight: 500 }}>หัวหน้าระดับ</span>
+                    {record.gradeHeadTeacher && (
+                      <span style={{ color: "var(--ink-3)", marginLeft: 6 }}>
+                        {record.gradeHeadTeacher.title?.name}{record.gradeHeadTeacher.firstName} {record.gradeHeadTeacher.lastName}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, color: record.gradeHeadSignature ? "var(--sage)" : "var(--ink-3)" }}>
+                    {record.gradeHeadSignature ? "✓ ลงนามแล้ว" : "รอลงนาม"}
+                  </span>
+                </div>
+              </div>
+              {/* ปุ่มสำหรับฝ่ายปกครอง (แสดงเมื่อยังไม่ลงนาม) */}
+              {!record.disciplineTeacherSignature && (
+                <div style={{ marginTop: 14 }}>
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: "100%" }}
+                    onClick={handleDisciplineApprove}
+                    disabled={disciplineApproving}
+                  >
+                    {disciplineApproving ? "กำลังดำเนินการ..." : "ยืนยันลงนาม (ฝ่ายปกครอง)"}
+                  </button>
+                  {disciplineApproveError && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: "var(--rose)" }}>{disciplineApproveError}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Discipline-only pending card */}
+          {record.status === "pending_discipline_teacher" && (
+            <div className="ks-card ks-card-pad" style={{ border: "1px solid var(--periwinkle)", background: "var(--indigo-wash)" }}>
+              <div className="eyebrow" style={{ marginBottom: 10, color: "var(--indigo)" }}>รอครูฝ่ายปกครองลงนาม</div>
+              {record.disciplineTeacher && (
+                <div style={{ fontSize: 13, marginBottom: 12, color: "var(--ink-2)" }}>
+                  {record.disciplineTeacher.title?.name}{record.disciplineTeacher.firstName} {record.disciplineTeacher.lastName}
+                </div>
+              )}
+              <button
+                className="btn btn-primary"
+                style={{ width: "100%" }}
+                onClick={handleDisciplineApprove}
+                disabled={disciplineApproving}
+              >
+                {disciplineApproving ? "กำลังดำเนินการ..." : "ยืนยันลงนาม (ฝ่ายปกครอง)"}
+              </button>
+              {disciplineApproveError && (
+                <div style={{ marginTop: 10, fontSize: 12, color: "var(--rose)" }}>{disciplineApproveError}</div>
+              )}
+            </div>
+          )}
+
           {/* Approved info */}
           {isApproved && (
             <div className="ks-card ks-card-pad" style={{ background: "var(--sage-soft)" }}>

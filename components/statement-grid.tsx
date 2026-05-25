@@ -11,7 +11,6 @@ type Statement = {
   semester: number
   academicYear: number
   violationCategory: string
-  recordedBy: string | null
   status: string
   student: {
     studentCode: string
@@ -21,6 +20,13 @@ type Statement = {
     classRoom: number
     title: { name: string }
   }
+  studentSignature: string | null
+  guardianSignature: string | null
+  advisorSignature: string | null
+  disciplineTeacherSignature: string | null
+  gradeHeadSignature: string | null
+  considerationMeasures: string[]
+  approvedAt: Date | null
 }
 
 interface StatementGridProps {
@@ -92,28 +98,47 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
 
       {/* Table */}
       <div className="ks-card" style={{ overflow: "hidden" }}>
-        <table className="ks-table">
+        <div style={{ overflowX: "auto" }}>
+        <table className="ks-table" style={{ tableLayout: "fixed", width: "100%", minWidth: 1120 }}>
+          <colgroup>
+            <col style={{ width: 108 }} />
+            <col style={{ width: 195 }} />
+            <col style={{ width: 175 }} />
+            <col style={{ width: 56 }} /><col style={{ width: 60 }} /><col style={{ width: 64 }} /><col style={{ width: 70 }} /><col style={{ width: 66 }} /><col style={{ width: 58 }} /><col style={{ width: 52 }} />
+            <col style={{ width: 122 }} />
+            <col style={{ width: 94 }} />
+          </colgroup>
           <thead>
             <tr>
-              <th style={{ width: 130 }}>วันที่</th>
+              <th>วันที่</th>
               <th>นักเรียน</th>
               <th>หมวดการผิดระเบียบ</th>
-              <th>ผู้บันทึก</th>
-              <th style={{ width: 130 }}>สถานะ</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>นักเรียน</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผู้ปกครอง</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูที่ปรึกษา</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูฝ่ายปกครอง</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>หัวหน้าระดับ</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>รองผอ.</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผอ.</th>
+              <th>สถานะ</th>
               <th className="col-actions">การจัดการ</th>
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={12}>
                   <div className="empty-state">
                     {searchValue ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีรายการบันทึกถ้อยคำ"}
                   </div>
                 </td>
               </tr>
             ) : (
-              data.map((row) => (
+              data.map((row) => {
+                const guardianDisabled =
+                  row.considerationMeasures.includes("notify_parent") &&
+                  !row.considerationMeasures.includes("invite_parent")
+                return (
                 <tr key={row.id}>
                   <td>
                     <div className="mono" style={{ fontSize: 13 }}>{formatDate(row.recordDate)}</div>
@@ -129,14 +154,34 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                       {row.student.studentCode} · {row.student.gradeLevel}/{row.student.classRoom}
                     </div>
                   </td>
-                  <td>{row.violationCategory}</td>
-                  <td style={{ color: "var(--ink-2)" }}>{row.recordedBy}</td>
+                  <td style={{ fontSize: 13, color: "var(--ink-2)" }}>{row.violationCategory}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={!!row.studentSignature} label="นักเรียน" />
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={!!row.guardianSignature} label="ผู้ปกครอง" disabled={guardianDisabled} />
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={!!row.advisorSignature} label="ครูที่ปรึกษา" />
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={!!row.disciplineTeacherSignature} label="ครูฝ่ายปกครอง" />
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={!!row.gradeHeadSignature} label="หัวหน้าระดับ" />
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={row.status === "pending_director" || row.status === "approved"} label="รองผอ." />
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={row.status === "approved"} label="ผอ." />
+                  </td>
                   <td>
                     <span className={`chip chip-${row.status === "approved" ? "approved" : "pending"}`}>
                       {row.status === "approved" ? "อนุมัติแล้ว" : "รออนุมัติ"}
                     </span>
                   </td>
-                  <td className="col-actions">
+                  <td className="col-actions" style={{ paddingRight: 20 }}>
                     <Link href={`/record/statement/${row.id}`} className="btn btn-ghost btn-sm btn-icon" title="ดู">
                       <Eye size={14} />
                     </Link>
@@ -155,10 +200,12 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                     </button>
                   </td>
                 </tr>
-              ))
+              )
+              })
             )}
           </tbody>
         </table>
+        </div>
 
         {/* Pagination */}
         <div className="pagination">
@@ -187,6 +234,22 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
             <ChevronRight size={12} />
           </button>
         </div>
+      </div>
+
+      {/* Signature status legend */}
+      <div style={{ padding: "8px 16px 4px", display: "flex", gap: 16, fontSize: 11, color: "var(--ink-3)", borderTop: "1px solid var(--rule)" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sage, #22c55e)", display: "inline-block" }} />
+          เซ็น/อนุมัติแล้ว
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
+          รอเซ็น/อนุมัติ
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#d1d5db", opacity: 0.4, display: "inline-block" }} />
+          ไม่จำเป็น
+        </span>
       </div>
 
       {/* Delete confirmation dialog */}
@@ -219,5 +282,26 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
         </div>
       )}
     </div>
+  )
+}
+
+function SigDot({ signed, label, disabled = false }: { signed: boolean; label: string; disabled?: boolean }) {
+  const color = disabled ? "#d1d5db" : signed ? "var(--sage, #22c55e)" : "#f59e0b"
+  const title = disabled
+    ? `${label} (ไม่จำเป็น)`
+    : signed
+    ? `${label} · เซ็น/อนุมัติแล้ว`
+    : `${label} · รอเซ็น/อนุมัติ`
+  return (
+    <span
+      title={title}
+      style={{
+        width: 12, height: 12, borderRadius: "50%",
+        background: color,
+        opacity: disabled ? 0.35 : 1,
+        display: "inline-block",
+        cursor: "default",
+      }}
+    />
   )
 }

@@ -12,10 +12,17 @@ const STUDENT_SELECT = {
   title: { select: { name: true } },
 } as const
 
-async function getPendingStatements() {
+async function getPendingStatements(role: string | undefined) {
   try {
+    // VICE_DIRECTOR sees pending (รอรองผอ), DIRECTOR sees pending_director (รอผอ)
+    // ADMIN and delegates see both
+    const statuses =
+      role === "VICE_DIRECTOR" ? ["pending"]
+      : role === "DIRECTOR" ? ["pending_director"]
+      : ["pending", "pending_director"]
+
     const rows = await db.statementRecord.findMany({
-      where: { status: "pending" },
+      where: { status: { in: statuses } },
       include: {
         student: { select: STUDENT_SELECT },
         semester: { select: { value: true } },
@@ -42,7 +49,11 @@ async function getPendingStatements() {
 async function getGradeHeadPendingStatements(teacherId: number) {
   try {
     const rows = await db.statementRecord.findMany({
-      where: { status: "pending_grade_head", gradeHeadTeacherId: teacherId },
+      where: {
+        status: { in: ["pending_grade_head", "pending_teacher_signatures"] },
+        gradeHeadTeacherId: teacherId,
+        gradeHeadSignature: null,
+      },
       include: {
         student: { select: STUDENT_SELECT },
         semester: { select: { value: true } },
@@ -66,10 +77,117 @@ async function getGradeHeadPendingStatements(teacherId: number) {
   }
 }
 
-async function getPendingBonds() {
+async function getDisciplineTeacherPendingStatements(teacherId: number) {
+  try {
+    const rows = await db.statementRecord.findMany({
+      where: {
+        status: { in: ["pending_discipline_teacher", "pending_teacher_signatures"] },
+        disciplineTeacherId: teacherId,
+        disciplineTeacherSignature: null,
+      },
+      include: {
+        student: { select: STUDENT_SELECT },
+        semester: { select: { value: true } },
+        academicYear: { select: { year: true } },
+        violationCategory: { select: { name: true } },
+      },
+      orderBy: { recordDate: "desc" },
+    })
+    return rows.map((r) => ({
+      id: r.id,
+      recordDate: r.recordDate,
+      recordedBy: r.recordedBy,
+      semester: r.semester.value,
+      academicYear: r.academicYear.year,
+      violationCategory: r.violationCategory.name,
+      status: r.status,
+      student: r.student,
+    }))
+  } catch {
+    return []
+  }
+}
+
+async function getPendingBonds(role: string | undefined) {
+  try {
+    const teachersSigned = [
+      { OR: [{ headTeacherId: null }, { headTeacherSignature: { not: null } }] },
+      { OR: [{ disciplineTeacherId: null }, { disciplineTeacherSignature: { not: null } }] },
+    ]
+    // VICE_DIRECTOR: รอรองผอลงนาม (viceDirectorSignature ยังไม่มี)
+    // DIRECTOR: รองผอลงนามแล้ว รอผอ
+    // ADMIN/delegate: เห็นทั้งหมดที่ directorSignature ยังไม่มี
+    const where =
+      role === "VICE_DIRECTOR"
+        ? { viceDirectorSignature: null, directorSignature: null, AND: teachersSigned }
+        : role === "DIRECTOR"
+        ? { viceDirectorSignature: { not: null }, directorSignature: null, AND: teachersSigned }
+        : { directorSignature: null, AND: teachersSigned }
+
+    const rows = await db.bondRecord.findMany({
+      where,
+      select: {
+        id: true,
+        contractDate: true,
+        guardianName: true,
+        recorder: true,
+        viceDirectorSignature: true,
+        student: { select: STUDENT_SELECT },
+        semester: { select: { value: true } },
+        academicYear: { select: { year: true } },
+      },
+      orderBy: { contractDate: "desc" },
+    })
+    return rows.map((r) => ({
+      ...r,
+      contractDate: r.contractDate.toISOString(),
+      semester: r.semester ?? null,
+      academicYear: r.academicYear ?? null,
+    }))
+  } catch {
+    return []
+  }
+}
+
+async function getDisciplinePendingBonds(teacherId: number) {
   try {
     const rows = await db.bondRecord.findMany({
-      where: { directorSignature: null },
+      where: {
+        disciplineTeacherId: teacherId,
+        disciplineTeacherSignature: null,
+        directorSignature: null,
+      },
+      select: {
+        id: true,
+        contractDate: true,
+        guardianName: true,
+        recorder: true,
+        viceDirectorSignature: true,
+        student: { select: STUDENT_SELECT },
+        semester: { select: { value: true } },
+        academicYear: { select: { year: true } },
+      },
+      orderBy: { contractDate: "desc" },
+    })
+    return rows.map((r) => ({
+      ...r,
+      contractDate: r.contractDate.toISOString(),
+      semester: r.semester ?? null,
+      academicYear: r.academicYear ?? null,
+    }))
+  } catch {
+    return []
+  }
+}
+
+async function getHeadTeacherPendingBonds(teacherId: number) {
+  try {
+    const rows = await db.bondRecord.findMany({
+      where: {
+        headTeacherId: teacherId,
+        headTeacherSignature: null,
+        directorSignature: null,
+      },
       select: {
         id: true,
         contractDate: true,
@@ -102,19 +220,22 @@ export default async function ApprovePage() {
 
   let isDelegate = false
   let isGradeHead = false
+  let isDisciplineTeacher = false
 
   if (!isApprover && teacherId) {
     const [delegateCount, teacher] = await Promise.all([
       db.approvalDelegate.count({ where: { delegateId: teacherId } }),
-      db.teacher.findUnique({ where: { id: teacherId }, select: { gradeHeadLevel: true } }),
+      db.teacher.findUnique({ where: { id: teacherId }, select: { gradeHeadLevel: true, role: true } }),
     ])
     isDelegate = delegateCount > 0
     isGradeHead = !!teacher?.gradeHeadLevel
+    isDisciplineTeacher = teacher?.role === "DISCIPLINE"
   }
 
-  if (!isApprover && !isDelegate && !isGradeHead) redirect("/dashboard")
+  if (!isApprover && !isDelegate && !isGradeHead && !isDisciplineTeacher) redirect("/dashboard")
 
   const myRoleLabel =
+    isDisciplineTeacher && !isApprover && !isDelegate ? "ครูฝ่ายปกครอง" :
     isGradeHead && !isApprover && !isDelegate ? "หัวหน้าระดับ" :
     role === "DIRECTOR" ? "ผอ." :
     role === "VICE_DIRECTOR" ? "รองผอ." :
@@ -123,15 +244,20 @@ export default async function ApprovePage() {
 
   const showDirectorQueue = isApprover || isDelegate
 
-  const [statements, bonds, gradeHeadPending] = await Promise.all([
-    showDirectorQueue ? getPendingStatements() : Promise.resolve([]),
-    showDirectorQueue ? getPendingBonds() : Promise.resolve([]),
+  const [statements, bonds, gradeHeadPending, disciplinePending, disciplinePendingBonds, gradeHeadPendingBonds] = await Promise.all([
+    showDirectorQueue ? getPendingStatements(role ?? undefined) : Promise.resolve([]),
+    showDirectorQueue ? getPendingBonds(role ?? undefined) : Promise.resolve([]),
     isGradeHead && teacherId ? getGradeHeadPendingStatements(teacherId) : Promise.resolve([]),
+    isDisciplineTeacher && teacherId ? getDisciplineTeacherPendingStatements(teacherId) : Promise.resolve([]),
+    isDisciplineTeacher && teacherId ? getDisciplinePendingBonds(teacherId) : Promise.resolve([]),
+    isGradeHead && teacherId ? getHeadTeacherPendingBonds(teacherId) : Promise.resolve([]),
   ])
 
+  const myPending = isDisciplineTeacher ? disciplinePending : gradeHeadPending
+  const myPendingBonds = isDisciplineTeacher ? disciplinePendingBonds : gradeHeadPendingBonds
   const totalQueue = showDirectorQueue
     ? statements.length + bonds.length
-    : gradeHeadPending.length
+    : myPending.length + myPendingBonds.length
 
   return (
     <div className="ks-page">
@@ -163,7 +289,7 @@ export default async function ApprovePage() {
       {showDirectorQueue ? (
         <ApprovalGrid data={statements} bonds={bonds} />
       ) : (
-        <ApprovalGrid data={gradeHeadPending} bonds={[]} />
+        <ApprovalGrid data={myPending} bonds={myPendingBonds} />
       )}
     </div>
   )

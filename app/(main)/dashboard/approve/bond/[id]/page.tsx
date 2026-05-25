@@ -21,10 +21,12 @@ type BondDetail = {
   guardianSignature: string | null
   studentSignature: string | null
   advisorSignature: string | null
+  headTeacherSignature: string | null
   viceDirectorSignature: string | null
   directorSignature: string | null
   headTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
   disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
+  disciplineTeacherSignature: string | null
   student: {
     studentCode: string
     firstName: string
@@ -81,6 +83,10 @@ export default function BondApproveDetailPage() {
   const [signError, setSignError] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedPrincipalId, setSelectedPrincipalId] = useState<number | null>(null)
+  const [disciplineSigning, setDisciplineSigning] = useState(false)
+  const [disciplineSignError, setDisciplineSignError] = useState<string | null>(null)
+  const [headTeacherSigning, setHeadTeacherSigning] = useState(false)
+  const [headTeacherSignError, setHeadTeacherSignError] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -106,14 +112,14 @@ export default function BondApproveDetailPage() {
     if (!me) return
     setSigning(true); setSignError(null)
 
-    const isDelegateApprover = (me.delegateFor?.length ?? 0) > 0
     const signingPrincipal = isDelegateApprover
       ? (me.delegateFor?.find((d) => d.principal.id === selectedPrincipalId)?.principal ?? null)
       : null
 
     const effectiveRole = signingPrincipal?.role ?? me.role
     const effectiveSig = signingPrincipal?.signatureUrl ?? me.signatureUrl
-    const sigField = effectiveRole === "DIRECTOR" ? "directorSignature" : "viceDirectorSignature"
+    // Route to correct field based on current turn (not just role, so ADMIN goes to the right field)
+    const sigField = isDirectorTurn ? "directorSignature" : "viceDirectorSignature"
 
     try {
       const res = await fetch(`/api/bonds/${id}`, {
@@ -138,6 +144,42 @@ export default function BondApproveDetailPage() {
     }
   }
 
+  async function handleDisciplineSign() {
+    setDisciplineSigning(true)
+    setDisciplineSignError(null)
+    try {
+      const res = await fetch(`/api/bonds/${id}/discipline-approve`, { method: "POST" })
+      if (!res.ok) {
+        const err = await res.json()
+        setDisciplineSignError(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      router.push("/dashboard/approve")
+    } catch {
+      setDisciplineSignError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setDisciplineSigning(false)
+    }
+  }
+
+  async function handleHeadTeacherSign() {
+    setHeadTeacherSigning(true)
+    setHeadTeacherSignError(null)
+    try {
+      const res = await fetch(`/api/bonds/${id}/head-teacher-approve`, { method: "POST" })
+      if (!res.ok) {
+        const err = await res.json()
+        setHeadTeacherSignError(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      router.push("/dashboard/approve")
+    } catch {
+      setHeadTeacherSignError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setHeadTeacherSigning(false)
+    }
+  }
+
   if (loading) return (
     <div className="ks-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="spin" style={{ color: "var(--indigo)" }}>
@@ -157,12 +199,42 @@ export default function BondApproveDetailPage() {
 
   const isSigned = !!(record.directorSignature)
   const approverName = me ? `${me.title.name}${me.firstName} ${me.lastName}` : ""
+  const isMyDisciplineItem = !!(
+    me &&
+    record.disciplineTeacher?.id === me.id &&
+    !record.disciplineTeacherSignature
+  )
+  const isMyHeadTeacherItem = !!(
+    me &&
+    record.headTeacher?.id === me.id &&
+    !record.headTeacherSignature
+  )
 
   const isDelegateApprover = (me?.delegateFor?.length ?? 0) > 0
   const principals = me?.delegateFor?.map((d) => d.principal) ?? []
   const approverRoleLabel = isDelegateApprover
     ? "ผู้รับมอบอำนาจ"
     : ROLE_LABEL[me?.role ?? ""] ?? me?.role ?? ""
+
+  // Sequential signing: รองผอ ก่อน → ผอ
+  // รองผอ: ลงนามได้เมื่อ viceDirectorSignature ยังไม่มี
+  const isViceDirectorTurn = !record.viceDirectorSignature && !record.directorSignature
+  // ผอ: ลงนามได้เมื่อ รองผอ ลงนามแล้ว
+  const isDirectorTurn = !!record.viceDirectorSignature && !record.directorSignature
+
+  const myRole = me?.role
+  const canViceDirectorSign = (myRole === "VICE_DIRECTOR" || myRole === "ADMIN") && isViceDirectorTurn
+  const canDirectorSignNow = (myRole === "DIRECTOR" || myRole === "ADMIN") && isDirectorTurn
+
+  // Delegate: check which step they can act on based on principal role
+  const viceDirectorPrincipals = principals.filter((p) => p.role === "VICE_DIRECTOR" || p.role === "ADMIN")
+  const directorPrincipals = principals.filter((p) => p.role === "DIRECTOR" || p.role === "ADMIN")
+  const canDelegateViceSign = isDelegateApprover && viceDirectorPrincipals.length > 0 && isViceDirectorTurn
+  const canDelegateDirectorSign = isDelegateApprover && directorPrincipals.length > 0 && isDirectorTurn
+
+  const canDirectorSign = canViceDirectorSign || canDirectorSignNow || canDelegateViceSign || canDelegateDirectorSign
+  // Which principals to show in the confirm panel
+  const activePrincipals = isViceDirectorTurn ? viceDirectorPrincipals : directorPrincipals
 
   const selectedPrincipal = principals.find((p) => p.id === selectedPrincipalId) ?? null
   const sigUrl = isDelegateApprover ? selectedPrincipal?.signatureUrl ?? null : me?.signatureUrl ?? null
@@ -189,7 +261,10 @@ export default function BondApproveDetailPage() {
           </div>
         </div>
         <span className={`chip ${isSigned ? "chip-approved" : "chip-pending"}`}>
-          {isSigned ? "อนุมัติแล้ว" : "รออนุมัติ"}
+          {isSigned ? "อนุมัติแล้ว"
+            : isViceDirectorTurn ? "รอรองผอ."
+            : isDirectorTurn ? "รอผอ."
+            : "รออนุมัติ"}
         </span>
       </div>
 
@@ -277,13 +352,13 @@ export default function BondApproveDetailPage() {
                   {record.headTeacher && (
                     <SigBox
                       label={`หัวหน้าระดับ — ${record.headTeacher.title.name}${record.headTeacher.firstName} ${record.headTeacher.lastName}`}
-                      dataUrl={record.headTeacher.signatureUrl}
+                      dataUrl={record.headTeacherSignature ?? record.headTeacher.signatureUrl}
                     />
                   )}
                   {record.disciplineTeacher && (
                     <SigBox
                       label={`ครูฝ่ายปกครอง — ${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}`}
-                      dataUrl={record.disciplineTeacher.signatureUrl}
+                      dataUrl={record.disciplineTeacherSignature ?? record.disciplineTeacher.signatureUrl}
                     />
                   )}
                 </div>
@@ -294,6 +369,74 @@ export default function BondApproveDetailPage() {
 
         {/* Sidebar */}
         <div style={{ position: "sticky", top: 16, display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+
+          {/* Discipline teacher signing panel */}
+          {isMyDisciplineItem && (
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">ลงนาม · ครูฝ่ายปกครอง</div></div>
+              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>
+                  คุณถูกระบุเป็นครูฝ่ายปกครองในสัญญาทัณฑ์บนนี้ กรุณาพิจารณาและลงนามเพื่อส่งต่อ
+                </div>
+                {me?.signatureUrl && (
+                  <div className="sig-display" style={{ borderColor: "var(--sage)" }}>
+                    <img src={me.signatureUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
+                    <span className="sig-name">{approverName}</span>
+                  </div>
+                )}
+                {disciplineSignError && (
+                  <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                    {disciplineSignError}
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleDisciplineSign}
+                  disabled={disciplineSigning}
+                  style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                >
+                  {disciplineSigning
+                    ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                    : <><Check size={14} /> ลงนามฝ่ายปกครอง</>
+                  }
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Head teacher signing panel */}
+          {isMyHeadTeacherItem && (
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">ลงนาม · หัวหน้าระดับ</div></div>
+              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>
+                  คุณถูกระบุเป็นหัวหน้าระดับในสัญญาทัณฑ์บนนี้ กรุณาพิจารณาและลงนาม
+                </div>
+                {me?.signatureUrl && (
+                  <div className="sig-display" style={{ borderColor: "var(--sage)" }}>
+                    <img src={me.signatureUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
+                    <span className="sig-name">{approverName}</span>
+                  </div>
+                )}
+                {headTeacherSignError && (
+                  <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                    {headTeacherSignError}
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleHeadTeacherSign}
+                  disabled={headTeacherSigning}
+                  style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                >
+                  {headTeacherSigning
+                    ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                    : <><Check size={14} /> ลงนามหัวหน้าระดับ</>
+                  }
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Delegate notice */}
           {isDelegateApprover && !isSigned && (
@@ -325,127 +468,154 @@ export default function BondApproveDetailPage() {
                   </div>
                 </div>
                 <div style={{ marginTop: 16 }}>
+                  <SigBox label="รองผู้อำนวยการ" dataUrl={record.viceDirectorSignature} />
+                </div>
+                <div style={{ marginTop: 12 }}>
                   <SigBox label="ผู้อำนวยการ" dataUrl={record.directorSignature} />
                 </div>
-                {record.viceDirectorSignature && (
-                  <div style={{ marginTop: 12 }}>
-                    <SigBox label="รองผู้อำนวยการ" dataUrl={record.viceDirectorSignature} />
-                  </div>
-                )}
               </div>
             </div>
-          ) : (
-            <div className="ks-card">
-              <div className="ks-card-header"><div className="eyebrow">SIGN</div></div>
-              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {!showConfirm ? (
-                  <>
-                    {me && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--indigo-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <User size={14} style={{ color: "var(--indigo)" }} />
-                        </div>
+          ) : canDirectorSign ? (
+            /* ── รองผอ/ผอ sign panel ── */
+            (() => {
+              const isViceStep = isViceDirectorTurn
+              const activeSelectedPrincipal = activePrincipals.find((p) => p.id === selectedPrincipalId) ?? null
+              const activeSigUrl = isDelegateApprover ? activeSelectedPrincipal?.signatureUrl ?? null : me?.signatureUrl ?? null
+              const activeSigName = isDelegateApprover && activeSelectedPrincipal
+                ? `${activeSelectedPrincipal.title.name}${activeSelectedPrincipal.firstName} ${activeSelectedPrincipal.lastName}`
+                : approverName
+              return (
+                <div className="ks-card">
+                  <div className="ks-card-header"><div className="eyebrow">{isViceStep ? "SIGN → รองผอ." : "APPROVE → ผอ."}</div></div>
+                  <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {isViceStep && !showConfirm && (
+                      <div style={{ fontSize: 12.5, padding: "8px 12px", background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", color: "var(--indigo-ink)" }}>
+                        ลงนามเพื่อ<span style={{ fontWeight: 600 }}>ส่งต่อให้ผู้อำนวยการ</span>อนุมัติขั้นสุดท้าย
+                      </div>
+                    )}
+                    {!showConfirm ? (
+                      <>
+                        {me && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--indigo-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <User size={14} style={{ color: "var(--indigo)" }} />
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13 }}>{approverName}</div>
+                              <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{approverRoleLabel}</div>
+                            </div>
+                          </div>
+                        )}
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => setShowConfirm(true)}
+                          disabled={!me}
+                          style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                        >
+                          <ShieldCheck size={14} /> {isViceStep ? "ลงนามส่งต่อให้ ผอ." : "อนุมัติบันทึกทัณฑ์บนนี้"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 13 }}>{approverName}</div>
-                          <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{approverRoleLabel}</div>
-                        </div>
-                      </div>
-                    )}
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => setShowConfirm(true)}
-                      disabled={!me}
-                      style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
-                    >
-                      <ShieldCheck size={14} /> อนุมัติบันทึกทัณฑ์บนนี้
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      {/* ผู้รับมอบอำนาจ: เลือกว่าจะใช้ลายเซ็นของ ผอ/รองผอ คนไหน */}
-                      {isDelegateApprover && (
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6 }}>
-                            เลือกลายเซ็นที่จะใช้ในเอกสาร
+                          {isDelegateApprover && activePrincipals.length > 0 && (
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6 }}>
+                                เลือกลายเซ็นที่จะใช้ในเอกสาร
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                {activePrincipals.map((p) => {
+                                  const pName = `${p.title.name}${p.firstName} ${p.lastName}`
+                                  const checked = selectedPrincipalId === p.id
+                                  return (
+                                    <label
+                                      key={p.id}
+                                      style={{
+                                        display: "flex", alignItems: "center", gap: 10,
+                                        padding: "8px 12px", borderRadius: "var(--radius)", cursor: "pointer",
+                                        border: `1px solid ${checked ? "var(--indigo)" : "var(--border)"}`,
+                                        background: checked ? "var(--indigo-wash)" : "var(--surface-2)",
+                                      }}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name="principal"
+                                        value={p.id}
+                                        checked={checked}
+                                        onChange={() => setSelectedPrincipalId(p.id)}
+                                        style={{ accentColor: "var(--indigo)" }}
+                                      />
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600 }}>{pName}</div>
+                                        <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{ROLE_LABEL[p.role ?? ""] ?? p.role}</div>
+                                      </div>
+                                      {p.signatureUrl
+                                        ? <img src={p.signatureUrl} alt="sig" style={{ height: 32, maxWidth: 64, objectFit: "contain", opacity: 0.8 }} />
+                                        : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8 }}>
+                            {isDelegateApprover ? "ลายเซ็นที่จะปรากฏในเอกสาร" : `ลายเซ็น — ${approverName}`}
                           </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            {principals.map((p) => {
-                              const pName = `${p.title.name}${p.firstName} ${p.lastName}`
-                              const checked = selectedPrincipalId === p.id
-                              return (
-                                <label
-                                  key={p.id}
-                                  style={{
-                                    display: "flex", alignItems: "center", gap: 10,
-                                    padding: "8px 12px", borderRadius: "var(--radius)", cursor: "pointer",
-                                    border: `1px solid ${checked ? "var(--indigo)" : "var(--border)"}`,
-                                    background: checked ? "var(--indigo-wash)" : "var(--surface-2)",
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="principal"
-                                    value={p.id}
-                                    checked={checked}
-                                    onChange={() => setSelectedPrincipalId(p.id)}
-                                    style={{ accentColor: "var(--indigo)" }}
-                                  />
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600 }}>{pName}</div>
-                                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{ROLE_LABEL[p.role ?? ""] ?? p.role}</div>
-                                  </div>
-                                  {p.signatureUrl
-                                    ? <img src={p.signatureUrl} alt="sig" style={{ height: 32, maxWidth: 64, objectFit: "contain", opacity: 0.8 }} />
-                                    : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
-                                </label>
-                              )
-                            })}
+                          <div className="sig-display" style={{ height: 120, borderColor: activeSigUrl ? "var(--sage)" : undefined }}>
+                            {activeSigUrl
+                              ? <img src={activeSigUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
+                              : <span style={{ fontSize: 12.5, color: "var(--ink-4)" }}>
+                                  {isDelegateApprover && !selectedPrincipalId ? "กรุณาเลือกลายเซ็นด้านบน" : "ยังไม่มีลายเซ็นในระบบ"}
+                                </span>}
+                            {activeSigName && <span className="sig-name">{activeSigName}</span>}
                           </div>
                         </div>
-                      )}
-
-                      <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8 }}>
-                        {isDelegateApprover ? "ลายเซ็นที่จะปรากฏในเอกสาร" : `ลายเซ็น — ${approverName}`}
-                      </div>
-                      <div className="sig-display" style={{ height: 120, borderColor: sigUrl ? "var(--sage)" : undefined }}>
-                        {sigUrl
-                          ? <img src={sigUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
-                          : <span style={{ fontSize: 12.5, color: "var(--ink-4)" }}>
-                              {isDelegateApprover && !selectedPrincipalId ? "กรุณาเลือกลายเซ็นด้านบน" : "ยังไม่มีลายเซ็นในระบบ"}
-                            </span>}
-                        {sigName && <span className="sig-name">{sigName}</span>}
-                      </div>
-                    </div>
-
-                    {signError && (
-                      <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
-                        {signError}
-                      </div>
+                        {signError && (
+                          <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                            {signError}
+                          </div>
+                        )}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <button
+                            className="btn btn-primary"
+                            onClick={handleSign}
+                            disabled={signing || (isDelegateApprover && !selectedPrincipalId)}
+                            style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                          >
+                            {signing
+                              ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                              : <><Check size={14} /> {isViceStep ? "ยืนยันลงนามส่งต่อ" : "บันทึกการอนุมัติ"}</>
+                            }
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => { setShowConfirm(false); setSignError(null) }}
+                            disabled={signing}
+                            style={{ width: "100%", justifyContent: "center" }}
+                          >
+                            <ChevronLeft size={14} /> ย้อนกลับ
+                          </button>
+                        </div>
+                      </>
                     )}
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <button
-                        className="btn btn-primary"
-                        onClick={handleSign}
-                        disabled={signing || (isDelegateApprover && !selectedPrincipalId)}
-                        style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
-                      >
-                        {signing
-                          ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
-                          : <><Check size={14} /> บันทึกการลงนาม</>
-                        }
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => { setShowConfirm(false); setSignError(null) }}
-                        disabled={signing}
-                        style={{ width: "100%", justifyContent: "center" }}
-                      >
-                        <ChevronLeft size={14} /> ย้อนกลับ
-                      </button>
-                    </div>
-                  </>
+                  </div>
+                </div>
+              )
+            })()
+          ) : (
+            /* ── Info: waiting for the correct approver ── */
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">STATUS</div></div>
+              <div className="ks-card-pad" style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.6 }}>
+                {isViceDirectorTurn
+                  ? "รายการนี้รอรองผู้อำนวยการลงนาม"
+                  : isDirectorTurn
+                  ? "รายการนี้รอผู้อำนวยการอนุมัติขั้นสุดท้าย"
+                  : "รายการนี้รอดำเนินการ"}
+                {record.viceDirectorSignature && (
+                  <div style={{ marginTop: 10 }}>
+                    <SigBox label="รองผู้อำนวยการ (ลงนามแล้ว)" dataUrl={record.viceDirectorSignature} />
+                  </div>
                 )}
               </div>
             </div>
@@ -465,7 +635,10 @@ export default function BondApproveDetailPage() {
               <div className="info-row" style={{ borderBottom: 0 }}>
                 <span className="info-label">สถานะ</span>
                 <span className={`chip ${isSigned ? "chip-approved" : "chip-pending"}`} style={{ fontSize: 11 }}>
-                  {isSigned ? "อนุมัติแล้ว" : "รออนุมัติ"}
+                  {isSigned ? "อนุมัติแล้ว"
+                    : isViceDirectorTurn ? "รอรองผอ."
+                    : isDirectorTurn ? "รอผอ."
+                    : "รออนุมัติ"}
                 </span>
               </div>
             </div>

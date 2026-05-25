@@ -119,6 +119,7 @@ type SignatureFormData = {
   guardianSignature: string
   advisorSignature: string
   disciplineTeacherId: number | null
+  disciplineTeacherSignature: string
   gradeHeadTeacherId: number | null
   gradeHeadSignature: string
 }
@@ -161,7 +162,8 @@ export default function NewStatementPage() {
 
   const [sigData, setSigData] = useState<SignatureFormData>({
     studentSignature: "", guardianSignature: "", advisorSignature: "",
-    disciplineTeacherId: null, gradeHeadTeacherId: null, gradeHeadSignature: "",
+    disciplineTeacherId: null, disciplineTeacherSignature: "",
+    gradeHeadTeacherId: null, gradeHeadSignature: "",
   })
 
   const [saving, setSaving] = useState(false)
@@ -262,6 +264,7 @@ export default function NewStatementPage() {
           guardianSignature: sigData.guardianSignature || null,
           advisorSignature: sigData.advisorSignature || null,
           disciplineTeacherId: sigData.disciplineTeacherId,
+          disciplineTeacherSignature: sigData.disciplineTeacherSignature || null,
           gradeHeadTeacherId: sigData.gradeHeadTeacherId,
           gradeHeadSignature: sigData.gradeHeadSignature || null,
         }),
@@ -963,11 +966,12 @@ function Step3Signatures({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-        <TeacherSigSelect
-          label="ครูฝ่ายปกครอง"
-          role="DISCIPLINE"
+        <DisciplineTeacherSigSection
           selectedId={data.disciplineTeacherId}
-          onSelect={(id) => setData((p) => ({ ...p, disciplineTeacherId: id }))}
+          onSelect={(id) => setData((p) => ({ ...p, disciplineTeacherId: id, disciplineTeacherSignature: "" }))}
+          liveSignature={data.disciplineTeacherSignature}
+          onLiveSign={(url) => setData((p) => ({ ...p, disciplineTeacherSignature: url, disciplineTeacherId: null }))}
+          onLiveClear={() => setData((p) => ({ ...p, disciplineTeacherSignature: "" }))}
         />
         <GradeHeadSigSection
           selectedId={data.gradeHeadTeacherId}
@@ -1077,6 +1081,86 @@ function SigPad({ label, name, value, onChange, onClear }: {
         {value && <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: "var(--sage)" }}><Check size={12} /> บันทึกแล้ว</span>}
       </div>
       {name && <div style={{ marginTop: 8, fontSize: 13, fontWeight: 500 }}>{name}</div>}
+    </div>
+  )
+}
+
+// ── DisciplineTeacherSigSection ────────────────────────────────────────────────
+
+function DisciplineTeacherSigSection({
+  selectedId, onSelect, liveSignature, onLiveSign, onLiveClear,
+}: {
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+  liveSignature: string
+  onLiveSign: (url: string) => void
+  onLiveClear: () => void
+}) {
+  const [mode, setMode] = useState<"system" | "live">(liveSignature ? "live" : "system")
+
+  function switchToSystem() {
+    setMode("system")
+    onLiveClear()
+  }
+
+  function switchToLive() {
+    setMode("live")
+    onSelect(null)
+  }
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>§ ลายเซ็นครูฝ่ายปกครอง</span>
+        {(selectedId || liveSignature) && <span style={{ color: "var(--sage)" }}>● เลือกแล้ว</span>}
+      </div>
+
+      {/* Mode toggle */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, background: "var(--surface-2)", borderRadius: "var(--radius)", padding: 3, width: "fit-content" }}>
+        <button
+          type="button"
+          onClick={switchToSystem}
+          style={{
+            padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none",
+            cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
+            background: mode === "system" ? "var(--surface)" : "transparent",
+            color: mode === "system" ? "var(--ink)" : "var(--ink-3)",
+            boxShadow: mode === "system" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+          }}
+        >
+          ดึงจากระบบ
+        </button>
+        <button
+          type="button"
+          onClick={switchToLive}
+          style={{
+            padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none",
+            cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
+            background: mode === "live" ? "var(--surface)" : "transparent",
+            color: mode === "live" ? "var(--ink)" : "var(--ink-3)",
+            boxShadow: mode === "live" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+          }}
+        >
+          เซ็นสด
+        </button>
+      </div>
+
+      {mode === "system" ? (
+        <TeacherSigSelectInner
+          role="DISCIPLINE"
+          label="ครูฝ่ายปกครอง"
+          selectedId={selectedId}
+          onSelect={onSelect}
+          hideSignature
+        />
+      ) : (
+        <SigPad
+          label="ครูฝ่ายปกครอง"
+          value={liveSignature}
+          onChange={onLiveSign}
+          onClear={onLiveClear}
+        />
+      )}
     </div>
   )
 }

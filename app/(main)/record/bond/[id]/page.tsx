@@ -38,6 +38,7 @@ type BondDetail = {
   headTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
   headTeacherSignature: string | null
   disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
+  disciplineTeacherSignature: string | null
   student: {
     id: number
     studentCode: string
@@ -83,7 +84,7 @@ function sigCount(r: BondDetail) {
   if (r.studentSignature) n++
   if (r.advisorSignature) n++
   if (r.headTeacherSignature || r.headTeacher?.signatureUrl) n++
-  if (r.disciplineTeacher?.signatureUrl) n++
+  if (r.disciplineTeacherSignature || r.disciplineTeacher?.signatureUrl) n++
   if (r.viceDirectorSignature) n++
   if (r.directorSignature) n++
   return n
@@ -279,7 +280,8 @@ export default function BondDetailPage() {
                 <SigBox
                   label="ลายเซ็นครูฝ่ายปกครอง"
                   name={record.disciplineTeacher ? `${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}` : ""}
-                  dataUrl={record.disciplineTeacher?.signatureUrl ?? null}
+                  dataUrl={record.disciplineTeacherSignature ?? record.disciplineTeacher?.signatureUrl ?? null}
+                  isLive={!!record.disciplineTeacherSignature}
                 />
               </div>
             </div>

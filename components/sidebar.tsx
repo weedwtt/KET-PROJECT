@@ -37,8 +37,9 @@ export function Sidebar({ userName, role }: SidebarProps) {
   const [pendingCount, setPendingCount] = useState<number | null>(null)
   const [isDelegateApprover, setIsDelegateApprover] = useState(false)
   const [isGradeHead, setIsGradeHead] = useState(false)
+  const [isDisciplineTeacher, setIsDisciplineTeacher] = useState(false)
 
-  // ตรวจสอบว่าเป็นผู้รับมอบอำนาจ หรือหัวหน้าระดับ (สำหรับ role ที่ไม่ใช่ approver/admin)
+  // ตรวจสอบว่าเป็นผู้รับมอบอำนาจ, หัวหน้าระดับ หรือครูฝ่ายปกครอง
   useEffect(() => {
     if (isApprover || isAdmin) return
     fetch("/api/me")
@@ -46,11 +47,12 @@ export function Sidebar({ userName, role }: SidebarProps) {
       .then((data) => {
         setIsDelegateApprover((data?.delegateFor?.length ?? 0) > 0)
         setIsGradeHead(!!data?.gradeHeadLevel)
+        setIsDisciplineTeacher(data?.role === "DISCIPLINE")
       })
       .catch(() => {})
   }, [isApprover, isAdmin])
 
-  const canSeeApproval = isApprover || isAdmin || isDelegateApprover || isGradeHead
+  const canSeeApproval = isApprover || isAdmin || isDelegateApprover || isGradeHead || isDisciplineTeacher
 
   useEffect(() => {
     if (!canSeeApproval) return

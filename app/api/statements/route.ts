@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       guardianSignature,
       advisorSignature,
       disciplineTeacherId,
+      disciplineTeacherSignature,
       gradeHeadTeacherId,
       gradeHeadSignature,
     } = body
@@ -39,9 +40,14 @@ export async function POST(request: NextRequest) {
 
     const incidentAt = incidentDateTime ? new Date(incidentDateTime) : null
 
-    // ถ้าเลือกหัวหน้าระดับจากระบบ (ไม่มีลายเซ็นสด) → ส่งให้หัวหน้าระดับอนุมัติก่อน
+    const isSystemDiscipline = !!disciplineTeacherId && !disciplineTeacherSignature
     const isSystemGradeHead = !!gradeHeadTeacherId && !gradeHeadSignature
-    const initialStatus = isSystemGradeHead ? "pending_grade_head" : "pending"
+    // ถ้าทั้งคู่จากระบบ → รอลงนามพร้อมกัน (parallel)
+    // ถ้าเพียงคนเดียว → รอคนนั้น
+    const initialStatus = isSystemDiscipline && isSystemGradeHead ? "pending_teacher_signatures"
+      : isSystemDiscipline ? "pending_discipline_teacher"
+      : isSystemGradeHead ? "pending_grade_head"
+      : "pending"
 
     const record = await db.statementRecord.create({
       data: {
@@ -67,6 +73,7 @@ export async function POST(request: NextRequest) {
         guardianSignature: guardianSignature || null,
         advisorSignature: advisorSignature || null,
         disciplineTeacherId: disciplineTeacherId ? Number(disciplineTeacherId) : null,
+        disciplineTeacherSignature: disciplineTeacherSignature || null,
         gradeHeadTeacherId: gradeHeadTeacherId ? Number(gradeHeadTeacherId) : null,
         gradeHeadSignature: gradeHeadSignature || null,
         status: initialStatus,

@@ -165,10 +165,19 @@ export function ApprovalGrid({ data, bonds = [] }: { data: Statement[]; bonds?: 
                   </td>
                   <td>{row.violationCategory}</td>
                   <td style={{ color: "var(--ink-2)" }}>{row.recordedBy}</td>
-                  <td><span className="chip chip-pending">รออนุมัติ</span></td>
+                  <td>
+                    <span className="chip chip-pending">
+                      {row.status === "pending_teacher_signatures" ? "รอลงนาม 2 ฝ่าย"
+                        : row.status === "pending_discipline_teacher" ? "รอฝ่ายปกครอง"
+                        : row.status === "pending_grade_head" ? "รอหัวหน้าระดับ"
+                        : row.status === "pending" ? "รอรองผอ."
+                        : row.status === "pending_director" ? "รอผอ."
+                        : "รออนุมัติ"}
+                    </span>
+                  </td>
                   <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                     <Link href={`/dashboard/approve/${row.id}`} className="btn btn-primary btn-sm">
-                      พิจารณา <ArrowRight size={12} />
+                      ลงนาม <ArrowRight size={12} />
                     </Link>
                   </td>
                 </tr>
