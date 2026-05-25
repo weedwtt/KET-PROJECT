@@ -340,7 +340,7 @@ model StatementRecord {
 
   // ────── สถานะการอนุมัติ ──────
   /// "pending_discipline_teacher" = รอครูฝ่ายปกครองลงนาม, "pending_grade_head" = รอหัวหน้าระดับลงนาม, "pending" = รอดำเนินการ, "approved" = อนุมัติแล้ว
-  status              String   @default("pending") @db.VarChar(20)
+  status              String   @default("pending") @db.VarChar(30)
   approvedByTeacherId Int?     @map("approved_by_teacher_id")
   approvedByTeacher   Teacher? @relation("ApprovedBy", fields: [approvedByTeacherId], references: [id])
   /// ครูที่ใช้ลายเซ็นในเอกสาร (อาจต่างจาก approvedByTeacher เมื่อผู้รับมอบอำนาจอนุมัติแทน)
@@ -474,6 +474,8 @@ model BondRecord {
   headTeacherSignature String? @db.Text @map("head_teacher_signature")
   disciplineTeacherId  Int?    @map("discipline_teacher_id")
   disciplineTeacher    Teacher? @relation("BondDisciplineTeacher", fields: [disciplineTeacherId], references: [id])
+  /// ลายเซ็นสดของครูฝ่ายปกครอง (data URL) — ใช้เมื่อเซ็นสด ณ ที่เกิดเหตุ แทนการดึงจากระบบ
+  disciplineTeacherSignature String? @db.Text @map("discipline_teacher_signature")
   viceDirectorSignature String? @db.Text @map("vice_director_signature")
   directorSignature    String? @db.Text @map("director_signature")
 

@@ -60,12 +60,18 @@ export default async function StatementListPage({
   const statements = rows.map((r) => ({
     id: r.id,
     recordDate: r.recordDate,
-    recordedBy: r.recordedBy,
     semester: r.semester.value,
     academicYear: r.academicYear.year,
     violationCategory: r.violationCategory.name,
     status: r.status,
     student: r.student,
+    studentSignature: r.studentSignature,
+    guardianSignature: r.guardianSignature,
+    advisorSignature: r.advisorSignature,
+    disciplineTeacherSignature: r.disciplineTeacherSignature,
+    gradeHeadSignature: r.gradeHeadSignature,
+    considerationMeasures: r.considerationMeasures,
+    approvedAt: r.approvedAt,
   }))
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))

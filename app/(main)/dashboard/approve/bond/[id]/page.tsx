@@ -21,10 +21,12 @@ type BondDetail = {
   guardianSignature: string | null
   studentSignature: string | null
   advisorSignature: string | null
+  headTeacherSignature: string | null
   viceDirectorSignature: string | null
   directorSignature: string | null
   headTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
   disciplineTeacher: { id: number; firstName: string; lastName: string; title: { name: string }; signatureUrl: string | null } | null
+  disciplineTeacherSignature: string | null
   student: {
     studentCode: string
     firstName: string
@@ -81,6 +83,10 @@ export default function BondApproveDetailPage() {
   const [signError, setSignError] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedPrincipalId, setSelectedPrincipalId] = useState<number | null>(null)
+  const [disciplineSigning, setDisciplineSigning] = useState(false)
+  const [disciplineSignError, setDisciplineSignError] = useState<string | null>(null)
+  const [headTeacherSigning, setHeadTeacherSigning] = useState(false)
+  const [headTeacherSignError, setHeadTeacherSignError] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -138,6 +144,42 @@ export default function BondApproveDetailPage() {
     }
   }
 
+  async function handleDisciplineSign() {
+    setDisciplineSigning(true)
+    setDisciplineSignError(null)
+    try {
+      const res = await fetch(`/api/bonds/${id}/discipline-approve`, { method: "POST" })
+      if (!res.ok) {
+        const err = await res.json()
+        setDisciplineSignError(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      router.push("/dashboard/approve")
+    } catch {
+      setDisciplineSignError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setDisciplineSigning(false)
+    }
+  }
+
+  async function handleHeadTeacherSign() {
+    setHeadTeacherSigning(true)
+    setHeadTeacherSignError(null)
+    try {
+      const res = await fetch(`/api/bonds/${id}/head-teacher-approve`, { method: "POST" })
+      if (!res.ok) {
+        const err = await res.json()
+        setHeadTeacherSignError(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      router.push("/dashboard/approve")
+    } catch {
+      setHeadTeacherSignError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setHeadTeacherSigning(false)
+    }
+  }
+
   if (loading) return (
     <div className="ks-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="spin" style={{ color: "var(--indigo)" }}>
@@ -157,8 +199,20 @@ export default function BondApproveDetailPage() {
 
   const isSigned = !!(record.directorSignature)
   const approverName = me ? `${me.title.name}${me.firstName} ${me.lastName}` : ""
+  const isMyDisciplineItem = !!(
+    me &&
+    record.disciplineTeacher?.id === me.id &&
+    !record.disciplineTeacherSignature
+  )
+  const isMyHeadTeacherItem = !!(
+    me &&
+    record.headTeacher?.id === me.id &&
+    !record.headTeacherSignature
+  )
 
   const isDelegateApprover = (me?.delegateFor?.length ?? 0) > 0
+  const isDirectorRole = me?.role === "DIRECTOR" || me?.role === "VICE_DIRECTOR" || me?.role === "ADMIN"
+  const canDirectorSign = isDirectorRole || isDelegateApprover
   const principals = me?.delegateFor?.map((d) => d.principal) ?? []
   const approverRoleLabel = isDelegateApprover
     ? "ผู้รับมอบอำนาจ"
@@ -277,13 +331,13 @@ export default function BondApproveDetailPage() {
                   {record.headTeacher && (
                     <SigBox
                       label={`หัวหน้าระดับ — ${record.headTeacher.title.name}${record.headTeacher.firstName} ${record.headTeacher.lastName}`}
-                      dataUrl={record.headTeacher.signatureUrl}
+                      dataUrl={record.headTeacherSignature ?? record.headTeacher.signatureUrl}
                     />
                   )}
                   {record.disciplineTeacher && (
                     <SigBox
                       label={`ครูฝ่ายปกครอง — ${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}`}
-                      dataUrl={record.disciplineTeacher.signatureUrl}
+                      dataUrl={record.disciplineTeacherSignature ?? record.disciplineTeacher.signatureUrl}
                     />
                   )}
                 </div>
@@ -294,6 +348,74 @@ export default function BondApproveDetailPage() {
 
         {/* Sidebar */}
         <div style={{ position: "sticky", top: 16, display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+
+          {/* Discipline teacher signing panel */}
+          {isMyDisciplineItem && (
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">ลงนาม · ครูฝ่ายปกครอง</div></div>
+              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>
+                  คุณถูกระบุเป็นครูฝ่ายปกครองในสัญญาทัณฑ์บนนี้ กรุณาพิจารณาและลงนามเพื่อส่งต่อ
+                </div>
+                {me?.signatureUrl && (
+                  <div className="sig-display" style={{ borderColor: "var(--sage)" }}>
+                    <img src={me.signatureUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
+                    <span className="sig-name">{approverName}</span>
+                  </div>
+                )}
+                {disciplineSignError && (
+                  <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                    {disciplineSignError}
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleDisciplineSign}
+                  disabled={disciplineSigning}
+                  style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                >
+                  {disciplineSigning
+                    ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                    : <><Check size={14} /> ลงนามฝ่ายปกครอง</>
+                  }
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Head teacher signing panel */}
+          {isMyHeadTeacherItem && (
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">ลงนาม · หัวหน้าระดับ</div></div>
+              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>
+                  คุณถูกระบุเป็นหัวหน้าระดับในสัญญาทัณฑ์บนนี้ กรุณาพิจารณาและลงนาม
+                </div>
+                {me?.signatureUrl && (
+                  <div className="sig-display" style={{ borderColor: "var(--sage)" }}>
+                    <img src={me.signatureUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
+                    <span className="sig-name">{approverName}</span>
+                  </div>
+                )}
+                {headTeacherSignError && (
+                  <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                    {headTeacherSignError}
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleHeadTeacherSign}
+                  disabled={headTeacherSigning}
+                  style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                >
+                  {headTeacherSigning
+                    ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                    : <><Check size={14} /> ลงนามหัวหน้าระดับ</>
+                  }
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Delegate notice */}
           {isDelegateApprover && !isSigned && (
@@ -312,7 +434,7 @@ export default function BondApproveDetailPage() {
             </div>
           )}
 
-          {isSigned ? (
+          {isSigned || canDirectorSign ? (isSigned ? (
             <div className="ks-card">
               <div className="ks-card-header"><div className="eyebrow">STATUS</div></div>
               <div className="ks-card-pad">
@@ -449,7 +571,7 @@ export default function BondApproveDetailPage() {
                 )}
               </div>
             </div>
-          )}
+          )) : null}
 
           <div className="ks-card">
             <div className="ks-card-header"><div className="eyebrow">AUDIT</div></div>

@@ -13,11 +13,18 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   const record = await db.statementRecord.findUnique({
     where: { id: Number(id) },
-    select: { id: true, status: true, gradeHeadTeacherId: true },
+    select: {
+      id: true, status: true,
+      gradeHeadTeacherId: true,
+      disciplineTeacherId: true,
+      disciplineTeacherSignature: true,
+    },
   })
 
   if (!record) return Response.json({ error: "ไม่พบรายการ" }, { status: 404 })
-  if (record.status !== "pending_grade_head") {
+
+  const allowedStatuses = ["pending_grade_head", "pending_teacher_signatures"]
+  if (!allowedStatuses.includes(record.status)) {
     return Response.json({ error: "ไม่สามารถดำเนินการได้ในสถานะนี้" }, { status: 400 })
   }
   if (record.gradeHeadTeacherId !== teacherId) {
@@ -29,11 +36,20 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     select: { signatureUrl: true },
   })
 
+  // หลังหัวหน้าระดับลงนามแล้ว ตรวจสอบว่าฝ่ายปกครองลงนามแล้วหรือยัง
+  // ถ้า pending_teacher_signatures และฝ่ายปกครองยังไม่ได้ลงนาม → คงสถานะรอฝ่ายปกครอง
+  // ถ้าฝ่ายปกครองลงนามแล้ว หรือไม่มีฝ่ายปกครองจากระบบ → ส่งต่อ pending
+  const disciplineAlreadySigned = !!record.disciplineTeacherSignature
+  const hasSystemDiscipline = !!record.disciplineTeacherId
+  const nextStatus = (record.status === "pending_teacher_signatures" && hasSystemDiscipline && !disciplineAlreadySigned)
+    ? "pending_teacher_signatures"
+    : "pending"
+
   const updated = await db.statementRecord.update({
     where: { id: Number(id) },
     data: {
       gradeHeadSignature: teacher?.signatureUrl || null,
-      status: "pending",
+      status: nextStatus,
     },
   })
 

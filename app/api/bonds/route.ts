@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       headTeacherId,
       headTeacherSignature,
       disciplineTeacherId,
+      disciplineTeacherSignature,
       guardianSignature, studentSignature, advisorSignature,
       viceDirectorSignature, directorSignature,
     } = body
@@ -118,6 +119,7 @@ export async function POST(request: NextRequest) {
         headTeacherId: headTeacherId ? Number(headTeacherId) : null,
         headTeacherSignature: headTeacherSignature || null,
         disciplineTeacherId: disciplineTeacherId ? Number(disciplineTeacherId) : null,
+        disciplineTeacherSignature: disciplineTeacherSignature || null,
         guardianSignature: guardianSignature || null,
         studentSignature: studentSignature || null,
         advisorSignature: advisorSignature || null,

@@ -124,6 +124,7 @@ export default function BondEditPage() {
   const [studentSig, setStudentSig] = useState("")
   const [advisorSig, setAdvisorSig] = useState("")
   const [headTeacherSig, setHeadTeacherSig] = useState("")
+  const [disciplineTeacherSig, setDisciplineTeacherSig] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -158,6 +159,7 @@ export default function BondEditPage() {
         setStudentSig(data.studentSignature ?? "")
         setAdvisorSig(data.advisorSignature ?? "")
         setHeadTeacherSig(data.headTeacherSignature ?? "")
+        setDisciplineTeacherSig(data.disciplineTeacherSignature ?? "")
         setForm({
           contractDate: data.contractDate ? data.contractDate.slice(0, 10) : "",
           semesterId: data.semesterId ? String(data.semesterId) : "",
@@ -246,6 +248,7 @@ export default function BondEditPage() {
           headTeacherId: form.headTeacherId,
           headTeacherSignature: headTeacherSig || null,
           disciplineTeacherId: form.disciplineTeacherId,
+          disciplineTeacherSignature: disciplineTeacherSig || null,
           guardianSignature: guardianSig || null,
           studentSignature: studentSig || null,
           advisorSignature: advisorSig || null,
@@ -348,6 +351,7 @@ export default function BondEditPage() {
           studentSig={studentSig} setStudentSig={setStudentSig}
           advisorSig={advisorSig} setAdvisorSig={setAdvisorSig}
           headTeacherSig={headTeacherSig} setHeadTeacherSig={setHeadTeacherSig}
+          disciplineTeacherSig={disciplineTeacherSig} setDisciplineTeacherSig={setDisciplineTeacherSig}
           saving={saving} saveError={saveError}
           onBack={() => goStep(3)} onSubmit={handleSubmit}
         />
@@ -687,6 +691,7 @@ function StepSignatures({
   studentSig, setStudentSig,
   advisorSig, setAdvisorSig,
   headTeacherSig, setHeadTeacherSig,
+  disciplineTeacherSig, setDisciplineTeacherSig,
   saving, saveError,
   onBack, onSubmit,
 }: {
@@ -697,6 +702,7 @@ function StepSignatures({
   studentSig: string; setStudentSig: (v: string) => void
   advisorSig: string; setAdvisorSig: (v: string) => void
   headTeacherSig: string; setHeadTeacherSig: (v: string) => void
+  disciplineTeacherSig: string; setDisciplineTeacherSig: (v: string) => void
   saving: boolean; saveError: string | null
   onBack: () => void; onSubmit: () => void
 }) {
@@ -717,7 +723,13 @@ function StepSignatures({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-        <TeacherSigSelect label="ลายเซ็นครูฝ่ายปกครอง" role="DISCIPLINE" selectedId={form.disciplineTeacherId} onSelect={(id) => upd({ disciplineTeacherId: id })} />
+        <DisciplineTeacherSigSection
+          selectedId={form.disciplineTeacherId}
+          onSelect={(id) => { upd({ disciplineTeacherId: id }); setDisciplineTeacherSig("") }}
+          liveSignature={disciplineTeacherSig}
+          onLiveSign={(url) => { setDisciplineTeacherSig(url); upd({ disciplineTeacherId: null }) }}
+          onLiveClear={() => setDisciplineTeacherSig("")}
+        />
         <GradeHeadSigSection
           selectedId={form.headTeacherId}
           onSelect={(id) => { upd({ headTeacherId: id }); setHeadTeacherSig("") }}
@@ -824,6 +836,48 @@ function SigPad({ label, name, value, onChange, onClear }: {
   )
 }
 
+// ── DisciplineTeacherSigSection ───────────────────────────────────────────────
+
+function DisciplineTeacherSigSection({
+  selectedId, onSelect, liveSignature, onLiveSign, onLiveClear,
+}: {
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+  liveSignature: string
+  onLiveSign: (url: string) => void
+  onLiveClear: () => void
+}) {
+  const [mode, setMode] = useState<"system" | "live">(liveSignature ? "live" : "system")
+
+  function switchToSystem() { setMode("system"); onLiveClear() }
+  function switchToLive() { setMode("live"); onSelect(null) }
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>ลายเซ็นครูฝ่ายปกครอง</span>
+        {(selectedId || liveSignature) && <span style={{ color: "var(--sage)" }}>● เลือกแล้ว</span>}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, background: "var(--surface-2)", borderRadius: "var(--radius)", padding: 3, width: "fit-content" }}>
+        {(["system", "live"] as const).map((m) => (
+          <button key={m} type="button" onClick={m === "system" ? switchToSystem : switchToLive}
+            style={{ padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none", cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
+              background: mode === m ? "var(--surface)" : "transparent",
+              color: mode === m ? "var(--ink)" : "var(--ink-3)",
+              boxShadow: mode === m ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            }}>
+            {m === "system" ? "ดึงจากระบบ" : "เซ็นสด"}
+          </button>
+        ))}
+      </div>
+      {mode === "system"
+        ? <TeacherSigSelectInner role="DISCIPLINE" selectedId={selectedId} onSelect={onSelect} hideSignature />
+        : <SigPad label="ลายเซ็นครูฝ่ายปกครอง" value={liveSignature} onChange={onLiveSign} onClear={onLiveClear} />
+      }
+    </div>
+  )
+}
+
 // ── GradeHeadSigSection ────────────────────────────────────────────────────────
 
 function GradeHeadSigSection({
@@ -859,7 +913,7 @@ function GradeHeadSigSection({
         ))}
       </div>
       {mode === "system"
-        ? <TeacherSigSelectInner role="หัวหน้าระดับชั้น" selectedId={selectedId} onSelect={onSelect} />
+        ? <TeacherSigSelectInner role="หัวหน้าระดับชั้น" selectedId={selectedId} onSelect={onSelect} hideSignature />
         : <SigPad label="ลายเซ็นหัวหน้าระดับชั้น" value={liveSignature} onChange={onLiveSign} onClear={onLiveClear} />
       }
     </div>
@@ -868,8 +922,8 @@ function GradeHeadSigSection({
 
 // ── TeacherSigSelect ───────────────────────────────────────────────────────────
 
-function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
-  role: string; label?: string; selectedId: number | null; onSelect: (id: number | null) => void
+function TeacherSigSelectInner({ role, label, selectedId, onSelect, hideSignature }: {
+  role: string; label?: string; selectedId: number | null; onSelect: (id: number | null) => void; hideSignature?: boolean
 }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -889,7 +943,7 @@ function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
         <div style={{ height: 38, background: "var(--paper-2)", borderRadius: "var(--radius)", animation: "pulse 1.5s infinite" }} />
       ) : (
         <select className="ks-select" value={selectedId ?? ""} onChange={(e) => onSelect(e.target.value ? Number(e.target.value) : null)}>
-          <option value="">เลือก{label ?? role}</option>
+          <option value="">เลือกasd</option>
           {teachers.map((t) => {
             const gradeLabel = t.gradeHeadLevel ? ` (${GRADE_HEAD_LEVEL_LABEL[t.gradeHeadLevel] ?? t.gradeHeadLevel})` : ""
             return (
@@ -898,7 +952,13 @@ function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
           })}
         </select>
       )}
-      {selected && (
+      {hideSignature && selected && (
+        <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", fontSize: 13 }}>
+          <div style={{ fontWeight: 500 }}>{selected.title.name}{selected.firstName} {selected.lastName}</div>
+          <div style={{ fontSize: 12, color: "var(--indigo-ink)", marginTop: 2 }}>จะได้รับแบบฟอร์มเพื่ออนุมัติและลงลายเซ็น</div>
+        </div>
+      )}
+      {!hideSignature && selected && (
         <div className="sig-display" style={{ marginTop: 10, borderColor: selected.signatureUrl ? "var(--sage)" : undefined }}>
           {selected.signatureUrl
             ? <img src={selected.signatureUrl} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />

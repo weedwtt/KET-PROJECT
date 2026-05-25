@@ -40,11 +40,12 @@ export async function POST(request: NextRequest) {
 
     const incidentAt = incidentDateTime ? new Date(incidentDateTime) : null
 
-    // ถ้าเลือกครูฝ่ายปกครองจากระบบ → ส่งให้ครูฝ่ายปกครองลงนามก่อน (ก่อนหัวหน้าระดับ)
     const isSystemDiscipline = !!disciplineTeacherId && !disciplineTeacherSignature
-    // ถ้าเลือกหัวหน้าระดับจากระบบ (ไม่มีลายเซ็นสด) → ส่งให้หัวหน้าระดับอนุมัติก่อน
     const isSystemGradeHead = !!gradeHeadTeacherId && !gradeHeadSignature
-    const initialStatus = isSystemDiscipline ? "pending_discipline_teacher"
+    // ถ้าทั้งคู่จากระบบ → รอลงนามพร้อมกัน (parallel)
+    // ถ้าเพียงคนเดียว → รอคนนั้น
+    const initialStatus = isSystemDiscipline && isSystemGradeHead ? "pending_teacher_signatures"
+      : isSystemDiscipline ? "pending_discipline_teacher"
       : isSystemGradeHead ? "pending_grade_head"
       : "pending"
 
