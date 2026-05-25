@@ -918,7 +918,7 @@ function DisciplineTeacherSigSection({
         ))}
       </div>
       {mode === "system"
-        ? <TeacherSigSelectInner role="DISCIPLINE" selectedId={selectedId} onSelect={onSelect} hideSignature />
+        ? <TeacherSigSelectInner role="DISCIPLINE" label="ครูฝ่ายปกครอง" selectedId={selectedId} onSelect={onSelect} hideSignature />
         : <SigPad label="ลายเซ็นครูฝ่ายปกครอง" value={liveSignature} onChange={onLiveSign} onClear={onLiveClear} />
       }
     </div>
