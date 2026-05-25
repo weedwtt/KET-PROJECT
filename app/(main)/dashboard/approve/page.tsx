@@ -12,10 +12,17 @@ const STUDENT_SELECT = {
   title: { select: { name: true } },
 } as const
 
-async function getPendingStatements() {
+async function getPendingStatements(role: string | undefined) {
   try {
+    // VICE_DIRECTOR sees pending (รอรองผอ), DIRECTOR sees pending_director (รอผอ)
+    // ADMIN and delegates see both
+    const statuses =
+      role === "VICE_DIRECTOR" ? ["pending"]
+      : role === "DIRECTOR" ? ["pending_director"]
+      : ["pending", "pending_director"]
+
     const rows = await db.statementRecord.findMany({
-      where: { status: "pending" },
+      where: { status: { in: statuses } },
       include: {
         student: { select: STUDENT_SELECT },
         semester: { select: { value: true } },
@@ -101,26 +108,24 @@ async function getDisciplineTeacherPendingStatements(teacherId: number) {
   }
 }
 
-async function getPendingBonds() {
+async function getPendingBonds(role: string | undefined) {
   try {
+    const teachersSigned = [
+      { OR: [{ headTeacherId: null }, { headTeacherSignature: { not: null } }] },
+      { OR: [{ disciplineTeacherId: null }, { disciplineTeacherSignature: { not: null } }] },
+    ]
+    // VICE_DIRECTOR: รอรองผอลงนาม (viceDirectorSignature ยังไม่มี)
+    // DIRECTOR: รองผอลงนามแล้ว รอผอ
+    // ADMIN/delegate: เห็นทั้งหมดที่ directorSignature ยังไม่มี
+    const where =
+      role === "VICE_DIRECTOR"
+        ? { viceDirectorSignature: null, directorSignature: null, AND: teachersSigned }
+        : role === "DIRECTOR"
+        ? { viceDirectorSignature: { not: null }, directorSignature: null, AND: teachersSigned }
+        : { directorSignature: null, AND: teachersSigned }
+
     const rows = await db.bondRecord.findMany({
-      where: {
-        directorSignature: null,
-        AND: [
-          {
-            OR: [
-              { headTeacherId: null },
-              { headTeacherSignature: { not: null } },
-            ],
-          },
-          {
-            OR: [
-              { disciplineTeacherId: null },
-              { disciplineTeacherSignature: { not: null } },
-            ],
-          },
-        ],
-      },
+      where,
       select: {
         id: true,
         contractDate: true,
@@ -240,8 +245,8 @@ export default async function ApprovePage() {
   const showDirectorQueue = isApprover || isDelegate
 
   const [statements, bonds, gradeHeadPending, disciplinePending, disciplinePendingBonds, gradeHeadPendingBonds] = await Promise.all([
-    showDirectorQueue ? getPendingStatements() : Promise.resolve([]),
-    showDirectorQueue ? getPendingBonds() : Promise.resolve([]),
+    showDirectorQueue ? getPendingStatements(role ?? undefined) : Promise.resolve([]),
+    showDirectorQueue ? getPendingBonds(role ?? undefined) : Promise.resolve([]),
     isGradeHead && teacherId ? getGradeHeadPendingStatements(teacherId) : Promise.resolve([]),
     isDisciplineTeacher && teacherId ? getDisciplineTeacherPendingStatements(teacherId) : Promise.resolve([]),
     isDisciplineTeacher && teacherId ? getDisciplinePendingBonds(teacherId) : Promise.resolve([]),

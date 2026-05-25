@@ -191,7 +191,8 @@ export default function ApproveDetailPage() {
         toast.error(err.error ?? "เกิดข้อผิดพลาด")
         return
       }
-      toast.success("อนุมัติบันทึกถ้อยคำสำเร็จ")
+      const result = await res.json()
+      toast.success(result.status === "pending_director" ? "ส่งต่อให้ผอ.เรียบร้อย" : "อนุมัติบันทึกถ้อยคำสำเร็จ")
       router.push("/dashboard/approve")
     } catch {
       setApproveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
@@ -218,6 +219,8 @@ export default function ApproveDetailPage() {
   const isGradeHeadPending = record.status === "pending_grade_head"
   const isTeacherSignaturesPending = record.status === "pending_teacher_signatures"
   const isDisciplinePending = record.status === "pending_discipline_teacher"
+  const isViceDirectorPending = record.status === "pending"
+  const isDirectorPending = record.status === "pending_director"
 
   // ฝ่ายปกครอง: เป็นคนนี้ และยังไม่ได้ลงนาม
   const isMyDisciplineItem = (isDisciplinePending || isTeacherSignaturesPending)
@@ -228,6 +231,7 @@ export default function ApproveDetailPage() {
   const isMyGradeHeadItem = (isGradeHeadPending || isTeacherSignaturesPending)
     && me?.id === record.gradeHeadTeacher?.id
     && !record.gradeHeadSignature
+
   const advisor1 = record.student.advisors.find((a) => a.slot === 1)?.teacher
   const bondGuardian = record.bond
     ? record.student.guardians.find((g) => g.id === record.bond!.guardianId)
@@ -236,6 +240,15 @@ export default function ApproveDetailPage() {
 
   const isDelegateApprover = (me?.delegateFor?.length ?? 0) > 0
   const principals = me?.delegateFor?.map((d) => d.principal) ?? []
+
+  // รองผอ: สถานะ pending และ role เป็น VICE_DIRECTOR
+  const isViceDirectorApprover = isViceDirectorPending && me?.role === "VICE_DIRECTOR"
+  // ผอ: สถานะ pending_director และ role เป็น DIRECTOR หรือ ADMIN
+  const isDirectorApprover = isDirectorPending && (me?.role === "DIRECTOR" || me?.role === "ADMIN")
+  // ADMIN ที่สถานะ pending ก็อนุมัติได้ (ข้ามทั้งสองขั้น)
+  const isAdminAnyStep = me?.role === "ADMIN" && (isViceDirectorPending || isDirectorPending)
+  // ผู้รับมอบอำนาจ: เห็นเมื่อสถานะรออนุมัติ (pending หรือ pending_director)
+  const isDelegateActiveStep = isDelegateApprover && (isViceDirectorPending || isDirectorPending)
   const principalNames = principals.map(
     (p) => `${p.title.name}${p.firstName} ${p.lastName}`
   ).join(" / ")
@@ -250,6 +263,18 @@ export default function ApproveDetailPage() {
   const sigName = isDelegateApprover && selectedPrincipal
     ? `${selectedPrincipal.title.name}${selectedPrincipal.firstName} ${selectedPrincipal.lastName}`
     : approverName
+
+  // Step-aware variables for รองผอ/ผอ approve panel
+  const stepRole = isViceDirectorPending ? "VICE_DIRECTOR" : "DIRECTOR"
+  const stepPrincipals = isDelegateApprover
+    ? principals.filter((p) => p.role === stepRole || p.role === "ADMIN")
+    : principals
+  const selectedStepPrincipal = stepPrincipals.find((p) => p.id === selectedPrincipalId) ?? null
+  const stepSigUrl = isDelegateApprover ? selectedStepPrincipal?.signatureUrl ?? null : me?.signatureUrl ?? null
+  const stepSigName = isDelegateApprover && selectedStepPrincipal
+    ? `${selectedStepPrincipal.title.name}${selectedStepPrincipal.firstName} ${selectedStepPrincipal.lastName}`
+    : approverName
+  const isViceStep = isViceDirectorApprover || (isDelegateActiveStep && isViceDirectorPending && !isAdminAnyStep)
 
   const allMeasures = [
     ...record.considerationMeasures.map((m) => CONSIDERATION_LABELS[m] ?? m),
@@ -276,6 +301,8 @@ export default function ApproveDetailPage() {
               : isTeacherSignaturesPending ? "รอลงนาม 2 ฝ่าย"
               : isDisciplinePending ? "รอฝ่ายปกครอง"
               : isGradeHeadPending ? "รอหัวหน้าระดับ"
+              : isViceDirectorPending ? "รอรองผอ."
+              : isDirectorPending ? "รอผอ."
               : "รออนุมัติ"}
           </span>
         </div>
@@ -634,127 +661,139 @@ export default function ApproveDetailPage() {
                 )}
               </div>
             </div>
-          ) : (
+          ) : (isViceDirectorApprover || isDirectorApprover || isAdminAnyStep || isDelegateActiveStep) ? (
+            /* ── รองผอ / ผอ / ADMIN / delegate approve panel ── */
+            <div className="ks-card">
+                  <div className="ks-card-header">
+                    <div className="eyebrow">{isViceStep ? "FORWARD → ผอ." : "APPROVE"}</div>
+                  </div>
+                  <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {isViceStep && !showConfirm && (
+                      <div style={{ fontSize: 12.5, padding: "8px 12px", background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", color: "var(--indigo-ink)" }}>
+                        ลงนามเพื่อ<span style={{ fontWeight: 600 }}>ส่งต่อให้ผู้อำนวยการ</span>พิจารณาอนุมัติขั้นสุดท้าย
+                      </div>
+                    )}
+                    {!showConfirm ? (
+                      <>
+                        {me ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--indigo-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <User size={14} style={{ color: "var(--indigo)" }} />
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13 }}>{approverName}</div>
+                              <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{approverRoleLabel}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 13, color: "var(--ink-4)" }}>ไม่พบข้อมูลผู้อนุมัติ</div>
+                        )}
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => setShowConfirm(true)}
+                          disabled={!me}
+                          style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                        >
+                          <ShieldCheck size={14} /> {isViceStep ? "ลงนามส่งต่อให้ ผอ." : "อนุมัติบันทึกถ้อยคำนี้"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          {isDelegateApprover && stepPrincipals.length > 0 && (
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6 }}>
+                                เลือกลายเซ็นที่จะใช้ในเอกสาร
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                {stepPrincipals.map((p) => {
+                                  const pName = `${p.title.name}${p.firstName} ${p.lastName}`
+                                  const checked = selectedPrincipalId === p.id
+                                  return (
+                                    <label
+                                      key={p.id}
+                                      style={{
+                                        display: "flex", alignItems: "center", gap: 10,
+                                        padding: "8px 12px", borderRadius: "var(--radius)", cursor: "pointer",
+                                        border: `1px solid ${checked ? "var(--indigo)" : "var(--border)"}`,
+                                        background: checked ? "var(--indigo-wash)" : "var(--surface-2)",
+                                      }}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name="principal"
+                                        value={p.id}
+                                        checked={checked}
+                                        onChange={() => setSelectedPrincipalId(p.id)}
+                                        style={{ accentColor: "var(--indigo)" }}
+                                      />
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600 }}>{pName}</div>
+                                        <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{ROLE_LABEL[p.role ?? ""] ?? p.role}</div>
+                                      </div>
+                                      {p.signatureUrl
+                                        ? <img src={p.signatureUrl} alt="sig" style={{ height: 32, maxWidth: 64, objectFit: "contain", opacity: 0.8 }} />
+                                        : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8 }}>
+                            {isDelegateApprover ? "ลายเซ็นที่จะปรากฏในเอกสาร" : `ลายเซ็นผู้อนุมัติ — ${approverName}`}
+                          </div>
+                          <div className="sig-display" style={{ height: 120, borderColor: stepSigUrl ? "var(--sage)" : undefined }}>
+                            {stepSigUrl
+                              ? <img src={stepSigUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
+                              : <span style={{ fontSize: 12.5, color: "var(--ink-4)" }}>
+                                  {isDelegateApprover && !selectedPrincipalId ? "กรุณาเลือกลายเซ็นด้านบน" : "ยังไม่มีลายเซ็นในระบบ"}
+                                </span>}
+                            {stepSigName && <span className="sig-name">{stepSigName}</span>}
+                          </div>
+                        </div>
+                        {approveError && (
+                          <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                            {approveError}
+                          </div>
+                        )}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <button
+                            className="btn btn-primary"
+                            onClick={handleApprove}
+                            disabled={approving || (isDelegateApprover && !selectedPrincipalId)}
+                            style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                          >
+                            {approving ? (
+                              <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                            ) : (
+                              <><Check size={14} /> {isViceStep ? "ยืนยันลงนามส่งต่อ" : "บันทึกการอนุมัติ"}</>
+                            )}
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => { setShowConfirm(false); setApproveError(null) }}
+                            disabled={approving}
+                            style={{ width: "100%", justifyContent: "center" }}
+                          >
+                            <ChevronLeft size={14} /> ย้อนกลับ
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+          ) : (isViceDirectorPending || isDirectorPending) ? (
+            /* ── Waiting for director approval (viewed by non-approvers) ── */
             <div className="ks-card">
               <div className="ks-card-header">
-                <div className="eyebrow">APPROVE</div>
+                <div className="eyebrow">STATUS</div>
               </div>
-              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {!showConfirm ? (
-                  <>
-                    {me ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--indigo-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <User size={14} style={{ color: "var(--indigo)" }} />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: 13 }}>{approverName}</div>
-                          <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{approverRoleLabel}</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: 13, color: "var(--ink-4)" }}>ไม่พบข้อมูลผู้อนุมัติ</div>
-                    )}
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => setShowConfirm(true)}
-                      disabled={!me}
-                      style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
-                    >
-                      <ShieldCheck size={14} /> อนุมัติบันทึกถ้อยคำนี้
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      {/* ผู้รับมอบอำนาจ: เลือกว่าจะใช้ลายเซ็นของ ผอ/รองผอ คนไหน */}
-                      {isDelegateApprover && (
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6 }}>
-                            เลือกลายเซ็นที่จะใช้ในเอกสาร
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            {principals.map((p) => {
-                              const pName = `${p.title.name}${p.firstName} ${p.lastName}`
-                              const checked = selectedPrincipalId === p.id
-                              return (
-                                <label
-                                  key={p.id}
-                                  style={{
-                                    display: "flex", alignItems: "center", gap: 10,
-                                    padding: "8px 12px", borderRadius: "var(--radius)", cursor: "pointer",
-                                    border: `1px solid ${checked ? "var(--indigo)" : "var(--border)"}`,
-                                    background: checked ? "var(--indigo-wash)" : "var(--surface-2)",
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="principal"
-                                    value={p.id}
-                                    checked={checked}
-                                    onChange={() => setSelectedPrincipalId(p.id)}
-                                    style={{ accentColor: "var(--indigo)" }}
-                                  />
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600 }}>{pName}</div>
-                                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{ROLE_LABEL[p.role ?? ""] ?? p.role}</div>
-                                  </div>
-                                  {p.signatureUrl
-                                    ? <img src={p.signatureUrl} alt="sig" style={{ height: 32, maxWidth: 64, objectFit: "contain", opacity: 0.8 }} />
-                                    : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
-                                </label>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8 }}>
-                        {isDelegateApprover ? "ลายเซ็นที่จะปรากฏในเอกสาร" : `ลายเซ็นผู้อนุมัติ — ${approverName}`}
-                      </div>
-                      <div className="sig-display" style={{ height: 120, borderColor: sigUrl ? "var(--sage)" : undefined }}>
-                        {sigUrl
-                          ? <img src={sigUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", padding: 8 }} />
-                          : <span style={{ fontSize: 12.5, color: "var(--ink-4)" }}>
-                              {isDelegateApprover && !selectedPrincipalId ? "กรุณาเลือกลายเซ็นด้านบน" : "ยังไม่มีลายเซ็นในระบบ"}
-                            </span>}
-                        {sigName && <span className="sig-name">{sigName}</span>}
-                      </div>
-                    </div>
-
-                    {approveError && (
-                      <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
-                        {approveError}
-                      </div>
-                    )}
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <button
-                        className="btn btn-primary"
-                        onClick={handleApprove}
-                        disabled={approving || (isDelegateApprover && !selectedPrincipalId)}
-                        style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
-                      >
-                        {approving ? (
-                          <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
-                        ) : (
-                          <><Check size={14} /> บันทึกการอนุมัติ</>
-                        )}
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => { setShowConfirm(false); setApproveError(null) }}
-                        disabled={approving}
-                        style={{ width: "100%", justifyContent: "center" }}
-                      >
-                        <ChevronLeft size={14} /> ย้อนกลับ
-                      </button>
-                    </div>
-                  </>
-                )}
+              <div className="ks-card-pad" style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.6 }}>
+                {isViceDirectorPending ? "รายการนี้รอรองผู้อำนวยการลงนาม" : "รายการนี้รอผู้อำนวยการอนุมัติขั้นสุดท้าย"}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Audit */}
           <div className="ks-card">
@@ -777,6 +816,8 @@ export default function ApproveDetailPage() {
                     : isTeacherSignaturesPending ? "รอลงนาม 2 ฝ่าย"
                     : isDisciplinePending ? "รอฝ่ายปกครอง"
                     : isGradeHeadPending ? "รอหัวหน้าระดับ"
+                    : isViceDirectorPending ? "รอรองผอ."
+                    : isDirectorPending ? "รอผอ."
                     : "รออนุมัติ"}
                 </span>
               </div>

@@ -170,6 +170,8 @@ export function ApprovalGrid({ data, bonds = [] }: { data: Statement[]; bonds?: 
                       {row.status === "pending_teacher_signatures" ? "รอลงนาม 2 ฝ่าย"
                         : row.status === "pending_discipline_teacher" ? "รอฝ่ายปกครอง"
                         : row.status === "pending_grade_head" ? "รอหัวหน้าระดับ"
+                        : row.status === "pending" ? "รอรองผอ."
+                        : row.status === "pending_director" ? "รอผอ."
                         : "รออนุมัติ"}
                     </span>
                   </td>
