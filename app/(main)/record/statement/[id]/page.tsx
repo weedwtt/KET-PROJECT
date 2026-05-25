@@ -21,6 +21,7 @@ type StatementDetail = {
   studentSignature: string | null
   guardianSignature: string | null
   advisorSignature: string | null
+  disciplineTeacherSignature: string | null
   gradeHeadSignature: string | null
   semester: { id: number; name: string; value: number }
   academicYear: { id: number; year: number }
@@ -84,6 +85,8 @@ export default function StatementDetailPage() {
   const [selectedApproverId, setSelectedApproverId] = useState("")
   const [approving, setApproving] = useState(false)
   const [approveError, setApproveError] = useState<string | null>(null)
+  const [disciplineApproving, setDisciplineApproving] = useState(false)
+  const [disciplineApproveError, setDisciplineApproveError] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -93,6 +96,17 @@ export default function StatementDetailPage() {
       setRecord(rec); setApprovers(apv); setLoading(false)
     }).catch(() => setLoading(false))
   }, [id])
+
+  async function handleDisciplineApprove() {
+    setDisciplineApproving(true); setDisciplineApproveError(null)
+    try {
+      const res = await fetch(`/api/statements/${id}/discipline-approve`, { method: "POST" })
+      if (!res.ok) { const err = await res.json(); setDisciplineApproveError(err.error ?? "เกิดข้อผิดพลาด"); return }
+      const updated = await fetch(`/api/statements/${id}`).then((r) => r.json())
+      setRecord(updated)
+    } catch { setDisciplineApproveError("เกิดข้อผิดพลาดในการเชื่อมต่อ") }
+    finally { setDisciplineApproving(false) }
+  }
 
   async function handleApprove() {
     if (!selectedApproverId) return
@@ -292,8 +306,9 @@ export default function StatementDetailPage() {
                 <SigDisplayBox
                   label="ครูฝ่ายปกครอง"
                   name={record.disciplineTeacher ? `${record.disciplineTeacher.title?.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}` : ""}
-                  url={record.disciplineTeacher?.signatureUrl ?? null}
+                  url={record.disciplineTeacherSignature ?? record.disciplineTeacher?.signatureUrl ?? null}
                   date={record.recordDate}
+                  isLive={!!record.disciplineTeacherSignature}
                 />
                 <SigDisplayBox
                   label="หัวหน้าระดับชั้น"
@@ -325,6 +340,29 @@ export default function StatementDetailPage() {
 
         {/* Sidebar column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)", position: "sticky", top: 16 }}>
+          {/* Discipline teacher approval action */}
+          {record.status === "pending_discipline_teacher" && (
+            <div className="ks-card ks-card-pad" style={{ border: "1px solid var(--periwinkle)", background: "var(--indigo-wash)" }}>
+              <div className="eyebrow" style={{ marginBottom: 10, color: "var(--indigo)" }}>รอครูฝ่ายปกครองลงนาม</div>
+              {record.disciplineTeacher && (
+                <div style={{ fontSize: 13, marginBottom: 12, color: "var(--ink-2)" }}>
+                  {record.disciplineTeacher.title?.name}{record.disciplineTeacher.firstName} {record.disciplineTeacher.lastName}
+                </div>
+              )}
+              <button
+                className="btn btn-primary"
+                style={{ width: "100%" }}
+                onClick={handleDisciplineApprove}
+                disabled={disciplineApproving}
+              >
+                {disciplineApproving ? "กำลังดำเนินการ..." : "ยืนยันลงนาม (ฝ่ายปกครอง)"}
+              </button>
+              {disciplineApproveError && (
+                <div style={{ marginTop: 10, fontSize: 12, color: "var(--rose)" }}>{disciplineApproveError}</div>
+              )}
+            </div>
+          )}
+
           {/* Approved info */}
           {isApproved && (
             <div className="ks-card ks-card-pad" style={{ background: "var(--sage-soft)" }}>

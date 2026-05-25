@@ -20,10 +20,18 @@ export async function GET() {
     const teacher = await db.teacher.findUnique({
       where: { id: teacherId },
       select: {
+        role: true,
         gradeHeadLevel: true,
         delegateFor: { select: { id: true } },
       },
     })
+
+    if (teacher?.role === "DISCIPLINE") {
+      const count = await db.statementRecord.count({
+        where: { status: "pending_discipline_teacher", disciplineTeacherId: teacherId },
+      })
+      return Response.json({ count })
+    }
 
     if (teacher?.gradeHeadLevel) {
       const count = await db.statementRecord.count({

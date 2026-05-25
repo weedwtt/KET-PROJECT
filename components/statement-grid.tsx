@@ -133,7 +133,10 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                   <td style={{ color: "var(--ink-2)" }}>{row.recordedBy}</td>
                   <td>
                     <span className={`chip chip-${row.status === "approved" ? "approved" : "pending"}`}>
-                      {row.status === "approved" ? "อนุมัติแล้ว" : "รออนุมัติ"}
+                      {row.status === "approved" ? "อนุมัติแล้ว"
+                        : row.status === "pending_discipline_teacher" ? "รอฝ่ายปกครอง"
+                        : row.status === "pending_grade_head" ? "รอหัวหน้าระดับ"
+                        : "รออนุมัติ"}
                     </span>
                   </td>
                   <td className="col-actions">

@@ -146,6 +146,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     guardianSignature,
     advisorSignature,
     disciplineTeacherId,
+    disciplineTeacherSignature,
     gradeHeadTeacherId,
     gradeHeadSignature,
   } = body
@@ -198,6 +199,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       guardianSignature: guardianSignature !== undefined ? (guardianSignature || null) : undefined,
       advisorSignature: advisorSignature !== undefined ? (advisorSignature || null) : undefined,
       disciplineTeacherId: disciplineTeacherId !== undefined ? (disciplineTeacherId ? Number(disciplineTeacherId) : null) : undefined,
+      disciplineTeacherSignature: disciplineTeacherSignature !== undefined ? (disciplineTeacherSignature || null) : undefined,
       gradeHeadTeacherId: gradeHeadTeacherId !== undefined ? (gradeHeadTeacherId ? Number(gradeHeadTeacherId) : null) : undefined,
       gradeHeadSignature: gradeHeadSignature !== undefined ? (gradeHeadSignature || null) : undefined,
       ...bondUpdate,

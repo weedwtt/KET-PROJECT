@@ -97,6 +97,7 @@ type SignatureFormData = {
   guardianSignature: string
   advisorSignature: string
   disciplineTeacherId: number | null
+  disciplineTeacherSignature: string
   gradeHeadTeacherId: number | null
   gradeHeadSignature: string
 }
@@ -156,7 +157,8 @@ export default function EditStatementPage() {
 
   const [signatureData, setSignatureData] = useState<SignatureFormData>({
     studentSignature: "", guardianSignature: "", advisorSignature: "",
-    disciplineTeacherId: null, gradeHeadTeacherId: null, gradeHeadSignature: "",
+    disciplineTeacherId: null, disciplineTeacherSignature: "",
+    gradeHeadTeacherId: null, gradeHeadSignature: "",
   })
 
   useEffect(() => {
@@ -202,9 +204,10 @@ export default function EditStatementPage() {
           studentSignature:  rec.studentSignature  ?? "",
           guardianSignature: rec.guardianSignature ?? "",
           advisorSignature:  rec.advisorSignature  ?? "",
-          disciplineTeacherId:  rec.disciplineTeacherId  ?? null,
-          gradeHeadTeacherId:   rec.gradeHeadTeacherId   ?? null,
-          gradeHeadSignature:   rec.gradeHeadSignature   ?? "",
+          disciplineTeacherId:        rec.disciplineTeacherId        ?? null,
+          disciplineTeacherSignature: rec.disciplineTeacherSignature ?? "",
+          gradeHeadTeacherId:         rec.gradeHeadTeacherId         ?? null,
+          gradeHeadSignature:         rec.gradeHeadSignature         ?? "",
         })
 
         setLoading(false)
@@ -245,9 +248,10 @@ export default function EditStatementPage() {
           studentSignature:  signatureData.studentSignature  || null,
           guardianSignature: signatureData.guardianSignature || null,
           advisorSignature:  signatureData.advisorSignature  || null,
-          disciplineTeacherId:  signatureData.disciplineTeacherId,
-          gradeHeadTeacherId:   signatureData.gradeHeadTeacherId,
-          gradeHeadSignature:   signatureData.gradeHeadSignature || null,
+          disciplineTeacherId:        signatureData.disciplineTeacherId,
+          disciplineTeacherSignature: signatureData.disciplineTeacherSignature || null,
+          gradeHeadTeacherId:         signatureData.gradeHeadTeacherId,
+          gradeHeadSignature:         signatureData.gradeHeadSignature || null,
         }),
       })
       if (!res.ok) {
@@ -940,10 +944,12 @@ function Step4Signature({ student, signatureData, setSignatureData, onBack, onNe
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-        <TeacherSigSelect
-          label="ครูฝ่ายปกครอง" role="DISCIPLINE"
+        <DisciplineTeacherSigSection
           selectedId={signatureData.disciplineTeacherId}
-          onSelect={(id) => setSignatureData((p) => ({ ...p, disciplineTeacherId: id }))}
+          onSelect={(id) => setSignatureData((p) => ({ ...p, disciplineTeacherId: id, disciplineTeacherSignature: "" }))}
+          liveSignature={signatureData.disciplineTeacherSignature}
+          onLiveSign={(url) => setSignatureData((p) => ({ ...p, disciplineTeacherSignature: url, disciplineTeacherId: null }))}
+          onLiveClear={() => setSignatureData((p) => ({ ...p, disciplineTeacherSignature: "" }))}
         />
         <GradeHeadSigSection
           selectedId={signatureData.gradeHeadTeacherId}
@@ -1046,6 +1052,86 @@ function SigPad({ label, name, value, onChange, onClear }: {
   )
 }
 
+// ── DisciplineTeacherSigSection ────────────────────────────────────────────────
+
+function DisciplineTeacherSigSection({
+  selectedId, onSelect, liveSignature, onLiveSign, onLiveClear,
+}: {
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+  liveSignature: string
+  onLiveSign: (url: string) => void
+  onLiveClear: () => void
+}) {
+  const [mode, setMode] = useState<"system" | "live">(liveSignature ? "live" : "system")
+
+  function switchToSystem() {
+    setMode("system")
+    onLiveClear()
+  }
+
+  function switchToLive() {
+    setMode("live")
+    onSelect(null)
+  }
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>§ ลายเซ็นครูฝ่ายปกครอง</span>
+        {(selectedId || liveSignature) && <span style={{ color: "var(--sage)" }}>● เลือกแล้ว</span>}
+      </div>
+
+      {/* Mode toggle */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, background: "var(--surface-2)", borderRadius: "var(--radius)", padding: 3, width: "fit-content" }}>
+        <button
+          type="button"
+          onClick={switchToSystem}
+          style={{
+            padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none",
+            cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
+            background: mode === "system" ? "var(--surface)" : "transparent",
+            color: mode === "system" ? "var(--ink)" : "var(--ink-3)",
+            boxShadow: mode === "system" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+          }}
+        >
+          ดึงจากระบบ
+        </button>
+        <button
+          type="button"
+          onClick={switchToLive}
+          style={{
+            padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none",
+            cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
+            background: mode === "live" ? "var(--surface)" : "transparent",
+            color: mode === "live" ? "var(--ink)" : "var(--ink-3)",
+            boxShadow: mode === "live" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+          }}
+        >
+          เซ็นสด
+        </button>
+      </div>
+
+      {mode === "system" ? (
+        <TeacherSigSelectInner
+          role="DISCIPLINE"
+          label="ครูฝ่ายปกครอง"
+          selectedId={selectedId}
+          onSelect={onSelect}
+          hideSignature
+        />
+      ) : (
+        <SigPad
+          label="ครูฝ่ายปกครอง"
+          value={liveSignature}
+          onChange={onLiveSign}
+          onClear={onLiveClear}
+        />
+      )}
+    </div>
+  )
+}
+
 // ── GradeHeadSigSection ────────────────────────────────────────────────────────
 
 function GradeHeadSigSection({
@@ -1125,9 +1211,10 @@ function GradeHeadSigSection({
 
 // ── TeacherSigSelect ───────────────────────────────────────────────────────────
 
-function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
+function TeacherSigSelectInner({ role, label, selectedId, onSelect, hideSignature }: {
   role: string; label?: string; selectedId: number | null
   onSelect: (id: number | null) => void
+  hideSignature?: boolean
 }) {
   const [teachers, setTeachers] = useState<TeacherOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -1162,12 +1249,26 @@ function TeacherSigSelectInner({ role, label, selectedId, onSelect }: {
           })}
         </select>
       )}
-      {selected && (
+      {!hideSignature && selected && (
         <div className="sig-display" style={{ marginTop: 10, borderColor: selected.signatureUrl ? "var(--sage)" : undefined }}>
           {selected.signatureUrl
             ? <img src={selected.signatureUrl} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
             : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ยังไม่มีลายเซ็นในระบบ</span>}
           <span className="sig-name">{selected.title.name}{selected.firstName} {selected.lastName}</span>
+        </div>
+      )}
+      {hideSignature && selected && (
+        <div style={{
+          marginTop: 10, padding: "10px 14px",
+          background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)",
+          borderRadius: "var(--radius)", fontSize: 13,
+        }}>
+          <div style={{ fontWeight: 600, color: "var(--indigo)", marginBottom: 2 }}>
+            {selected.title.name}{selected.firstName} {selected.lastName}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--indigo-ink)" }}>
+            จะได้รับแบบฟอร์มเพื่ออนุมัติและลงลายเซ็น
+          </div>
         </div>
       )}
     </>
