@@ -99,14 +99,14 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
       {/* Table */}
       <div className="ks-card" style={{ overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-        <table className="ks-table" style={{ tableLayout: "fixed", width: "100%", minWidth: 1020 }}>
+        <table className="ks-table" style={{ tableLayout: "fixed", width: "100%", minWidth: 1120 }}>
           <colgroup>
-            <col style={{ width: 112 }} />
-            <col style={{ width: 210 }} />
-            <col style={{ width: 185 }} />
-            <col style={{ width: 62 }} /><col style={{ width: 62 }} /><col style={{ width: 66 }} /><col style={{ width: 74 }} /><col style={{ width: 68 }} /><col style={{ width: 62 }} />
-            <col style={{ width: 118 }} />
-            <col style={{ width: 82 }} />
+            <col style={{ width: 108 }} />
+            <col style={{ width: 195 }} />
+            <col style={{ width: 175 }} />
+            <col style={{ width: 56 }} /><col style={{ width: 60 }} /><col style={{ width: 64 }} /><col style={{ width: 70 }} /><col style={{ width: 66 }} /><col style={{ width: 58 }} /><col style={{ width: 52 }} />
+            <col style={{ width: 122 }} />
+            <col style={{ width: 94 }} />
           </colgroup>
           <thead>
             <tr>
@@ -118,7 +118,8 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
               <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูที่ปรึกษา</th>
               <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูฝ่ายปกครอง</th>
               <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>หัวหน้าระดับ</th>
-              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผอ./รองผอ.</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>รองผอ.</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผอ.</th>
               <th>สถานะ</th>
               <th className="col-actions">การจัดการ</th>
             </tr>
@@ -126,7 +127,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={11}>
+                <td colSpan={12}>
                   <div className="empty-state">
                     {searchValue ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีรายการบันทึกถ้อยคำ"}
                   </div>
@@ -170,15 +171,14 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
                     <SigDot signed={!!row.gradeHeadSignature} label="หัวหน้าระดับ" />
                   </td>
                   <td style={{ textAlign: "center" }}>
-                    <SigDot signed={!!row.approvedAt} label="ผอ./รองผอ." />
+                    <SigDot signed={row.status === "pending_director" || row.status === "approved"} label="รองผอ." />
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <SigDot signed={row.status === "approved"} label="ผอ." />
                   </td>
                   <td>
                     <span className={`chip chip-${row.status === "approved" ? "approved" : "pending"}`}>
-                      {row.status === "approved" ? "อนุมัติแล้ว"
-                        : row.status === "pending_teacher_signatures" ? "รอลงนาม 2 ฝ่าย"
-                        : row.status === "pending_discipline_teacher" ? "รอฝ่ายปกครอง"
-                        : row.status === "pending_grade_head" ? "รอหัวหน้าระดับ"
-                        : "รออนุมัติ"}
+                      {row.status === "approved" ? "อนุมัติแล้ว" : "รออนุมัติ"}
                     </span>
                   </td>
                   <td className="col-actions" style={{ paddingRight: 20 }}>

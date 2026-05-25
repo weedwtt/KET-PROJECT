@@ -26,7 +26,9 @@ type BondRecord = {
   guardianSignature: string | null
   studentSignature: string | null
   advisorSignature: string | null
+  headTeacher: { id: number } | null
   headTeacherSignature: string | null
+  disciplineTeacher: { id: number } | null
   disciplineTeacherSignature: string | null
   viceDirectorSignature: string | null
   directorSignature: string | null
@@ -120,13 +122,13 @@ export default function BondListPage() {
       {/* Table */}
       <div className="ks-card" style={{ overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-        <table className="ks-table" style={{ tableLayout: "fixed", width: "100%", minWidth: 820 }}>
+        <table className="ks-table" style={{ tableLayout: "fixed", width: "100%", minWidth: 990 }}>
           <colgroup>
-            <col style={{ width: 100 }} />
-            <col style={{ width: 185 }} />
-            <col style={{ width: 105 }} />
-            <col style={{ width: 52 }} /><col style={{ width: 52 }} /><col style={{ width: 56 }} /><col style={{ width: 70 }} /><col style={{ width: 60 }} /><col style={{ width: 62 }} />
-            <col style={{ width: 108 }} />
+            <col style={{ width: 104 }} />
+            <col style={{ width: 182 }} />
+            <col style={{ width: 104 }} />
+            <col style={{ width: 54 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 70 }} /><col style={{ width: 64 }} /><col style={{ width: 58 }} /><col style={{ width: 50 }} />
+            <col style={{ width: 112 }} />
             <col style={{ width: 72 }} />
           </colgroup>
           <thead>
@@ -139,7 +141,8 @@ export default function BondListPage() {
               <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูที่ปรึกษา</th>
               <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ครูฝ่ายปกครอง</th>
               <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>หัวหน้าระดับ</th>
-              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผอ./รองผอ.</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>รองผอ.</th>
+              <th style={{ textAlign: "center", fontSize: 11, whiteSpace: "normal", lineHeight: 1.35 }}>ผอ.</th>
               <th>สถานะ</th>
               <th className="col-actions">การจัดการ</th>
             </tr>
@@ -147,13 +150,13 @@ export default function BondListPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={11}>
+                <td colSpan={12}>
                   <div className="empty-state">กำลังโหลด...</div>
                 </td>
               </tr>
             ) : records.length === 0 ? (
               <tr>
-                <td colSpan={11}>
+                <td colSpan={12}>
                   <div className="empty-state">
                     {q ? "ไม่พบรายการที่ค้นหา" : "ยังไม่มีบันทึกทัณฑ์บน"}
                   </div>
@@ -212,7 +215,10 @@ export default function BondListPage() {
                       <SigDot signed={!!r.headTeacherSignature} label="หัวหน้าระดับ" />
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <SigDot signed={!!(r.directorSignature || r.viceDirectorSignature)} label="ผอ./รองผอ." />
+                      <SigDot signed={!!r.viceDirectorSignature} label="รองผอ." />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <SigDot signed={!!r.directorSignature} label="ผอ." />
                     </td>
                     <td>
                       <span className={`chip chip-${r.directorSignature ? "approved" : "pending"}`}>
