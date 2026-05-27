@@ -178,13 +178,13 @@ export function Sidebar({ userName, role }: SidebarProps) {
               <UserCog size={16} className="nav-icon" />
               <span className="nav-label">จัดการผู้ใช้</span>
             </Link>
-            <Link
+            {/* <Link
               href="/dashboard/master/import"
               className={`nav-item ${isActive("/dashboard/master/import") ? "active" : ""}`}
             >
               <FileUp size={16} className="nav-icon" />
               <span className="nav-label">นำเข้าข้อมูลนักเรียน</span>
-            </Link>
+            </Link> */}
           </>
         )}
 
