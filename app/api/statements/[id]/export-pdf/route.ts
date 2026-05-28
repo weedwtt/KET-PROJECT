@@ -1,8 +1,12 @@
 import { NextRequest } from "next/server"
 import { db } from "@/lib/db"
-import React from "react"
-import { renderToBuffer } from "@react-pdf/renderer"
-import { StatementPDF, type StatementPDFData } from "./statement-pdf"
+import { htmlToPdf } from "@/lib/pdf/browser"
+import { renderStatementHtml, type StatementHtmlData } from "@/lib/pdf/statement-html"
+
+// Puppeteer needs the Node.js runtime (not edge) and enough time to spin up Chromium.
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const maxDuration = 60
 
 const THAI_MONTHS = [
   "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
@@ -83,6 +87,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       semester: { select: { name: true, value: true } },
       academicYear: { select: { year: true } },
       violationCategory: { select: { name: true } },
+      violationSubCategory: { select: { name: true } },
       bond: { select: { deductPoints: true } },
       disciplineTeacher: {
         select: { firstName: true, lastName: true, signatureUrl: true, title: { select: { name: true } } },
@@ -120,8 +125,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const advisor2 = st.advisors.find((a) => a.slot === 2)?.teacher
   const incident = thaiDateParts(record.incidentAt)
 
-  const data: StatementPDFData = {
-    id: record.id,
+  const data: StatementHtmlData = {
     studentName: fullName(st.title, st.firstName, st.lastName),
     studentCode: st.studentCode ?? "",
     gradeLevel: st.gradeLevel ?? "",
@@ -143,6 +147,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     semesterValue: String(record.semester.value),
     academicYear: String(record.academicYear.year),
     violationCategory: record.violationCategory.name,
+    subCategory: record.violationSubCategory?.name ?? "",
     subject: record.subject ?? "",
     content: record.content ?? "",
     incidentDay: incident.day,
@@ -160,16 +165,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     advisorSignatureUrl: record.advisorSignature ?? null,
     gradeHeadSignatureUrl: record.gradeHeadTeacher?.signatureUrl ?? null,
     disciplineTeacherSignatureUrl: record.disciplineTeacher?.signatureUrl ?? null,
-    approvedBySignatureUrl: (record.signatureTeacher ?? record.approvedByTeacher)?.signatureUrl ?? null,
     directorSignatureUrl: director?.signatureUrl ?? null,
     viceDirectorSignatureUrl: viceDirector?.signatureUrl ?? null,
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buffer = await renderToBuffer(React.createElement(StatementPDF, { data }) as any)
+  const pdf = await htmlToPdf(renderStatementHtml(data))
 
   const filename = `statement-${id}.pdf`
-  return new Response(new Uint8Array(buffer), {
+  return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(filename)}`,

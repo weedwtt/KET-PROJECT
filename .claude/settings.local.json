@@ -18,7 +18,10 @@
       "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\" -o /dev/null http://localhost:3000/api/statements/4/export-word)",
       "Bash(python -c ' *)",
       "Bash(Out-File -FilePath \"D:\\\\works\\\\ket-github\\\\KET-PROJECT\\\\xls_dump.txt\" -Encoding utf8)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(node -e \"const p=require\\('puppeteer'\\); Promise.resolve\\(p.executablePath\\(\\)\\).then\\(x=>{console.log\\('execPath:', x\\); console.log\\('exists:', require\\('fs'\\).existsSync\\(x\\)\\)}\\)\")",
+      "Bash(rm \"D:/works/ket-github/KET-PROJECT/app/api/statements/[id]/export-pdf/statement-pdf.tsx\" && echo removed)",
+      "Bash(npx tsx *)"
     ]
   }
 }
