@@ -1,8 +1,12 @@
 import { NextRequest } from "next/server"
 import { db } from "@/lib/db"
-import React from "react"
-import { renderToBuffer } from "@react-pdf/renderer"
-import { BondPDF, type BondPDFData } from "./bond-pdf"
+import { htmlToPdf } from "@/lib/pdf/browser"
+import { renderBondHtml, type BondHtmlData } from "@/lib/pdf/bond-html"
+
+// Puppeteer needs the Node.js runtime (not edge) and enough time to spin up Chromium.
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const maxDuration = 60
 
 const THAI_MONTHS = [
   "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
@@ -38,19 +42,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
             gradeLevel: true,
             classRoom: true,
             title: { select: { name: true } },
-            advisors: {
-              select: {
-                slot: true,
-                teacher: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    title: { select: { name: true } },
-                  },
-                },
-              },
-              orderBy: { slot: "asc" as const },
-            },
           },
         },
         headTeacher: {
@@ -63,11 +54,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }),
     db.teacher.findFirst({
       where: { role: "DIRECTOR" },
-      select: { firstName: true, lastName: true, title: { select: { name: true } } },
+      select: { firstName: true, lastName: true, title: { select: { name: true } }, signatureUrl: true },
     }),
     db.teacher.findFirst({
       where: { role: "VICE_DIRECTOR" },
-      select: { firstName: true, lastName: true, title: { select: { name: true } } },
+      select: { firstName: true, lastName: true, title: { select: { name: true } }, signatureUrl: true },
     }),
   ])
 
@@ -76,13 +67,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const st = record.student
   const contractParts = thaiDateParts(record.contractDate)
 
-  // Split violation detail into max 2 display lines (split on newline, or keep as-is)
   const vLines = (record.violationDetail ?? "").split("\n")
   const violationLine1 = vLines[0] ?? ""
   const violationLine2 = vLines[1] ?? ""
 
-  const data: BondPDFData = {
-    id: record.id,
+  const data: BondHtmlData = {
     contractDay: contractParts.day,
     contractMonth: contractParts.month,
     contractYear: contractParts.year,
@@ -113,17 +102,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     advisorSignatureUrl: record.advisorSignature ?? null,
     headTeacherSignatureUrl: record.headTeacher?.signatureUrl ?? null,
     disciplineTeacherSignatureUrl: record.disciplineTeacher?.signatureUrl ?? null,
-    viceDirectorSignatureUrl: record.viceDirectorSignature ?? null,
+    viceDirectorSignatureUrl: viceDirector?.signatureUrl ?? null,
     viceDirectorName: viceDirector ? fullName(viceDirector.title, viceDirector.firstName, viceDirector.lastName) : "",
-    directorSignatureUrl: record.directorSignature ?? null,
+    directorSignatureUrl: director?.signatureUrl ?? null,
     directorName: director ? fullName(director.title, director.firstName, director.lastName) : "",
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buffer = await renderToBuffer(React.createElement(BondPDF, { data }) as any)
+  const pdf = await htmlToPdf(renderBondHtml(data))
 
   const filename = `bond-${id}.pdf`
-  return new Response(new Uint8Array(buffer), {
+  return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(filename)}`,
