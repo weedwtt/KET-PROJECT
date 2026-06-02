@@ -126,7 +126,7 @@ export function renderBondHtml(d: BondHtmlData): string {
   .docno { position: absolute; top: 10mm; right: 14mm; font-size: 13px; }
 
   .head { text-align: center; }
-  .head img { width: 56px; height: 56px; object-fit: contain; }
+  .head img { width: 100px; height: 100px; object-fit: contain; }
   .title { font-size: 17px; font-weight: 700; margin-top: 2px; }
 
   /* School name + date — right-justified block */
@@ -153,7 +153,10 @@ export function renderBondHtml(d: BondHtmlData): string {
   .fill-left { text-align: left; }
   .fill-left .fv { padding-left: 6px; }
   .indent { padding-left: 40px; }
-  .para { margin-bottom: 6px; }
+  /* justify so wrapped Thai fills the full line width instead of leaving a
+     ragged gap on the right; Chrome segments Thai words for break points,
+     and the last line stays left-aligned automatically */
+  .para { margin-bottom: 6px; text-align: justify; text-justify: inter-character; }
   .dots-inline { display: inline-block; width: 56px; border-bottom: 1px dotted #999; }
 
   /* Checkbox group — centered on the page */
@@ -256,10 +259,7 @@ export function renderBondHtml(d: BondHtmlData): string {
       <span class="lbl">(ชื่อนักเรียน)</span>${field(d.studentName, { grow: 1 })}
       <span class="lbl">นักเรียนโรงเรียนบางพลีราษฎร์บำรุง ข้าพเจ้าจะควบคุมดูแล</span>
     </div>
-    <div class="para">และกวดขันให้นักเรียนในความปกครองของข้าพเจ้าไม่ให้ประพฤติเช่นนี้อีกต่อไป อันจะนำความเสื่อมเสียมาสู่</div>
-    <div class="para">ตนเอง สถาบันฯ และจะเข้มงวดให้ปฏิบัติตามระเบียบวินัยของโรงเรียนโดยเคร่งครัด หากปรากฎว่าประพฤติ</div>
-    <div class="para">ผิดทำนองนี้อีกหรืออย่างอื่นอันเป็นการฝ่าฝนทัณฑ์บนนี้ไม่วากรณีใด ๆ ข้าพเจ้ายินยอมให้โรงเรียนพิจารณา</div>
-    <div class="para">สภาพการเป็นนักเรียน โดยดำเนินการดังนี้</div>
+    <div class="para">และกวดขันให้นักเรียนในความปกครองของข้าพเจ้าไม่ให้ประพฤติเช่นนี้อีกต่อไป อันจะนำความเสื่อมเสียมาสู่ตนเอง สถาบันฯ และจะเข้มงวดให้ปฏิบัติตามระเบียบวินัยของโรงเรียนโดยเคร่งครัด หากปรากฎว่าประพฤติผิดทำนองนี้อีกหรืออย่างอื่น<span style="white-space:nowrap">อันเป็นการฝ่าฝืนทัณฑ์บน</span>นี้ไม่วากรณีใด ๆ ข้าพเจ้ายินยอมให้โรงเรียนพิจารณาสภาพการเป็นนักเรียน โดยดำเนินการดังนี้</div>
   </div>
 
   <div class="chk-section">
