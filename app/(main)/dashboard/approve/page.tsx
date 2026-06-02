@@ -277,13 +277,21 @@ export default async function ApprovePage() {
           { marker: "02", eyebrow: "TODAY", num: "—", label: "รอจากวันนี้" },
           { marker: "03", eyebrow: "OVERDUE", num: "—", label: "เกินกำหนด (>24 ชม.)" },
           { marker: "04", eyebrow: "MY ROLE", num: myRoleLabel, label: "ระดับการอนุมัติ" },
-        ].map((s) => (
-          <div key={s.marker} className="stat-card">
-            <div className="stat-eyebrow"><span>{s.eyebrow}</span><span style={{ color: "var(--ink-4)" }}>{s.marker}</span></div>
-            <div className="stat-num">{s.num}</div>
-            <div className="stat-label"><span>{s.label}</span></div>
-          </div>
-        ))}
+        ].map((s) => {
+          const isText = typeof s.num === "string" && s.num.length > 4
+          return (
+            <div key={s.marker} className="stat-card">
+              <div className="stat-eyebrow"><span>{s.eyebrow}</span><span style={{ color: "var(--ink-4)" }}>{s.marker}</span></div>
+              <div
+                className="stat-num"
+                style={isText ? { fontSize: 20, fontFamily: "var(--font-sans)", letterSpacing: "normal", marginTop: 16, marginBottom: 8 } : undefined}
+              >
+                {s.num}
+              </div>
+              <div className="stat-label"><span>{s.label}</span></div>
+            </div>
+          )
+        })}
       </div>
 
       {showDirectorQueue ? (

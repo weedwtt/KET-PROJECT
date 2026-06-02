@@ -113,7 +113,7 @@ export default function BondListPage() {
     <div className="ks-page">
       <div className="page-header">
         <div>
-          <div className="page-eyebrow">บันทึกข้อมูล</div>
+          <div className="page-eyebrow"><span>บันทึกข้อมูล · บันทึกทัณฑ์บน</span></div>
           <h1>บันทึกทัณฑ์บน</h1>
         </div>
         <Link href="/record/bond/new" className="btn btn-primary">
@@ -283,13 +283,13 @@ export default function BondListPage() {
           <span style={{ flex: 1 }}>
             แสดง <span className="mono">{total === 0 ? 0 : (page - 1) * 15 + 1}–{Math.min(page * 15, total)}</span> จาก <span className="mono">{total}</span> รายการ
           </span>
-          <button className={`page-btn ${page === 1 ? "disabled" : ""}`} onClick={() => { if (page > 1) { setPage(page - 1); navigate(q, page - 1) } }}>
+          <button className="page-btn" aria-label="หน้าก่อนหน้า" disabled={page === 1} onClick={() => { setPage(page - 1); navigate(q, page - 1) }}>
             <ChevronLeft size={12} />
           </button>
           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
             <button key={p} className={`page-btn ${p === page ? "active" : ""}`} onClick={() => { setPage(p); navigate(q, p) }}>{p}</button>
           ))}
-          <button className={`page-btn ${page === totalPages ? "disabled" : ""}`} onClick={() => { if (page < totalPages) { setPage(page + 1); navigate(q, page + 1) } }}>
+          <button className="page-btn" aria-label="หน้าถัดไป" disabled={page === totalPages} onClick={() => { setPage(page + 1); navigate(q, page + 1) }}>
             <ChevronRight size={12} />
           </button>
         </div>
@@ -297,11 +297,11 @@ export default function BondListPage() {
 
       {/* Delete confirmation dialog */}
       {confirmDeleteId !== null && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1000,
+        <div className="modal-backdrop" style={{
+          position: "fixed", inset: 0, background: "color-mix(in srgb, var(--ink) 50%, transparent)", zIndex: 1000,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <div className="ks-card" style={{ width: 360, padding: 28, display: "flex", flexDirection: "column", gap: 18 }}>
+          <div className="ks-card modal-card" style={{ width: 360, padding: 28, display: "flex", flexDirection: "column", gap: 18 }}>
             <div>
               <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>ยืนยันการลบ</div>
               <p style={{ margin: 0, fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.6 }}>
@@ -314,7 +314,7 @@ export default function BondListPage() {
               </button>
               <button
                 className="btn btn-primary"
-                style={{ background: "var(--rose)", borderColor: "var(--rose)", opacity: deleting ? 0.6 : 1 }}
+                style={{ background: "var(--rose)", borderColor: "var(--rose)", opacity: deleting ? 0.5 : 1 }}
                 onClick={handleDelete}
                 disabled={deleting}
               >
@@ -329,7 +329,7 @@ export default function BondListPage() {
 }
 
 function SigDot({ signed, label, disabled = false }: { signed: boolean; label: string; disabled?: boolean }) {
-  const color = disabled ? "#d1d5db" : signed ? "var(--sage, #22c55e)" : "#f59e0b"
+  const color = disabled ? "var(--ink-4)" : signed ? "var(--sage)" : "var(--amber)"
   const title = disabled
     ? `${label} (ไม่จำเป็น)`
     : signed

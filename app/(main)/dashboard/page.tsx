@@ -58,12 +58,12 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid-4" style={{ marginBottom: "var(--gap-lg)" }}>
-        {stats.map((s) => (
-          <div key={s.marker} className="stat-card">
+      <div className="grid-4" style={{ gap: "var(--gap-lg)", marginBottom: "var(--gap-xl)" }}>
+        {stats.map((s, i) => (
+          <div key={s.marker} className="stat-card" style={{ animationDelay: `${i * 70}ms` }}>
             <div className="stat-eyebrow">
               <span>{s.eyebrow}</span>
-              <span style={{ color: "var(--ink-4)" }}>{s.marker}</span>
+              <span style={{ color: "var(--ink-3)" }}>{s.marker}</span>
             </div>
             <div className="stat-num" aria-label={`${s.label}: ${s.num}`}>{s.num}</div>
             <div className="stat-label">
@@ -74,12 +74,11 @@ export default async function DashboardPage() {
       </div>
 
       {/* Main content */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.85fr 1fr", gap: "var(--gap)", alignItems: "start" }}>
+      <div className="dashboard-main">
         {/* Recent records table */}
         <div className="ks-card">
           <div className="ks-card-header">
             <div>
-              <div className="eyebrow" style={{ marginBottom: 4 }}>บันทึกล่าสุด</div>
               <div className="ks-card-title">บันทึกถ้อยคำล่าสุด</div>
             </div>
             <Link href="/record/statement" className="btn btn-ghost btn-sm">
@@ -107,22 +106,22 @@ export default async function DashboardPage() {
           {/* Reminders */}
           <div className="ks-card ks-card-pad">
             <div className="eyebrow" style={{ marginBottom: 14 }}>เตือนความจำ</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <div style={{ width: 4, alignSelf: "stretch", background: "var(--amber)", borderRadius: 2 }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap)" }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div style={{ width: 3, alignSelf: "stretch", background: "var(--amber)", borderRadius: 2, flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>รายการรออนุมัติ</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                    มี {statementCount - approvedCount} รายการที่ยังไม่อนุมัติ
+                  <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>
+                    มี <span className="mono" style={{ color: "var(--amber)", fontWeight: 600 }}>{statementCount - approvedCount}</span> รายการที่ยังไม่อนุมัติ
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <div style={{ width: 4, alignSelf: "stretch", background: "var(--indigo)", borderRadius: 2 }} />
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div style={{ width: 3, alignSelf: "stretch", background: "var(--indigo)", borderRadius: 2, flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>ติดตามสัญญาทัณฑ์บน</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                    {bondCount} สัญญาที่ดำเนินการอยู่
+                  <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>
+                    <span className="mono" style={{ color: "var(--indigo)", fontWeight: 600 }}>{bondCount}</span> สัญญาที่ดำเนินการอยู่
                   </div>
                 </div>
               </div>
@@ -139,9 +138,9 @@ export default async function DashboardPage() {
                 { label: "สัญญาทัณฑ์บน", value: bondCount, color: "var(--indigo)" },
               ].map((item) => (
                 <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color, flexShrink: 0 }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
                   <span style={{ flex: 1, color: "var(--ink-2)" }}>{item.label}</span>
-                  <span className="mono" style={{ color: "var(--ink-3)", fontWeight: 500 }}>{item.value}</span>
+                  <span className="mono" style={{ color: item.color, fontWeight: 600 }}>{item.value}</span>
                 </div>
               ))}
             </div>

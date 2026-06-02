@@ -857,7 +857,7 @@ function SigPad({ label, name, value, onChange, onClear }: {
         <span>{label}</span>
         <span style={{ color: value ? "var(--sage)" : "var(--ink-4)" }}>{value ? "● ลงนามแล้ว" : "○ ยังไม่ลงนาม"}</span>
       </div>
-      <div className="sig-pad" style={{ height: 130, border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash, #f0fdf4)" : undefined, cursor: "crosshair" }}>
+      <div className="sig-pad" style={{ height: 130, border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash)" : undefined, cursor: "crosshair" }}>
         {value ? (
           <img src={value} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
         ) : (
@@ -911,7 +911,7 @@ function DisciplineTeacherSigSection({
             style={{ padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none", cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
               background: mode === m ? "var(--surface)" : "transparent",
               color: mode === m ? "var(--ink)" : "var(--ink-3)",
-              boxShadow: mode === m ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+              boxShadow: mode === m ? "0 1px 3px rgba(37,99,235,.12)" : "none",
             }}>
             {m === "system" ? "ดึงจากระบบ" : "เซ็นสด"}
           </button>
@@ -953,7 +953,7 @@ function GradeHeadSigSection({
             style={{ padding: "4px 12px", fontSize: 12, borderRadius: "calc(var(--radius) - 2px)", border: "none", cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
               background: mode === m ? "var(--surface)" : "transparent",
               color: mode === m ? "var(--ink)" : "var(--ink-3)",
-              boxShadow: mode === m ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+              boxShadow: mode === m ? "0 1px 3px rgba(37,99,235,.12)" : "none",
             }}>
             {m === "system" ? "ดึงจากระบบ" : "เซ็นสด"}
           </button>

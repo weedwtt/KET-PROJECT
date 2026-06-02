@@ -7,7 +7,7 @@ export default function LoginPage() {
     <div className="login-screen">
 
       {/* ── Left — school photo panel ── */}
-      <div className="login-art" style={{ padding: 0, background: "#0f172a", position: "relative", overflow: "hidden" }}>
+      <div className="login-art" style={{ padding: 0, background: "var(--ink)", position: "relative", overflow: "hidden" }}>
 
         {/* Background photo */}
         <Image
@@ -57,7 +57,7 @@ export default function LoginPage() {
         <div style={{ width: "100%", maxWidth: 380 }}>
 
           {/* System title */}
-          <div style={{ marginBottom: 40, textAlign: "center" }}>
+          <div style={{ marginBottom: 32, textAlign: "center" }}>
             <Image
               src="/school-logo.png"
               alt="โลโก้โรงเรียน"
@@ -70,19 +70,19 @@ export default function LoginPage() {
               fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.14em",
               color: "var(--ink-3)", textTransform: "uppercase",
               border: "1px solid var(--rule)", padding: "3px 12px",
-              borderRadius: 99, marginBottom: 10,
+              borderRadius: 999, marginBottom: 10,
             }}>
               โรงเรียนบางพลีราษฎร์บำรุง
             </div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 6px", color: "var(--ink)" }}>
+            <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.01em", margin: "0 0 6px", color: "var(--ink)" }}>
               ระบบบันทึกความประพฤตินักเรียน
             </h1>
-            <p style={{ color: "var(--ink-3)", margin: 0, fontSize: 13 }}>
+            <p style={{ color: "var(--ink-3)", margin: 0, fontSize: 13.5 }}>
               เข้าสู่ระบบด้วยบัญชีที่ได้รับจากฝ่ายปกครอง
             </p>
           </div>
 
-          <Suspense>
+          <Suspense fallback={<div style={{ height: 140 }} />}>
             <LoginForm />
           </Suspense>
 

@@ -1,8 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import { ReportCharts, type StatsData } from "@/components/report-charts"
-import { BondReportCharts, type BondStatsData } from "@/components/bond-report-charts"
+import type { BondStatsData } from "@/components/bond-report-charts"
+
+const BondReportCharts = dynamic(
+  () => import("@/components/bond-report-charts").then((m) => ({ default: m.BondReportCharts })),
+  { loading: () => <div className="empty-state">กำลังโหลด...</div> }
+)
 
 const TABS = [
   { id: "statement" as const, label: "รายงานบันทึกถ้อยคำนักเรียน" },

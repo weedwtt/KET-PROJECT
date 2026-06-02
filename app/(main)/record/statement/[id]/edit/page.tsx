@@ -1024,7 +1024,7 @@ function SigPad({ label, name, value, onChange, onClear }: {
         <span>§ ลายเซ็น{label}</span>
         <span style={{ color: value ? "var(--sage)" : "var(--ink-4)" }}>{value ? "● ลงนามแล้ว" : "○ ยังไม่ลงนาม"}</span>
       </div>
-      <div className="sig-pad" style={{ height: 140, border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash, #f0fdf4)" : undefined, cursor: "crosshair" }}>
+      <div className="sig-pad" style={{ height: 140, border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash)" : undefined, cursor: "crosshair" }}>
         {value ? (
           <img src={value} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
         ) : (
@@ -1092,7 +1092,7 @@ function DisciplineTeacherSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "system" ? "var(--surface)" : "transparent",
             color: mode === "system" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "system" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "system" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
           }}
         >
           ดึงจากระบบ
@@ -1105,7 +1105,7 @@ function DisciplineTeacherSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "live" ? "var(--surface)" : "transparent",
             color: mode === "live" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "live" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "live" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
           }}
         >
           เซ็นสด
@@ -1171,7 +1171,7 @@ function GradeHeadSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "system" ? "var(--surface)" : "transparent",
             color: mode === "system" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "system" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "system" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
           }}
         >
           ดึงจากระบบ
@@ -1184,7 +1184,7 @@ function GradeHeadSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "live" ? "var(--surface)" : "transparent",
             color: mode === "live" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "live" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "live" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
           }}
         >
           เซ็นสด

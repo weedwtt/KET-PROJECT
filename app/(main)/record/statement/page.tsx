@@ -82,7 +82,6 @@ export default async function StatementListPage({
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            
             <span>บันทึกข้อมูล · บันทึกถ้อยคำนักเรียน</span>
           </div>
           <h1>บันทึกถ้อยคำนักเรียน</h1>

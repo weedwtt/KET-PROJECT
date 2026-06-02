@@ -367,14 +367,14 @@ function WizardStepper({ currentStep }: { currentStep: number }) {
           )
         })}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--rule-soft)", fontSize: 12, color: "var(--ink-3)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--rule-soft)", fontSize: 12.5, color: "var(--ink-3)" }}>
         <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.06em" }}>
           ขั้นตอน {currentStep + 1} จาก {STEPS.length}
         </span>
         <span style={{ display: "flex", gap: 14 }}>
-          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--sage)", borderRadius: 2, marginRight: 5 }} />เสร็จแล้ว</span>
-          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--indigo)", borderRadius: 2, marginRight: 5 }} />ปัจจุบัน</span>
-          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--rule-2)", borderRadius: 2, marginRight: 5 }} />ยังไม่ถึง</span>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--sage)", borderRadius: "50%", marginRight: 5 }} />เสร็จแล้ว</span>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--indigo)", borderRadius: "50%", marginRight: 5 }} />ปัจจุบัน</span>
+          <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--rule-2)", borderRadius: "50%", marginRight: 5 }} />ยังไม่ถึง</span>
         </span>
       </div>
     </div>
@@ -879,9 +879,9 @@ function Step2Measures({
 
 function MeasureBlock({ title, children }: { marker?: string; title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: "var(--surface-2)", border: "1px solid var(--rule)", borderRadius: 6, padding: 20 }}>
+    <div style={{ background: "var(--surface-2)", border: "1px solid var(--rule)", borderRadius: "var(--radius)", padding: 20 }}>
       <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 16, color: "var(--ink)" }}>{title}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{children}</div>
     </div>
   )
 }
@@ -988,7 +988,7 @@ function Step3Signatures({
       </div>
 
       {saveError && (
-        <div style={{ padding: "10px 14px", background: "var(--rose-wash, #fff0f0)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--rose)", marginBottom: 16 }}>
+        <div role="alert" style={{ padding: "10px 14px", background: "var(--rose-wash)", border: "1px solid var(--rose)", borderRadius: "var(--radius)", fontSize: 13.5, color: "var(--rose)", marginBottom: 16 }}>
           {saveError}
         </div>
       )}
@@ -1000,7 +1000,7 @@ function Step3Signatures({
           onClick={onSubmit}
           disabled={saving}
           aria-busy={saving}
-          style={{ background: "var(--sage, #059669)" }}
+          style={{ background: "var(--sage)", borderColor: "var(--sage)" }}
         >
           {saving ? <><SpinIcon /> กำลังบันทึก...</> : <><Check size={14} /> ยืนยันและบันทึก</>}
         </button>
@@ -1058,7 +1058,7 @@ function SigPad({ label, name, value, onChange, onClear }: {
         <span>§ ลายเซ็น{label}</span>
         <span style={{ color: value ? "var(--sage)" : "var(--ink-4)" }}>{value ? "● ลงนามแล้ว" : "○ ยังไม่ลงนาม"}</span>
       </div>
-      <div className="sig-pad" style={{ height: 140, border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash, #f0fdf4)" : undefined, cursor: "crosshair" }}>
+      <div className="sig-pad" style={{ height: 140, border: value ? "1px solid var(--sage)" : undefined, background: value ? "var(--sage-wash)" : undefined, cursor: "crosshair" }}>
         {value ? (
           <img src={value} alt="sig" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
         ) : (
@@ -1126,7 +1126,7 @@ function DisciplineTeacherSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "system" ? "var(--surface)" : "transparent",
             color: mode === "system" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "system" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "system" ? "0 1px 3px rgba(37,99,235,.15)" : "none",
           }}
         >
           ดึงจากระบบ
@@ -1139,7 +1139,7 @@ function DisciplineTeacherSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "live" ? "var(--surface)" : "transparent",
             color: mode === "live" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "live" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "live" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
           }}
         >
           เซ็นสด
@@ -1206,7 +1206,7 @@ function GradeHeadSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "system" ? "var(--surface)" : "transparent",
             color: mode === "system" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "system" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "system" ? "0 1px 3px rgba(37,99,235,.15)" : "none",
           }}
         >
           ดึงจากระบบ
@@ -1219,7 +1219,7 @@ function GradeHeadSigSection({
             cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
             background: mode === "live" ? "var(--surface)" : "transparent",
             color: mode === "live" ? "var(--ink)" : "var(--ink-3)",
-            boxShadow: mode === "live" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+            boxShadow: mode === "live" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
           }}
         >
           เซ็นสด
@@ -1309,20 +1309,6 @@ function TeacherSigSelectInner({ role, label, selectedId, onSelect, hideSignatur
         </div>
       )}
     </>
-  )
-}
-
-function TeacherSigSelect({ label, role, selectedId, onSelect }: {
-  label: string; role: string; selectedId: number | null
-  onSelect: (id: number | null) => void
-}) {
-  return (
-    <div>
-      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-        <span>§ ลายเซ็น{label}</span>
-      </div>
-      <TeacherSigSelectInner role={role} label={label} selectedId={selectedId} onSelect={onSelect} />
-    </div>
   )
 }
 

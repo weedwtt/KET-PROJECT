@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Download } from "lucide-react"
 
 export interface StatsData {
@@ -75,19 +75,18 @@ function formatMonthLabel(yearMonth: string) {
 function AnimCount({ to, mounted }: { to: number; mounted: boolean }) {
   const [v, setV] = useState(0)
   useEffect(() => {
-    if (!mounted) {
-      setV(0)
-      return
-    }
+    if (!mounted) { setV(0); return }
     const dur = 850
-    const start = Date.now()
-    const id = setInterval(() => {
-      const p = Math.min((Date.now() - start) / dur, 1)
+    const start = performance.now()
+    let raf: number
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / dur, 1)
       const e = 1 - (1 - p) ** 3
       setV(Math.round(e * to))
-      if (p >= 1) clearInterval(id)
-    }, 16)
-    return () => clearInterval(id)
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
   }, [mounted, to])
   return <>{v}</>
 }
@@ -1112,10 +1111,11 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
   const [viewMode, setViewMode] = useState(1)
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const mountTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 80)
-    return () => clearTimeout(t)
+    mountTimerRef.current = setTimeout(() => setMounted(true), 80)
+    return () => clearTimeout(mountTimerRef.current)
   }, [])
 
   const fetchData = useCallback(async (yId: string, sId: string) => {
@@ -1129,7 +1129,8 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
       if (res.ok) {
         const next = await res.json()
         setData(next)
-        setTimeout(() => setMounted(true), 80)
+        clearTimeout(mountTimerRef.current)
+        mountTimerRef.current = setTimeout(() => setMounted(true), 80)
       }
     } finally {
       setLoading(false)
@@ -1149,21 +1150,24 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
   const resetAnim = (mode: number) => {
     setViewMode(mode)
     setMounted(false)
-    setTimeout(() => setMounted(true), 60)
+    clearTimeout(mountTimerRef.current)
+    mountTimerRef.current = setTimeout(() => setMounted(true), 60)
   }
 
-  // Build category color map (stable across re-renders by categoryId position)
-  const catColorMap = new Map<number, string>()
-  data.byCategory.forEach((c, i) => {
-    catColorMap.set(c.categoryId, CAT_COLORS[i % CAT_COLORS.length]!)
-  })
-  // Also seed from bySubCategory in case category has no direct records
-  data.bySubCategory.forEach((d) => {
-    if (!catColorMap.has(d.categoryId)) {
-      const idx = catColorMap.size % CAT_COLORS.length
-      catColorMap.set(d.categoryId, CAT_COLORS[idx]!)
-    }
-  })
+  // Build category color map — memoised so the Map isn't recreated on every render
+  const catColorMap = useMemo(() => {
+    const m = new Map<number, string>()
+    data.byCategory.forEach((c, i) => {
+      m.set(c.categoryId, CAT_COLORS[i % CAT_COLORS.length]!)
+    })
+    // Also seed from bySubCategory in case category has no direct records
+    data.bySubCategory.forEach((d) => {
+      if (!m.has(d.categoryId)) {
+        m.set(d.categoryId, CAT_COLORS[m.size % CAT_COLORS.length]!)
+      }
+    })
+    return m
+  }, [data.byCategory, data.bySubCategory])
 
   const subTotal = data.bySubCategory.reduce((s, d) => s + d.count, 0)
 
@@ -1357,7 +1361,7 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
                   background: viewMode === b.v ? "var(--surface)" : "transparent",
                   color: viewMode === b.v ? "var(--ink)" : "var(--ink-3)",
                   boxShadow:
-                    viewMode === b.v ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+                    viewMode === b.v ? "0 1px 4px rgba(37,99,235,.12)" : "none",
                   transition: "all 0.15s",
                 }}
               >
