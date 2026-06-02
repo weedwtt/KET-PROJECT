@@ -999,6 +999,7 @@ function Step3Signatures({
           className="btn btn-primary"
           onClick={onSubmit}
           disabled={saving}
+          aria-busy={saving}
           style={{ background: "var(--sage, #059669)" }}
         >
           {saving ? <><SpinIcon /> กำลังบันทึก...</> : <><Check size={14} /> ยืนยันและบันทึก</>}

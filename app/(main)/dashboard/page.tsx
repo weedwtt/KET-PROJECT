@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { Download, Plus, ChevronRight } from "lucide-react"
+import { RecentRecordsTable } from "@/components/recent-records-table"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -38,16 +39,15 @@ export default async function DashboardPage() {
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            
             <span>ภาพรวม · ระบบบันทึกความประพฤตินักเรียน</span>
           </div>
-          <h1>Dashboard</h1>
+          <h1>ภาพรวม</h1>
         </div>
         <div className="page-actions">
-          <button className="btn btn-secondary">
+          <Link href="/dashboard/reports" className="btn btn-secondary">
             <Download size={14} />
             ดาวน์โหลดรายงาน
-          </button>
+          </Link>
           {!isApprover && (
             <Link href="/record/statement/new" className="btn btn-primary">
               <Plus size={14} />
@@ -65,7 +65,7 @@ export default async function DashboardPage() {
               <span>{s.eyebrow}</span>
               <span style={{ color: "var(--ink-4)" }}>{s.marker}</span>
             </div>
-            <div className="stat-num">{s.num}</div>
+            <div className="stat-num" aria-label={`${s.label}: ${s.num}`}>{s.num}</div>
             <div className="stat-label">
               <span>{s.label}</span>
             </div>
@@ -97,33 +97,7 @@ export default async function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {recentRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="empty-state">ยังไม่มีข้อมูล</td>
-                </tr>
-              ) : (
-                recentRecords.map((r) => (
-                  <tr key={r.id} className="clickable">
-                    <td className="col-mono">
-                      {new Date(r.recordDate).toLocaleDateString("th-TH", {
-                        day: "numeric", month: "short", year: "numeric",
-                      })}
-                    </td>
-                    <td className="col-mono">{r.student.studentCode}</td>
-                    <td>
-                      <div style={{ fontWeight: 500 }}>
-                        {r.student.title?.name}{r.student.firstName} {r.student.lastName}
-                      </div>
-                    </td>
-                    <td>{r.violationCategory.name}</td>
-                    <td>
-                      <span className={`chip chip-${r.status === "approved" ? "approved" : "pending"}`}>
-                        {r.status === "approved" ? "อนุมัติแล้ว" : "รออนุมัติ"}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
+              <RecentRecordsTable rows={recentRecords} />
             </tbody>
           </table>
         </div>

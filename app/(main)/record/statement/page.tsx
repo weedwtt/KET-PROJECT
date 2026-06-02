@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { db } from "@/lib/db"
 import { StatementGrid } from "@/components/statement-grid"
-import { Plus, Filter, Download } from "lucide-react"
+import { Plus } from "lucide-react"
 
 const PAGE_SIZE = 15
 
@@ -88,9 +88,6 @@ export default async function StatementListPage({
           <h1>บันทึกถ้อยคำนักเรียน</h1>
         </div>
         <div className="page-actions">
-          <button className="btn btn-secondary">
-            <Filter size={14} />ตัวกรอง
-          </button>
           <Link href="/record/statement/new" className="btn btn-primary">
             <Plus size={14} />บันทึกถ้อยคำใหม่
           </Link>

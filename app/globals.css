@@ -670,6 +670,39 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; justify-content: center; padding: 48px;
 }
 
+/* ─────────── Grid — responsive ─────────── */
+@media (max-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .grid-4 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .ks-page { padding: 20px 16px 48px; }
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .detail-grid { grid-template-columns: 1fr; }
+}
+
+/* ─────────── Login — responsive ─────────── */
+@media (max-width: 768px) {
+  .login-screen {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .login-art {
+    min-height: 180px;
+    max-height: 220px;
+  }
+  .login-form-side {
+    padding: 32px 24px 48px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+  .login-form-side > div {
+    max-width: 100% !important;
+  }
+}
+
 /* ─────────── Wizard ─────────── */
 .wizard-stepper {
   background: var(--surface);

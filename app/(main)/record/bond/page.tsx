@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Search, Plus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 
@@ -45,12 +46,15 @@ function formatThaiDate(iso: string) {
 
 
 export default function BondListPage() {
-  const [q, setQ] = useState("")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [q, setQ] = useState(searchParams.get("search") ?? "")
   const [records, setRecords] = useState<BondRecord[]>([])
   const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(Number(searchParams.get("page") ?? "1") || 1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -69,14 +73,17 @@ export default function BondListPage() {
 
   const load = useCallback(async (search: string, p: number) => {
     setLoading(true)
+    setFetchError(false)
     try {
       const res = await fetch(`/api/bonds?q=${encodeURIComponent(search)}&page=${p}`)
+      if (!res.ok) throw new Error()
       const data = await res.json()
       setRecords(data.records ?? [])
       setTotal(data.total ?? 0)
       setTotalPages(data.totalPages ?? 1)
     } catch {
       setRecords([])
+      setFetchError(true)
     } finally {
       setLoading(false)
     }
@@ -84,11 +91,20 @@ export default function BondListPage() {
 
   useEffect(() => { load(q, page) }, [load, q, page])
 
+  function navigate(search: string, p: number) {
+    const params = new URLSearchParams()
+    if (search) params.set("search", search)
+    if (p > 1) params.set("page", String(p))
+    const qs = params.toString()
+    router.push(`/record/bond${qs ? `?${qs}` : ""}`)
+  }
+
   function onSearchChange(val: string) {
     setQ(val)
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       setPage(1)
+      navigate(val, 1)
       load(val, 1)
     }, 400)
   }
@@ -151,7 +167,19 @@ export default function BondListPage() {
             {loading ? (
               <tr>
                 <td colSpan={12}>
-                  <div className="empty-state">กำลังโหลด...</div>
+                  <div className="empty-state" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    <svg className="spin" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
+                      <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    กำลังโหลด...
+                  </div>
+                </td>
+              </tr>
+            ) : fetchError ? (
+              <tr>
+                <td colSpan={12}>
+                  <div className="empty-state" style={{ color: "var(--rose)" }}>เกิดข้อผิดพลาดในการโหลดข้อมูล — กรุณาลองใหม่อีกครั้ง</div>
                 </td>
               </tr>
             ) : records.length === 0 ? (
@@ -255,13 +283,13 @@ export default function BondListPage() {
           <span style={{ flex: 1 }}>
             แสดง <span className="mono">{total === 0 ? 0 : (page - 1) * 15 + 1}–{Math.min(page * 15, total)}</span> จาก <span className="mono">{total}</span> รายการ
           </span>
-          <button className={`page-btn ${page === 1 ? "disabled" : ""}`} onClick={() => page > 1 && setPage(page - 1)}>
+          <button className={`page-btn ${page === 1 ? "disabled" : ""}`} onClick={() => { if (page > 1) { setPage(page - 1); navigate(q, page - 1) } }}>
             <ChevronLeft size={12} />
           </button>
           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
-            <button key={p} className={`page-btn ${p === page ? "active" : ""}`} onClick={() => setPage(p)}>{p}</button>
+            <button key={p} className={`page-btn ${p === page ? "active" : ""}`} onClick={() => { setPage(p); navigate(q, p) }}>{p}</button>
           ))}
-          <button className={`page-btn ${page === totalPages ? "disabled" : ""}`} onClick={() => page < totalPages && setPage(page + 1)}>
+          <button className={`page-btn ${page === totalPages ? "disabled" : ""}`} onClick={() => { if (page < totalPages) { setPage(page + 1); navigate(q, page + 1) } }}>
             <ChevronRight size={12} />
           </button>
         </div>

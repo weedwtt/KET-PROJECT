@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search, ChevronLeft, ChevronRight, ChevronRight as ArrowRight } from "lucide-react"
 
@@ -43,6 +44,7 @@ type Statement = {
 const PAGE_SIZE = 15
 
 export function ApprovalGrid({ data, bonds = [] }: { data: Statement[]; bonds?: Bond[] }) {
+  const router = useRouter()
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [tab, setTab] = useState<"statement" | "bond">("statement")
@@ -151,7 +153,7 @@ export function ApprovalGrid({ data, bonds = [] }: { data: Statement[]; bonds?: 
               </tr>
             ) : (
               paged.map((row) => (
-                <tr key={row.id} className="clickable" onClick={() => window.location.href = `/dashboard/approve/${row.id}`}>
+                <tr key={row.id} className="clickable" onClick={() => router.push(`/dashboard/approve/${row.id}`)}>
                   <td>
                     <div className="mono" style={{ fontSize: 13 }}>{formatDate(row.recordDate)}</div>
                   </td>

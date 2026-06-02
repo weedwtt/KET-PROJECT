@@ -127,12 +127,23 @@ export default function StatementDetailPage() {
 
   if (loading) return (
     <div className="ks-page" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 300 }}>
-      <div style={{ color: "var(--ink-3)" }}>กำลังโหลด...</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-3)" }}>
+        <svg className="spin" width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
+          <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        กำลังโหลด...
+      </div>
     </div>
   )
 
   if (!record) return (
-    <div className="ks-page empty-state">ไม่พบรายการ</div>
+    <div className="ks-page" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, gap: 16 }}>
+      <div style={{ color: "var(--ink-3)", fontSize: 15 }}>ไม่พบรายการบันทึกถ้อยคำนี้</div>
+      <Link href="/record/statement" className="btn btn-secondary">
+        <ChevronLeft size={14} /> ย้อนกลับรายการ
+      </Link>
+    </div>
   )
 
   const isApproved = record.status === "approved"
@@ -147,7 +158,6 @@ export default function StatementDetailPage() {
       <div className="page-header">
         <div>
           <div className="page-eyebrow">
-            
             <span>#{record.id} · {formatThaiDate(record.recordDate)}</span>
           </div>
           <h1>บันทึกถ้อยคำ — {record.student.title?.name}{record.student.firstName} {record.student.lastName}</h1>
@@ -391,6 +401,7 @@ export default function StatementDetailPage() {
                     style={{ width: "100%" }}
                     onClick={handleDisciplineApprove}
                     disabled={disciplineApproving}
+                    aria-busy={disciplineApproving}
                   >
                     {disciplineApproving ? "กำลังดำเนินการ..." : "ยืนยันลงนาม (ฝ่ายปกครอง)"}
                   </button>

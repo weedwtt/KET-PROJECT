@@ -69,6 +69,7 @@ export function MasterTable<T extends { id: number }>({
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
+    if (!addValid) return
     setAdding(true)
     const body: Record<string, string | number> = {}
     fields.forEach((f) => {
@@ -109,6 +110,7 @@ export function MasterTable<T extends { id: number }>({
   }
 
   async function handleDelete(id: number) {
+    if (!confirm("ยืนยันการลบรายการนี้? ไม่สามารถกู้คืนได้")) return
     setDeletingId(id)
     await fetch(`${apiBase}/${id}`, { method: "DELETE" })
     setDeletingId(null)
