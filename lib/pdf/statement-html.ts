@@ -136,7 +136,7 @@ export function renderStatementHtml(d: StatementHtmlData): string {
   .docno { position: absolute; top: 10mm; right: 14mm; font-size: 13px; }
 
   .head { text-align: center; }
-  .head img { width: 56px; height: 56px; object-fit: contain; }
+  .head img { width: 100px; height: 100px; object-fit: contain; }
   .title { font-size: 17px; font-weight: 700; margin-top: 2px; }
 
   .info { margin-top: 8px; }
@@ -226,8 +226,8 @@ export function renderStatementHtml(d: StatementHtmlData): string {
   .op-sign { display: flex; align-items: flex-end; justify-content: center; margin-top: 14px; position: relative; }
   .op-sign .sig-prefix { padding-right: 3px; }
   .op-sign .sig-dots { width: 60%; border-bottom: 1px dotted #999; min-height: 16px; }
-  .op-sign img { position: absolute; bottom: 2px; max-height: 26px; max-width: 60%; object-fit: contain; }
-  .op-name { margin-top: 2px; }
+  .op-sign img { position: absolute; bottom: -18px; max-height: 68px; max-width: 85%; object-fit: contain; }
+  .op-name { margin-top: 22px; }
 </style>
 </head>
 <body>
