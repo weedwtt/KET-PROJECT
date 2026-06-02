@@ -74,19 +74,31 @@ export function Sidebar({ userName, role }: SidebarProps) {
 
       {/* ── Brand ── */}
       <div className="sidebar-brand">
-        <Image src="/school-logo.png" alt="โลโก้โรงเรียน" width={36} height={36} style={{ objectFit: "contain", flexShrink: 0 }} />
-        <div className="min-w-0 flex-1">
-          <div className="brand-name">โรงเรียนบางพลีราษฎร์บำรุง</div>
-          <div className="brand-sub">EST · 2475</div>
-        </div>
-        <button
-          onClick={() => setCollapsed((v) => !v)}
-          className="btn-ghost btn-icon btn-sm ml-auto"
-          title={collapsed ? "ขยาย sidebar" : "ย่อ sidebar"}
-          style={{ flexShrink: 0 }}
-        >
-          <PanelLeft size={15} />
-        </button>
+        {collapsed ? (
+          <button
+            onClick={() => setCollapsed(false)}
+            className="btn-ghost btn-icon btn-sm"
+            title="ขยาย sidebar"
+          >
+            <PanelLeft size={15} />
+          </button>
+        ) : (
+          <>
+            <Image src="/school-logo.png" alt="โลโก้โรงเรียน" width={36} height={36} style={{ objectFit: "contain", flexShrink: 0 }} />
+            <div className="min-w-0 flex-1">
+              <div className="brand-name">โรงเรียนบางพลีราษฎร์บำรุง</div>
+              <div className="brand-sub">EST · 2475</div>
+            </div>
+            <button
+              onClick={() => setCollapsed(true)}
+              className="btn-ghost btn-icon btn-sm ml-auto"
+              title="ย่อ sidebar"
+              style={{ flexShrink: 0 }}
+            >
+              <PanelLeft size={15} />
+            </button>
+          </>
+        )}
       </div>
 
       {/* ── Nav ── */}
