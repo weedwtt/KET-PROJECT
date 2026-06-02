@@ -196,8 +196,8 @@ export function renderBondHtml(d: BondHtmlData): string {
   .op-sign { display: flex; align-items: flex-end; justify-content: center; margin-top: 16px; position: relative; }
   .op-sign .lbl { padding-right: 3px; }
   .op-sign .sig-dots { width: 60%; border-bottom: 1px dotted #999; min-height: 16px; }
-  .op-sign img { position: absolute; bottom: 2px; max-height: 26px; max-width: 60%; object-fit: contain; }
-  .op-name { margin-top: 2px; text-align: center; }
+  .op-sign img { position: absolute; bottom: -18px; max-height: 68px; max-width: 85%; object-fit: contain; }
+  .op-name { margin-top: 22px; text-align: center; }
   .op-role { text-align: center; }
 </style>
 </head>
