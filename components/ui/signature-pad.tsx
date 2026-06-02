@@ -281,7 +281,7 @@ export function SignaturePad({ value, onChange, disabled = false }: SignaturePad
               cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
               background: method === "draw" ? "var(--surface)" : "transparent",
               color: method === "draw" ? "var(--ink)" : "var(--ink-3)",
-              boxShadow: method === "draw" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+              boxShadow: method === "draw" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
             }}
           >
             <Pen size={13} />
@@ -296,7 +296,7 @@ export function SignaturePad({ value, onChange, disabled = false }: SignaturePad
               cursor: "pointer", fontWeight: 500, transition: "all 0.15s",
               background: method === "upload" ? "var(--surface)" : "transparent",
               color: method === "upload" ? "var(--ink)" : "var(--ink-3)",
-              boxShadow: method === "upload" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+              boxShadow: method === "upload" ? "0 1px 3px rgba(37,99,235,.12)" : "none",
             }}
           >
             <Upload size={13} />

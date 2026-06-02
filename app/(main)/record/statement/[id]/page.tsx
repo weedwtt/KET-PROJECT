@@ -172,7 +172,7 @@ export default function StatementDetailPage() {
             </Link>
           )}
           <a href={`/api/statements/${id}/export-pdf`} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
-            <FileText size={14} />Export PDF
+            <FileText size={14} />ออก PDF
           </a>
         </div>
       </div>
@@ -360,7 +360,7 @@ export default function StatementDetailPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{
                     width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                    background: record.disciplineTeacherSignature ? "var(--sage)" : "var(--amber, #f59e0b)",
+                    background: record.disciplineTeacherSignature ? "var(--sage)" : "var(--amber)",
                   }} />
                   <div style={{ flex: 1, fontSize: 13 }}>
                     <span style={{ fontWeight: 500 }}>ฝ่ายปกครอง</span>
@@ -378,7 +378,7 @@ export default function StatementDetailPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{
                     width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                    background: record.gradeHeadSignature ? "var(--sage)" : "var(--amber, #f59e0b)",
+                    background: record.gradeHeadSignature ? "var(--sage)" : "var(--amber)",
                   }} />
                   <div style={{ flex: 1, fontSize: 13 }}>
                     <span style={{ fontWeight: 500 }}>หัวหน้าระดับ</span>
@@ -449,7 +449,7 @@ export default function StatementDetailPage() {
               {(record.signatureTeacher ?? record.approvedByTeacher)?.signatureUrl && (() => {
                 const sigT = record.signatureTeacher ?? record.approvedByTeacher!
                 return (
-                  <div className="sig-display" style={{ marginTop: 14, borderColor: "var(--sage)", background: "var(--sage-wash, #f0fdf4)" }}>
+                  <div className="sig-display" style={{ marginTop: 14, borderColor: "var(--sage)", background: "var(--sage-wash)" }}>
                     <img src={sigT.signatureUrl!} alt="ลายเซ็นผู้อนุมัติ" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
                     <div className="sig-name">{sigT.title?.name}{sigT.firstName} {sigT.lastName}</div>
                   </div>
@@ -481,9 +481,9 @@ function SigDisplayBox({ label, name, url, date, isLive }: {
           <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--indigo-wash)", color: "var(--indigo)", fontWeight: 500 }}>เซ็นสด</span>
         )}
       </div>
-      <div className="sig-display" style={{ borderColor: url ? "var(--sage)" : undefined, background: url ? "var(--sage-wash, #f0fdf4)" : undefined }}>
+      <div className="sig-display" style={{ borderColor: url ? "var(--sage)" : undefined, background: url ? "var(--sage-wash)" : undefined }}>
         {url
-          ? <img src={url} alt="signature" style={{ maxHeight: "80%", maxWidth: "100%", objectFit: "contain" }} />
+          ? <img src={url} alt="ลายเซ็น" style={{ maxHeight: "80%", maxWidth: "100%", objectFit: "contain" }} />
           : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>
         }
         <div className="sig-name">{label}</div>

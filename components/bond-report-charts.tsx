@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 
 export interface BondStatsData {
   total: number
@@ -55,14 +55,16 @@ function AnimCount({ to, mounted }: { to: number; mounted: boolean }) {
   useEffect(() => {
     if (!mounted) { setV(0); return }
     const dur = 850
-    const start = Date.now()
-    const id = setInterval(() => {
-      const p = Math.min((Date.now() - start) / dur, 1)
+    const start = performance.now()
+    let raf: number
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / dur, 1)
       const e = 1 - (1 - p) ** 3
       setV(Math.round(e * to))
-      if (p >= 1) clearInterval(id)
-    }, 16)
-    return () => clearInterval(id)
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
   }, [mounted, to])
   return <>{v}</>
 }
@@ -510,10 +512,11 @@ export function BondReportCharts({ initialData }: { initialData: BondStatsData }
   const [semesterId, setSemesterId] = useState("all")
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const mountTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 80)
-    return () => clearTimeout(t)
+    mountTimerRef.current = setTimeout(() => setMounted(true), 80)
+    return () => clearTimeout(mountTimerRef.current)
   }, [])
 
   const fetchData = useCallback(async (yId: string, sId: string) => {
@@ -527,7 +530,8 @@ export function BondReportCharts({ initialData }: { initialData: BondStatsData }
       if (res.ok) {
         const next = await res.json()
         setData(next)
-        setTimeout(() => setMounted(true), 80)
+        clearTimeout(mountTimerRef.current)
+        mountTimerRef.current = setTimeout(() => setMounted(true), 80)
       }
     } finally {
       setLoading(false)

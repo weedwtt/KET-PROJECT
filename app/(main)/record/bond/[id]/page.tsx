@@ -103,13 +103,24 @@ export default function BondDetailPage() {
   }, [id])
 
   if (loading) return (
-    <div className="ks-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
-      <div style={{ color: "var(--ink-3)" }}>กำลังโหลด...</div>
+    <div className="ks-page" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 300 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-3)" }}>
+        <svg className="spin" width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
+          <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        กำลังโหลด...
+      </div>
     </div>
   )
 
   if (!record) return (
-    <div className="ks-page empty-state">ไม่พบรายการ</div>
+    <div className="ks-page" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, gap: 16 }}>
+      <div style={{ color: "var(--ink-3)", fontSize: 15 }}>ไม่พบรายการบันทึกทัณฑ์บนนี้</div>
+      <Link href="/record/bond" className="btn btn-secondary">
+        <ChevronLeft size={14} /> ย้อนกลับรายการ
+      </Link>
+    </div>
   )
 
   const isSigned = !!record.directorSignature
@@ -154,7 +165,7 @@ export default function BondDetailPage() {
             </Link>
           )}
           <a href={`/api/bonds/${id}/export-pdf`} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
-            <FileText size={14} />Export PDF
+            <FileText size={14} />ออก PDF
           </a>
         </div>
       </div>
@@ -302,7 +313,7 @@ export default function BondDetailPage() {
                 {formatThaiDateTime(record.approvedAt ?? record.updatedAt)}
               </div>
               {record.directorSignature && (
-                <div className="sig-display" style={{ marginTop: 14, borderColor: "var(--sage)", background: "var(--sage-wash, #f0fdf4)" }}>
+                <div className="sig-display" style={{ marginTop: 14, borderColor: "var(--sage)", background: "var(--sage-wash)" }}>
                   <img src={record.directorSignature} alt="ลายเซ็นผู้อำนวยการ" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
                   <div className="sig-name">ผู้อำนวยการ</div>
                 </div>
@@ -348,11 +359,11 @@ function SigBox({ label, name, dataUrl, isLive }: { label: string; name?: string
         className="sig-display"
         style={{
           borderColor: dataUrl ? "var(--sage)" : undefined,
-          background: dataUrl ? "var(--sage-wash, #f0fdf4)" : undefined,
+          background: dataUrl ? "var(--sage-wash)" : undefined,
         }}
       >
         {dataUrl
-          ? <img src={dataUrl} alt="signature" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+          ? <img src={dataUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
           : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
         <div className="sig-name">{label}</div>
       </div>

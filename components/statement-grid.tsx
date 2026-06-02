@@ -89,6 +89,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
           <input
             className="ks-input"
             type="text"
+            aria-label="ค้นหาบันทึกถ้อยคำ"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="ค้นหาด้วยรหัสนักเรียน · ชื่อ-สกุล · หมวดการผิดระเบียบ"
@@ -213,8 +214,10 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
             แสดง <span className="mono">{start}–{end}</span> จาก <span className="mono">{total}</span> รายการ
           </span>
           <button
-            className={`page-btn ${page === 1 ? "disabled" : ""}`}
-            onClick={() => page > 1 && navigate(page - 1, searchValue)}
+            className="page-btn"
+            aria-label="หน้าก่อนหน้า"
+            disabled={page === 1}
+            onClick={() => navigate(page - 1, searchValue)}
           >
             <ChevronLeft size={12} />
           </button>
@@ -228,8 +231,10 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
             </button>
           ))}
           <button
-            className={`page-btn ${page === totalPages ? "disabled" : ""}`}
-            onClick={() => page < totalPages && navigate(page + 1, searchValue)}
+            className="page-btn"
+            aria-label="หน้าถัดไป"
+            disabled={page === totalPages}
+            onClick={() => navigate(page + 1, searchValue)}
           >
             <ChevronRight size={12} />
           </button>
@@ -237,28 +242,32 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
       </div>
 
       {/* Signature status legend */}
-      <div style={{ padding: "8px 16px 4px", display: "flex", gap: 16, fontSize: 11, color: "var(--ink-3)", borderTop: "1px solid var(--rule)" }}>
+      <div
+        role="note"
+        aria-label="คำอธิบายสัญลักษณ์ลายเซ็น"
+        style={{ padding: "8px 16px 4px", display: "flex", gap: 16, fontSize: 11.5, color: "var(--ink-3)", borderTop: "1px solid var(--rule)" }}
+      >
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sage, #22c55e)", display: "inline-block" }} />
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sage)", display: "inline-block" }} />
           เซ็น/อนุมัติแล้ว
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--amber)", display: "inline-block" }} />
           รอเซ็น/อนุมัติ
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#d1d5db", opacity: 0.4, display: "inline-block" }} />
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ink-4)", opacity: 0.5, display: "inline-block" }} />
           ไม่จำเป็น
         </span>
       </div>
 
       {/* Delete confirmation dialog */}
       {confirmDeleteId !== null && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1000,
+        <div className="modal-backdrop" style={{
+          position: "fixed", inset: 0, background: "color-mix(in srgb, var(--ink) 50%, transparent)", zIndex: 1000,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <div className="ks-card" style={{ width: 360, padding: 28, display: "flex", flexDirection: "column", gap: 18 }}>
+          <div className="ks-card modal-card" style={{ width: 360, padding: 28, display: "flex", flexDirection: "column", gap: 18 }}>
             <div>
               <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>ยืนยันการลบ</div>
               <p style={{ margin: 0, fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.6 }}>
@@ -271,7 +280,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
               </button>
               <button
                 className="btn btn-primary"
-                style={{ background: "var(--rose)", borderColor: "var(--rose)", opacity: deleting ? 0.6 : 1 }}
+                style={{ background: "var(--rose)", borderColor: "var(--rose)", opacity: deleting ? 0.5 : 1 }}
                 onClick={handleDelete}
                 disabled={deleting}
               >
@@ -286,7 +295,7 @@ export function StatementGrid({ data, total, page, totalPages, search: initialSe
 }
 
 function SigDot({ signed, label, disabled = false }: { signed: boolean; label: string; disabled?: boolean }) {
-  const color = disabled ? "#d1d5db" : signed ? "var(--sage, #22c55e)" : "#f59e0b"
+  const color = disabled ? "var(--ink-4)" : signed ? "var(--sage)" : "var(--amber)"
   const title = disabled
     ? `${label} (ไม่จำเป็น)`
     : signed

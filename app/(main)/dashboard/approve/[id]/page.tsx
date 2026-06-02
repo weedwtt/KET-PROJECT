@@ -569,7 +569,7 @@ export default function ApproveDetailPage() {
               </div>
               <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--sage-wash, #f0fdf4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--sage)" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--sage-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--sage)" }}>
                     <CheckCircle2 size={16} style={{ color: "var(--sage)" }} />
                   </div>
                   <div>
@@ -647,14 +647,14 @@ export default function ApproveDetailPage() {
                 {isTeacherSignaturesPending ? "รายการนี้รอลงลายเซ็นจากทั้ง 2 ฝ่าย" : isGradeHeadPending ? "รายการนี้รอหัวหน้าระดับลงลายเซ็น" : "รายการนี้รอครูฝ่ายปกครองลงลายเซ็น"}
                 {record.disciplineTeacher && (isDisciplinePending || isTeacherSignaturesPending) && (
                   <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: record.disciplineTeacherSignature ? "var(--sage)" : "var(--amber, #f59e0b)", flexShrink: 0 }} />
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: record.disciplineTeacherSignature ? "var(--sage)" : "var(--amber)", flexShrink: 0 }} />
                     <span style={{ fontWeight: 500 }}>ฝ่ายปกครอง: {record.disciplineTeacher.title.name}{record.disciplineTeacher.firstName} {record.disciplineTeacher.lastName}</span>
                     <span style={{ fontSize: 11, color: record.disciplineTeacherSignature ? "var(--sage)" : "var(--ink-3)" }}>{record.disciplineTeacherSignature ? "✓" : "รอ"}</span>
                   </div>
                 )}
                 {record.gradeHeadTeacher && (isGradeHeadPending || isTeacherSignaturesPending) && (
                   <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: record.gradeHeadSignature ? "var(--sage)" : "var(--amber, #f59e0b)", flexShrink: 0 }} />
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: record.gradeHeadSignature ? "var(--sage)" : "var(--amber)", flexShrink: 0 }} />
                     <span style={{ fontWeight: 500 }}>หัวหน้าระดับ: {record.gradeHeadTeacher.title.name}{record.gradeHeadTeacher.firstName} {record.gradeHeadTeacher.lastName}</span>
                     <span style={{ fontSize: 11, color: record.gradeHeadSignature ? "var(--sage)" : "var(--ink-3)" }}>{record.gradeHeadSignature ? "✓" : "รอ"}</span>
                   </div>
@@ -837,7 +837,7 @@ function SigBox({ label, dataUrl }: { label: string; dataUrl: string | null }) {
       <div style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--ink-3)", textTransform: "uppercase" }}>
         {label}
       </div>
-      <div className="sig-display" style={{ borderColor: dataUrl ? "var(--sage)" : undefined, background: dataUrl ? "var(--sage-wash, #f0fdf4)" : undefined }}>
+      <div className="sig-display" style={{ borderColor: dataUrl ? "var(--sage)" : undefined, background: dataUrl ? "var(--sage-wash)" : undefined }}>
         {dataUrl
           ? <img src={dataUrl} alt="signature" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
           : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}

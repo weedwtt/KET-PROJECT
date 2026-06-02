@@ -13,6 +13,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [shaking, setShaking] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -22,6 +23,8 @@ export function LoginForm() {
     setLoading(false)
     if (result?.error) {
       setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
+      setShaking(true)
+      setTimeout(() => setShaking(false), 400)
       return
     }
     router.push(callbackUrl)
@@ -30,7 +33,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16 }} className={shaking ? "login-shake" : ""}>
         <label htmlFor="username" className="field-label">ชื่อผู้ใช้</label>
         <input
           id="username"
@@ -44,7 +47,7 @@ export function LoginForm() {
         />
       </div>
 
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 24 }} className={shaking ? "login-shake" : ""}>
         <label htmlFor="password" className="field-label">รหัสผ่าน</label>
         <input
           id="password"
@@ -59,11 +62,18 @@ export function LoginForm() {
       </div>
 
       {error && (
-        <div style={{
-          marginBottom: 16, padding: "10px 14px",
-          background: "var(--rose-wash)", borderRadius: "var(--radius)",
-          fontSize: 13, color: "var(--rose)",
-        }}>
+        <div
+          key={error}
+          role="alert"
+          className="login-error"
+          style={{
+            marginBottom: 16, padding: "10px 14px",
+            background: "var(--rose-wash)",
+            border: "1px solid var(--rose)",
+            borderRadius: "var(--radius)",
+            fontSize: 13.5, color: "var(--rose)",
+          }}
+        >
           {error}
         </div>
       )}
@@ -73,7 +83,7 @@ export function LoginForm() {
         disabled={loading}
         aria-busy={loading}
         className="btn btn-primary"
-        style={{ width: "100%", justifyContent: "center", opacity: loading ? 0.7 : 1 }}
+        style={{ width: "100%", justifyContent: "center", opacity: loading ? 0.5 : 1 }}
       >
         {loading ? (
           <>

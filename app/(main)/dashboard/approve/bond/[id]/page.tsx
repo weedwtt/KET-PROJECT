@@ -460,7 +460,7 @@ export default function BondApproveDetailPage() {
               <div className="ks-card-header"><div className="eyebrow">STATUS</div></div>
               <div className="ks-card-pad">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--sage-wash, #f0fdf4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--sage)" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--sage-wash)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--sage)" }}>
                     <Check size={16} style={{ color: "var(--sage)" }} />
                   </div>
                   <div>
@@ -655,7 +655,7 @@ function SigBox({ label, dataUrl }: { label: string; dataUrl: string | null }) {
       <div style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--ink-3)", textTransform: "uppercase" }}>
         {label}
       </div>
-      <div className="sig-display" style={{ borderColor: dataUrl ? "var(--sage)" : undefined, background: dataUrl ? "var(--sage-wash, #f0fdf4)" : undefined }}>
+      <div className="sig-display" style={{ borderColor: dataUrl ? "var(--sage)" : undefined, background: dataUrl ? "var(--sage-wash)" : undefined }}>
         {dataUrl
           ? <img src={dataUrl} alt="signature" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
           : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}

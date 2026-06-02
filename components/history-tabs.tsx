@@ -195,13 +195,13 @@ export function HistoryTabs({
           <span style={{ flex: 1 }}>
             แสดง <span className="mono">{start}–{end}</span> จาก <span className="mono">{total}</span> รายการ
           </span>
-          <button className={`page-btn ${page === 1 ? "disabled" : ""}`} onClick={() => page > 1 && navigate(tab, page - 1, searchValue)}>
+          <button className="page-btn" aria-label="หน้าก่อนหน้า" disabled={page === 1} onClick={() => navigate(tab, page - 1, searchValue)}>
             <ChevronLeft size={12} />
           </button>
           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
             <button key={p} className={`page-btn ${p === page ? "active" : ""}`} onClick={() => navigate(tab, p, searchValue)}>{p}</button>
           ))}
-          <button className={`page-btn ${page === totalPages ? "disabled" : ""}`} onClick={() => page < totalPages && navigate(tab, page + 1, searchValue)}>
+          <button className="page-btn" aria-label="หน้าถัดไป" disabled={page === totalPages} onClick={() => navigate(tab, page + 1, searchValue)}>
             <ChevronRight size={12} />
           </button>
         </div>

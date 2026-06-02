@@ -45,8 +45,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SessionProvider>
-            <NextTopLoader color="#3b82f6" showSpinner={false} height={2} />
-            <Toaster richColors position="top-right" />
+            <NextTopLoader color="#2563eb" showSpinner={false} height={2} />
+            <Toaster richColors position="bottom-right" closeButton duration={3500} />
             {children}
           </SessionProvider>
         </ThemeProvider>
