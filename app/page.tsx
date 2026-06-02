@@ -1,7 +1,6 @@
 import { Suspense } from "react"
 import Image from "next/image"
 import { LoginForm } from "@/components/login-form"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function LoginPage() {
   return (
@@ -54,11 +53,6 @@ export default function LoginPage() {
 
       {/* ── Right — form panel ── */}
       <div className="login-form-side" style={{ position: "relative", flexDirection: "column", gap: 0 }}>
-
-        {/* Theme toggle */}
-        <div style={{ position: "absolute", top: 20, right: 20 }}>
-          <ThemeToggle />
-        </div>
 
         <div style={{ width: "100%", maxWidth: 380 }}>
 
