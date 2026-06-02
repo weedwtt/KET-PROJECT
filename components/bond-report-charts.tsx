@@ -512,7 +512,7 @@ export function BondReportCharts({ initialData }: { initialData: BondStatsData }
   const [semesterId, setSemesterId] = useState("all")
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const mountTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const mountTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     mountTimerRef.current = setTimeout(() => setMounted(true), 80)

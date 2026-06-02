@@ -1111,7 +1111,7 @@ export function ReportCharts({ initialData }: { initialData: StatsData }) {
   const [viewMode, setViewMode] = useState(1)
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const mountTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const mountTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     mountTimerRef.current = setTimeout(() => setMounted(true), 80)
