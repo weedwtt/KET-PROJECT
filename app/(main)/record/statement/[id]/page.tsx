@@ -316,16 +316,18 @@ export default function StatementDetailPage() {
                 <SigDisplayBox
                   label="ครูฝ่ายปกครอง"
                   name={record.disciplineTeacher ? `${record.disciplineTeacher.title?.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}` : ""}
-                  url={record.disciplineTeacherSignature ?? record.disciplineTeacher?.signatureUrl ?? null}
+                  url={record.disciplineTeacherSignature}
                   date={record.recordDate}
                   isLive={!!record.disciplineTeacherSignature}
+                  pending={!!record.disciplineTeacher && !record.disciplineTeacherSignature}
                 />
                 <SigDisplayBox
                   label="หัวหน้าระดับชั้น"
                   name={record.gradeHeadTeacher ? `${record.gradeHeadTeacher.title?.name}${record.gradeHeadTeacher.firstName} ${record.gradeHeadTeacher.lastName}` : ""}
-                  url={record.gradeHeadSignature ?? record.gradeHeadTeacher?.signatureUrl ?? null}
+                  url={record.gradeHeadSignature}
                   date={record.recordDate}
                   isLive={!!record.gradeHeadSignature}
+                  pending={!!record.gradeHeadTeacher && !record.gradeHeadSignature}
                 />
               </div>
             </div>
@@ -470,8 +472,8 @@ export default function StatementDetailPage() {
   )
 }
 
-function SigDisplayBox({ label, name, url, date, isLive }: {
-  label: string; name: string; url: string | null; date: string; isLive?: boolean
+function SigDisplayBox({ label, name, url, date, isLive, pending }: {
+  label: string; name: string; url: string | null; date: string; isLive?: boolean; pending?: boolean
 }) {
   return (
     <div>
@@ -480,16 +482,30 @@ function SigDisplayBox({ label, name, url, date, isLive }: {
         {isLive && (
           <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--indigo-wash)", color: "var(--indigo)", fontWeight: 500 }}>เซ็นสด</span>
         )}
+        {!url && pending && (
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--amber-wash)", color: "var(--amber)", fontWeight: 500 }}>รออนุมัติ</span>
+        )}
       </div>
-      <div className="sig-display" style={{ borderColor: url ? "var(--sage)" : undefined, background: url ? "var(--sage-wash)" : undefined }}>
+      <div
+        className="sig-display"
+        style={{
+          borderColor: url ? "var(--sage)" : pending ? "var(--amber)" : undefined,
+          background: url ? "var(--sage-wash)" : pending ? "var(--amber-wash)" : undefined,
+          borderStyle: !url && pending ? "dashed" : undefined,
+        }}
+      >
         {url
           ? <img src={url} alt="ลายเซ็น" style={{ maxHeight: "80%", maxWidth: "100%", objectFit: "contain" }} />
-          : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>
+          : pending
+            ? <span style={{ fontSize: 12, color: "var(--amber)" }}>อยู่ระหว่างรออนุมัติ</span>
+            : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>
         }
         <div className="sig-name">{label}</div>
       </div>
       {name && <div style={{ fontSize: 12.5, marginTop: 8, fontWeight: 500 }}>{name}</div>}
-      <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)", marginTop: 2 }}>{formatThaiDate(date)}</div>
+      <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+        {url ? formatThaiDate(date) : "—"}
+      </div>
     </div>
   )
 }

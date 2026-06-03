@@ -163,8 +163,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     studentSignatureUrl: record.studentSignature ?? null,
     guardianSignatureUrl: record.guardianSignature ?? null,
     advisorSignatureUrl: record.advisorSignature ?? null,
-    gradeHeadSignatureUrl: record.gradeHeadTeacher?.signatureUrl ?? null,
-    disciplineTeacherSignatureUrl: record.disciplineTeacher?.signatureUrl ?? null,
+    // ใช้เฉพาะลายเซ็นที่ลงนามจริงตอนอนุมัติ (live) — ไม่ดึงลายเซ็นโปรไฟล์มาแสดง
+    // ก่อนกดอนุมัติ ไม่งั้นจะขึ้นลายเซ็นทับเส้นทั้งที่ยังรออนุมัติอยู่
+    gradeHeadSignatureUrl: record.gradeHeadSignature ?? null,
+    disciplineTeacherSignatureUrl: record.disciplineTeacherSignature ?? null,
     directorSignatureUrl: director?.signatureUrl ?? null,
     viceDirectorSignatureUrl: viceDirector?.signatureUrl ?? null,
   }

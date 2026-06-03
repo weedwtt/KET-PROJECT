@@ -473,13 +473,15 @@ export default function ApproveDetailPage() {
                   {record.disciplineTeacher && (
                     <SigBox
                       label={`ครูฝ่ายปกครอง — ${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}`}
-                      dataUrl={record.disciplineTeacher.signatureUrl}
+                      dataUrl={record.disciplineTeacherSignature}
+                      pending={!record.disciplineTeacherSignature}
                     />
                   )}
                   {record.gradeHeadTeacher && (
                     <SigBox
                       label={`หัวหน้าระดับชั้น — ${record.gradeHeadTeacher.title.name}${record.gradeHeadTeacher.firstName} ${record.gradeHeadTeacher.lastName}`}
-                      dataUrl={record.gradeHeadSignature || record.gradeHeadTeacher.signatureUrl}
+                      dataUrl={record.gradeHeadSignature}
+                      pending={!record.gradeHeadSignature}
                     />
                   )}
                 </div>
@@ -831,16 +833,28 @@ export default function ApproveDetailPage() {
 
 // ── Shared UI ──────────────────────────────────────────────────────────────────
 
-function SigBox({ label, dataUrl }: { label: string; dataUrl: string | null }) {
+function SigBox({ label, dataUrl, pending }: { label: string; dataUrl: string | null; pending?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--ink-3)", textTransform: "uppercase" }}>
-        {label}
+      <div style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", color: "var(--ink-3)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+        <span>{label}</span>
+        {!dataUrl && pending && (
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--amber-wash)", color: "var(--amber)", fontWeight: 500, letterSpacing: 0, textTransform: "none" }}>รออนุมัติ</span>
+        )}
       </div>
-      <div className="sig-display" style={{ borderColor: dataUrl ? "var(--sage)" : undefined, background: dataUrl ? "var(--sage-wash)" : undefined }}>
+      <div
+        className="sig-display"
+        style={{
+          borderColor: dataUrl ? "var(--sage)" : pending ? "var(--amber)" : undefined,
+          background: dataUrl ? "var(--sage-wash)" : pending ? "var(--amber-wash)" : undefined,
+          borderStyle: !dataUrl && pending ? "dashed" : undefined,
+        }}
+      >
         {dataUrl
           ? <img src={dataUrl} alt="signature" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
-          : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
+          : pending
+            ? <span style={{ fontSize: 12, color: "var(--amber)" }}>อยู่ระหว่างรออนุมัติ</span>
+            : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
       </div>
     </div>
   )
