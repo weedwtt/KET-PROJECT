@@ -33,21 +33,16 @@ export function SignaturePad({ value, onChange, disabled = false }: SignaturePad
 
   const isDrawingActive = view === "edit" && method === "draw"
 
-  // Initialize canvas with white background
+  // Initialize canvas — keep it transparent so the exported PNG has no
+  // white background (the white box / guide line are CSS only, not drawn
+  // onto the canvas, otherwise they get baked into toDataURL and cover
+  // the lines in the generated PDF).
   const initCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext("2d")
     if (!ctx) return
-    ctx.fillStyle = "#ffffff"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    // subtle guide line
-    ctx.strokeStyle = "#f0e8d8"
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(20, canvas.height - 24)
-    ctx.lineTo(canvas.width - 20, canvas.height - 24)
-    ctx.stroke()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     setHasSignature(false)
   }, [])
 
@@ -308,6 +303,11 @@ export function SignaturePad({ value, onChange, disabled = false }: SignaturePad
       {method === "draw" ? (
         <>
           <div className="relative border border-gray-200 rounded-lg overflow-hidden bg-white">
+            {/* guide line — CSS only, not drawn onto the canvas */}
+            <div
+              className="absolute left-5 right-5 pointer-events-none"
+              style={{ bottom: "24px", borderTop: "1px solid #f0e8d8" }}
+            />
             {/* hint label */}
             {!hasSignature && !disabled && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

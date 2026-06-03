@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { DevRolePicker } from "@/components/dev-role-picker"
 
 export function LoginForm() {
   const router = useRouter()
@@ -32,7 +33,9 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <>
+      <DevRolePicker onSelect={(u, p) => { setUsername(u); setPassword(p) }} />
+      <form onSubmit={handleSubmit}>
       <div style={{ marginBottom: 16 }} className={shaking ? "login-shake" : ""}>
         <label htmlFor="username" className="field-label">ชื่อผู้ใช้</label>
         <input
@@ -96,5 +99,6 @@ export function LoginForm() {
         ) : "เข้าสู่ระบบ"}
       </button>
     </form>
+    </>
   )
 }

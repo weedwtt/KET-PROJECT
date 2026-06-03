@@ -8,18 +8,30 @@ export async function GET() {
 
   const isApprover = role === "DIRECTOR" || role === "VICE_DIRECTOR" || role === "ADMIN"
 
+  // ทัณฑ์บนต้องผ่านลายเซ็นครู (หัวหน้าระดับ + ฝ่ายปกครอง) ก่อนจึงถึงคิวผู้บริหาร
+  const teachersSigned = [
+    { OR: [{ headTeacherId: null }, { headTeacherSignature: { not: null } }] },
+    { OR: [{ disciplineTeacherId: null }, { disciplineTeacherSignature: { not: null } }] },
+  ]
+
   if (isApprover) {
+    // นับเฉพาะคิวของ role ตัวเอง — รองผอ.เห็น "pending", ผอ.เห็น "pending_director"
+    // ADMIN ทำได้ทุกขั้น จึงนับทั้งสอง (ตรงกับ logic หน้า /dashboard/approve)
+    const statementStatuses =
+      role === "VICE_DIRECTOR" ? ["pending"]
+      : role === "DIRECTOR" ? ["pending_director"]
+      : ["pending", "pending_director"]
+
+    const bondWhere =
+      role === "VICE_DIRECTOR"
+        ? { viceDirectorSignature: null, directorSignature: null, AND: teachersSigned }
+        : role === "DIRECTOR"
+        ? { viceDirectorSignature: { not: null }, directorSignature: null, AND: teachersSigned }
+        : { directorSignature: null, AND: teachersSigned }
+
     const [statements, bonds] = await Promise.all([
-      db.statementRecord.count({ where: { status: "pending" } }),
-      db.bondRecord.count({
-        where: {
-          directorSignature: null,
-          AND: [
-            { OR: [{ headTeacherId: null }, { headTeacherSignature: { not: null } }] },
-            { OR: [{ disciplineTeacherId: null }, { disciplineTeacherSignature: { not: null } }] },
-          ],
-        },
-      }),
+      db.statementRecord.count({ where: { status: { in: statementStatuses } } }),
+      db.bondRecord.count({ where: bondWhere }),
     ])
     return Response.json({ count: statements + bonds })
   }
@@ -35,8 +47,7 @@ export async function GET() {
     })
 
     if (teacher?.role === "DISCIPLINE") {
-      // นับทั้ง pending_discipline_teacher และ pending_teacher_signatures ที่ตนเองยังไม่ได้ลงนาม
-      // รวมถึงทัณฑ์บนที่รอลงนามฝ่ายปกครองด้วย
+      // นับเฉพาะรายการที่ assign มาที่ตนเอง และตนเองยังไม่ได้ลงนาม
       const [statementCount, bondCount] = await Promise.all([
         db.statementRecord.count({
           where: {
@@ -57,8 +68,7 @@ export async function GET() {
     }
 
     if (teacher?.gradeHeadLevel) {
-      // นับทั้ง pending_grade_head และ pending_teacher_signatures ที่ตนเองยังไม่ได้ลงนาม
-      // รวมถึงทัณฑ์บนที่รอลงนามหัวหน้าระดับด้วย
+      // นับเฉพาะรายการที่ assign มาที่ตนเอง และตนเองยังไม่ได้ลงนาม
       const [statementCount, bondCount] = await Promise.all([
         db.statementRecord.count({
           where: {
@@ -79,17 +89,10 @@ export async function GET() {
     }
 
     if ((teacher?.delegateFor?.length ?? 0) > 0) {
+      // ผู้รับมอบอำนาจเห็นคิวผู้บริหารทั้งสองขั้น (ตรงกับหน้า /dashboard/approve)
       const [statements, bonds] = await Promise.all([
-        db.statementRecord.count({ where: { status: "pending" } }),
-        db.bondRecord.count({
-          where: {
-            directorSignature: null,
-            AND: [
-              { OR: [{ headTeacherId: null }, { headTeacherSignature: { not: null } }] },
-              { OR: [{ disciplineTeacherId: null }, { disciplineTeacherSignature: { not: null } }] },
-            ],
-          },
-        }),
+        db.statementRecord.count({ where: { status: { in: ["pending", "pending_director"] } } }),
+        db.bondRecord.count({ where: { directorSignature: null, AND: teachersSigned } }),
       ])
       return Response.json({ count: statements + bonds })
     }

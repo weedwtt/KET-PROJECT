@@ -83,8 +83,8 @@ function sigCount(r: BondDetail) {
   if (r.guardianSignature) n++
   if (r.studentSignature) n++
   if (r.advisorSignature) n++
-  if (r.headTeacherSignature || r.headTeacher?.signatureUrl) n++
-  if (r.disciplineTeacherSignature || r.disciplineTeacher?.signatureUrl) n++
+  if (r.headTeacherSignature) n++
+  if (r.disciplineTeacherSignature) n++
   if (r.viceDirectorSignature) n++
   if (r.directorSignature) n++
   return n
@@ -285,14 +285,16 @@ export default function BondDetailPage() {
                 <SigBox
                   label="ลายเซ็นหัวหน้าระดับชั้น"
                   name={record.headTeacher ? `${record.headTeacher.title.name}${record.headTeacher.firstName} ${record.headTeacher.lastName}` : ""}
-                  dataUrl={record.headTeacherSignature ?? record.headTeacher?.signatureUrl ?? null}
+                  dataUrl={record.headTeacherSignature}
                   isLive={!!record.headTeacherSignature}
+                  pending={!!record.headTeacher && !record.headTeacherSignature}
                 />
                 <SigBox
                   label="ลายเซ็นครูฝ่ายปกครอง"
                   name={record.disciplineTeacher ? `${record.disciplineTeacher.title.name}${record.disciplineTeacher.firstName} ${record.disciplineTeacher.lastName}` : ""}
-                  dataUrl={record.disciplineTeacherSignature ?? record.disciplineTeacher?.signatureUrl ?? null}
+                  dataUrl={record.disciplineTeacherSignature}
                   isLive={!!record.disciplineTeacherSignature}
+                  pending={!!record.disciplineTeacher && !record.disciplineTeacherSignature}
                 />
               </div>
             </div>
@@ -346,7 +348,7 @@ function InfoRow({ label, value, mono }: { label: string; value: string; mono?: 
   )
 }
 
-function SigBox({ label, name, dataUrl, isLive }: { label: string; name?: string; dataUrl: string | null; isLive?: boolean }) {
+function SigBox({ label, name, dataUrl, isLive, pending }: { label: string; name?: string; dataUrl: string | null; isLive?: boolean; pending?: boolean }) {
   return (
     <div>
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
@@ -354,17 +356,23 @@ function SigBox({ label, name, dataUrl, isLive }: { label: string; name?: string
         {isLive && (
           <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--indigo-wash)", color: "var(--indigo)", fontWeight: 500 }}>เซ็นสด</span>
         )}
+        {!dataUrl && pending && (
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "var(--amber-wash)", color: "var(--amber)", fontWeight: 500 }}>รออนุมัติ</span>
+        )}
       </div>
       <div
         className="sig-display"
         style={{
-          borderColor: dataUrl ? "var(--sage)" : undefined,
-          background: dataUrl ? "var(--sage-wash)" : undefined,
+          borderColor: dataUrl ? "var(--sage)" : pending ? "var(--amber)" : undefined,
+          background: dataUrl ? "var(--sage-wash)" : pending ? "var(--amber-wash)" : undefined,
+          borderStyle: !dataUrl && pending ? "dashed" : undefined,
         }}
       >
         {dataUrl
           ? <img src={dataUrl} alt="ลายเซ็น" style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
-          : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
+          : pending
+            ? <span style={{ fontSize: 12, color: "var(--amber)" }}>อยู่ระหว่างรออนุมัติ</span>
+            : <span style={{ fontSize: 12, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
         <div className="sig-name">{label}</div>
       </div>
       {name && <div style={{ fontSize: 12.5, marginTop: 8, fontWeight: 500 }}>{name}</div>}
