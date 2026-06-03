@@ -49,6 +49,8 @@ export interface BondHtmlData {
   viceDirectorName: string
   directorSignatureUrl: string | null
   directorName: string
+  viceDirectorComment: string | null
+  directorComment: string | null
 }
 
 function esc(v: unknown): string {
@@ -64,6 +66,15 @@ function field(value: string, opts: { grow?: number; w?: string; left?: boolean 
   const flex = opts.w ? `flex:0 0 ${opts.w}` : `flex:${opts.grow ?? 1} 1 0`
   const cls = opts.left ? "fill fill-left" : "fill"
   return `<span class="${cls}" style="${flex}"><span class="fv">${esc(value)}</span></span>`
+}
+
+// ช่องความเห็น: ใช้เส้น border-dotted แบบเดียวกับเส้น "ลงชื่อ" — ถ้ามีข้อความให้วางบนเส้นแรก
+function opinionText(comment: string | null): string {
+  if (!comment || !comment.trim()) {
+    return `<div class="op-dline"></div>\n      <div class="op-dline"></div>`
+  }
+  const text = esc(comment).replace(/\r?\n/g, " ")
+  return `<div class="op-dline op-dline-fill">${text}</div>\n      <div class="op-dline"></div>`
 }
 
 function checkbox(checked: boolean, label: string): string {
@@ -193,7 +204,9 @@ export function renderBondHtml(d: BondHtmlData): string {
   .approval-box { flex: 1; padding: 0 8px; }
   .approval-title { font-weight: 700; margin-bottom: 6px; }
   .op-dline { border-bottom: 1px dotted #999; min-height: 17px; margin-bottom: 10px; }
-  .op-sign { display: flex; align-items: flex-end; justify-content: center; margin-top: 16px; position: relative; }
+  /* ความเห็นวางบนเส้น border-dotted เส้นเดียวกับ .op-dline (เหมือนเส้น "ลงชื่อ") */
+  .op-dline-fill { text-align: left; padding: 0 3px; line-height: 17px; overflow-wrap: anywhere; word-break: break-word; }
+  .op-sign { display: flex; align-items: flex-end; justify-content: center; margin-top: 32px; position: relative; }
   .op-sign .lbl { padding-right: 3px; }
   .op-sign .sig-dots { width: 60%; border-bottom: 1px dotted #999; min-height: 16px; }
   .op-sign img { position: absolute; bottom: -18px; max-height: 68px; max-width: 85%; object-fit: contain; }
@@ -288,8 +301,7 @@ export function renderBondHtml(d: BondHtmlData): string {
   <div class="approvals">
     <div class="approval-box">
       <div class="approval-title">ความเห็นรองผู้อำนวยการกลุ่มบริหารทั่วไป</div>
-      <div class="op-dline"></div>
-      <div class="op-dline"></div>
+      ${opinionText(d.viceDirectorComment)}
       <div class="op-sign">
         ${d.viceDirectorSignatureUrl ? `<img src="${esc(d.viceDirectorSignatureUrl)}" />` : ""}
         <span class="lbl">ลงชื่อ</span><span class="sig-dots"></span>
@@ -299,8 +311,7 @@ export function renderBondHtml(d: BondHtmlData): string {
     </div>
     <div class="approval-box">
       <div class="approval-title">ความเห็นผู้อำนวยการโรงเรียน</div>
-      <div class="op-dline"></div>
-      <div class="op-dline"></div>
+      ${opinionText(d.directorComment)}
       <div class="op-sign">
         ${d.directorSignatureUrl ? `<img src="${esc(d.directorSignatureUrl)}" />` : ""}
         <span class="lbl">ลงชื่อ</span><span class="sig-dots"></span>

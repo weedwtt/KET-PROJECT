@@ -83,6 +83,12 @@ export default function BondApproveDetailPage() {
   const [signError, setSignError] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedPrincipalId, setSelectedPrincipalId] = useState<number | null>(null)
+  const [comment, setComment] = useState("")
+  // โหมดรวม (delegate ได้ทั้งรองผอ.+ผอ.)
+  const [viceSignatureId, setViceSignatureId] = useState<number | null>(null)
+  const [directorSignatureId, setDirectorSignatureId] = useState<number | null>(null)
+  const [viceComment, setViceComment] = useState("")
+  const [directorComment, setDirectorComment] = useState("")
   const [disciplineSigning, setDisciplineSigning] = useState(false)
   const [disciplineSignError, setDisciplineSignError] = useState<string | null>(null)
   const [headTeacherSigning, setHeadTeacherSigning] = useState(false)
@@ -116,10 +122,11 @@ export default function BondApproveDetailPage() {
       ? (me.delegateFor?.find((d) => d.principal.id === selectedPrincipalId)?.principal ?? null)
       : null
 
-    const effectiveRole = signingPrincipal?.role ?? me.role
     const effectiveSig = signingPrincipal?.signatureUrl ?? me.signatureUrl
     // Route to correct field based on current turn (not just role, so ADMIN goes to the right field)
     const sigField = isDirectorTurn ? "directorSignature" : "viceDirectorSignature"
+    const commentField = isDirectorTurn ? "directorComment" : "viceDirectorComment"
+    const trimmedComment = comment.trim()
 
     try {
       const res = await fetch(`/api/bonds/${id}`, {
@@ -127,6 +134,42 @@ export default function BondApproveDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           [sigField]: effectiveSig ?? "signed",
+          ...(trimmedComment ? { [commentField]: trimmedComment } : {}),
+          approvedByTeacherId: me.id,
+          approvedAt: new Date().toISOString(),
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setSignError(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      router.push("/dashboard/approve")
+    } catch {
+      setSignError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  async function handleApproveBoth() {
+    if (!me) return
+    setSigning(true); setSignError(null)
+
+    const vicePrincipal = me.delegateFor?.find((d) => d.principal.id === viceSignatureId)?.principal ?? null
+    const directorPrincipal = me.delegateFor?.find((d) => d.principal.id === directorSignatureId)?.principal ?? null
+    const viceSig = vicePrincipal?.signatureUrl ?? me.signatureUrl
+    const directorSig = directorPrincipal?.signatureUrl ?? me.signatureUrl
+
+    try {
+      const res = await fetch(`/api/bonds/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          viceDirectorSignature: viceSig ?? "signed",
+          directorSignature: directorSig ?? "signed",
+          ...(viceComment.trim() ? { viceDirectorComment: viceComment.trim() } : {}),
+          ...(directorComment.trim() ? { directorComment: directorComment.trim() } : {}),
           approvedByTeacherId: me.id,
           approvedAt: new Date().toISOString(),
         }),
@@ -235,6 +278,10 @@ export default function BondApproveDetailPage() {
   const canDirectorSign = canViceDirectorSign || canDirectorSignNow || canDelegateViceSign || canDelegateDirectorSign
   // Which principals to show in the confirm panel
   const activePrincipals = isViceDirectorTurn ? viceDirectorPrincipals : directorPrincipals
+
+  // โหมดรวม: delegate ที่ได้รับมอบทั้งรองผอ. และ ผอ. → ลงนามทั้งสองขั้นในครั้งเดียว (เฉพาะก่อนเริ่มลงนาม)
+  const canApproveBoth = isDelegateApprover && isViceDirectorTurn
+    && viceDirectorPrincipals.length > 0 && directorPrincipals.length > 0
 
   const selectedPrincipal = principals.find((p) => p.id === selectedPrincipalId) ?? null
   const sigUrl = isDelegateApprover ? selectedPrincipal?.signatureUrl ?? null : me?.signatureUrl ?? null
@@ -475,6 +522,59 @@ export default function BondApproveDetailPage() {
                 </div>
               </div>
             </div>
+          ) : canApproveBoth ? (
+            /* ── โหมดรวม: ผู้รับมอบอำนาจลงนามทั้งรองผอ. + ผอ. ในครั้งเดียว ── */
+            <div className="ks-card">
+              <div className="ks-card-header"><div className="eyebrow">APPROVE → รองผอ. + ผอ.</div></div>
+              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ fontSize: 12.5, padding: "8px 12px", background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", color: "var(--indigo-ink)" }}>
+                  คุณได้รับมอบอำนาจทั้ง<span style={{ fontWeight: 600 }}>รองผู้อำนวยการ</span>และ<span style={{ fontWeight: 600 }}>ผู้อำนวยการ</span> — ลงนามทั้งสองขั้นได้ในครั้งเดียว
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}>1 · ความเห็นรองผู้อำนวยการ</div>
+                  <PrincipalPicker principals={viceDirectorPrincipals} selectedId={viceSignatureId} onSelect={setViceSignatureId} />
+                  <textarea
+                    className="ks-textarea"
+                    value={viceComment}
+                    onChange={(e) => setViceComment(e.target.value)}
+                    placeholder="ความเห็นรองผอ. (ไม่บังคับ)"
+                    rows={2}
+                    style={{ width: "100%", marginTop: 8, resize: "vertical" }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}>2 · ความเห็นผู้อำนวยการ</div>
+                  <PrincipalPicker principals={directorPrincipals} selectedId={directorSignatureId} onSelect={setDirectorSignatureId} />
+                  <textarea
+                    className="ks-textarea"
+                    value={directorComment}
+                    onChange={(e) => setDirectorComment(e.target.value)}
+                    placeholder="ความเห็นผอ. (ไม่บังคับ)"
+                    rows={2}
+                    style={{ width: "100%", marginTop: 8, resize: "vertical" }}
+                  />
+                </div>
+
+                {signError && (
+                  <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                    {signError}
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleApproveBoth}
+                  disabled={signing || !viceSignatureId || !directorSignatureId}
+                  style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                >
+                  {signing
+                    ? <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                    : <><ShieldCheck size={14} /> อนุมัติทั้งสองขั้น (รองผอ. + ผอ.)</>
+                  }
+                </button>
+              </div>
+            </div>
           ) : canDirectorSign ? (
             /* ── รองผอ/ผอ sign panel ── */
             (() => {
@@ -570,6 +670,19 @@ export default function BondApproveDetailPage() {
                             {activeSigName && <span className="sig-name">{activeSigName}</span>}
                           </div>
                         </div>
+                        <div>
+                          <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6 }}>
+                            {isViceStep ? "ความเห็นรองผู้อำนวยการ (ไม่บังคับ)" : "ความเห็นผู้อำนวยการ (ไม่บังคับ)"}
+                          </div>
+                          <textarea
+                            className="ks-textarea"
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder="พิมพ์ความเห็นเพื่อแสดงในเอกสาร PDF"
+                            rows={2}
+                            style={{ width: "100%", resize: "vertical" }}
+                          />
+                        </div>
                         {signError && (
                           <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
                             {signError}
@@ -645,6 +758,48 @@ export default function BondApproveDetailPage() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function PrincipalPicker({
+  principals, selectedId, onSelect,
+}: {
+  principals: DelegatePrincipal[]
+  selectedId: number | null
+  onSelect: (id: number) => void
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {principals.map((p) => {
+        const pName = `${p.title.name}${p.firstName} ${p.lastName}`
+        const checked = selectedId === p.id
+        return (
+          <label
+            key={p.id}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "8px 12px", borderRadius: "var(--radius)", cursor: "pointer",
+              border: `1px solid ${checked ? "var(--indigo)" : "var(--border)"}`,
+              background: checked ? "var(--indigo-wash)" : "var(--surface-2)",
+            }}
+          >
+            <input
+              type="radio"
+              checked={checked}
+              onChange={() => onSelect(p.id)}
+              style={{ accentColor: "var(--indigo)" }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{pName}</div>
+              <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{ROLE_LABEL[p.role ?? ""] ?? p.role}</div>
+            </div>
+            {p.signatureUrl
+              ? <img src={p.signatureUrl} alt="sig" style={{ height: 32, maxWidth: 64, objectFit: "contain", opacity: 0.8 }} />
+              : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
+          </label>
+        )
+      })}
     </div>
   )
 }

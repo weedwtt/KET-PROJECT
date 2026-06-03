@@ -169,6 +169,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     disciplineTeacherSignatureUrl: record.disciplineTeacherSignature ?? null,
     directorSignatureUrl: director?.signatureUrl ?? null,
     viceDirectorSignatureUrl: viceDirector?.signatureUrl ?? null,
+    viceDirectorComment: record.viceDirectorComment ?? null,
+    directorComment: record.directorComment ?? null,
   }
 
   const pdf = await htmlToPdf(renderStatementHtml(data))

@@ -111,6 +111,7 @@ enum TeacherRole {
   TEACHER       @map("TEACHER")
   ADMIN         @map("ADMIN")
   DISCIPLINE    @map("DISCIPLINE")
+  SUPER_ADMIN   @map("SUPER_ADMIN")
 }
 
 /// ระดับชั้นที่ครูดูแล (ใช้สำหรับหัวหน้าระดับชั้น)
@@ -348,6 +349,10 @@ model StatementRecord {
   signatureTeacher    Teacher? @relation("SignatureTeacher", fields: [signatureTeacherId], references: [id])
   approvedAt          DateTime? @map("approved_at")
 
+  /// ความเห็นรองผู้อำนวยการ / ผู้อำนวยการ (พิมพ์ตอนอนุมัติ ไม่บังคับ) — แสดงในช่องความเห็นของ PDF
+  viceDirectorComment String? @db.Text @map("vice_director_comment")
+  directorComment     String? @db.Text @map("director_comment")
+
   @@index([studentId], map: "idx_statement_student")
   @@index([recordDate], map: "idx_statement_date")
 
@@ -478,6 +483,10 @@ model BondRecord {
   disciplineTeacherSignature String? @db.Text @map("discipline_teacher_signature")
   viceDirectorSignature String? @db.Text @map("vice_director_signature")
   directorSignature    String? @db.Text @map("director_signature")
+
+  /// ความเห็นรองผู้อำนวยการ / ผู้อำนวยการ (พิมพ์ตอนอนุมัติ ไม่บังคับ) — แสดงในช่องความเห็นของ PDF
+  viceDirectorComment  String? @db.Text @map("vice_director_comment")
+  directorComment      String? @db.Text @map("director_comment")
 
   advisor1Name         String? @db.VarChar(200) @map("advisor1_name")
   advisor2Name         String? @db.VarChar(200) @map("advisor2_name")
