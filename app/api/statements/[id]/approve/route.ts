@@ -3,7 +3,17 @@ import { db } from "@/lib/db"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { teacherId, signatureTeacherId } = await req.json()
+  const {
+    teacherId,
+    signatureTeacherId,
+    comment,
+    // โหมดรวม: ผู้รับมอบอำนาจอนุมัติทั้งรองผอ.+ผอ. ในครั้งเดียว
+    approveBoth,
+    viceSignatureTeacherId,
+    directorSignatureTeacherId,
+    viceComment,
+    directorComment,
+  } = await req.json()
 
   if (!teacherId) return Response.json({ error: "กรุณาระบุผู้อนุมัติ" }, { status: 400 })
 
@@ -15,6 +25,41 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (existing.status !== "pending" && existing.status !== "pending_director") {
     return Response.json({ error: "ไม่สามารถอนุมัติได้ในสถานะนี้" }, { status: 400 })
+  }
+
+  // ── โหมดรวม: อนุมัติทั้งสองขั้น (รองผอ. + ผอ.) ในครั้งเดียว ──
+  // ใช้ได้เฉพาะผู้รับมอบอำนาจที่ได้รับมอบทั้งสองตำแหน่ง และรายการต้องอยู่ขั้นแรก (pending)
+  if (approveBoth) {
+    if (existing.status !== "pending") {
+      return Response.json({ error: "ไม่สามารถอนุมัติรวมขั้นได้ในสถานะนี้" }, { status: 400 })
+    }
+    const viceSignerId = Number(viceSignatureTeacherId)
+    const directorSignerId = Number(directorSignatureTeacherId)
+    if (!viceSignerId || !directorSignerId) {
+      return Response.json({ error: "กรุณาเลือกลายเซ็นทั้งรองผอ. และ ผอ." }, { status: 400 })
+    }
+
+    // ตรวจว่า teacherId ได้รับมอบอำนาจจากทั้งสองคนจริง
+    const [viceDelegate, directorDelegate] = await Promise.all([
+      db.approvalDelegate.findFirst({ where: { delegateId: Number(teacherId), principalId: viceSignerId } }),
+      db.approvalDelegate.findFirst({ where: { delegateId: Number(teacherId), principalId: directorSignerId } }),
+    ])
+    if (!viceDelegate || !directorDelegate) {
+      return Response.json({ error: "ไม่มีสิทธิ์อนุมัติในนามบุคคลเหล่านี้" }, { status: 403 })
+    }
+
+    const record = await db.statementRecord.update({
+      where: { id: Number(id) },
+      data: {
+        status: "approved",
+        approvedByTeacherId: Number(teacherId),
+        signatureTeacherId: directorSignerId,
+        approvedAt: new Date(),
+        viceDirectorComment: viceComment || null,
+        directorComment: directorComment || null,
+      },
+    })
+    return Response.json({ id: record.id, status: record.status })
   }
 
   // Determine effective signer: signatureTeacherId is always the "effective signer"
@@ -64,10 +109,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return Response.json({ error: "ไม่มีสิทธิ์อนุมัติรายการนี้" }, { status: 403 })
   }
 
+  // ความเห็น (ไม่บังคับ) — บันทึกลงช่องตามขั้นที่กำลังอนุมัติ
+  // ขั้นรองผอ. (pending → pending_director) → viceDirectorComment
+  // ขั้นผอ./ADMIN (→ approved)               → directorComment
+  const isViceStep = existing.status === "pending" && effectiveRole === "VICE_DIRECTOR"
+  const trimmedComment = typeof comment === "string" ? comment.trim() : ""
+  const commentData = trimmedComment
+    ? isViceStep
+      ? { viceDirectorComment: trimmedComment }
+      : { directorComment: trimmedComment }
+    : {}
+
   const record = await db.statementRecord.update({
     where: { id: Number(id) },
     data: {
       status: nextStatus,
+      ...commentData,
       ...(nextStatus === "approved" ? {
         approvedByTeacherId: Number(teacherId),
         signatureTeacherId: effectiveSignerId,

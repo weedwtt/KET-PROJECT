@@ -22,6 +22,7 @@ const ROLE_LABEL: Record<string, string> = {
   DIRECTOR:       "ผู้อำนวยการ",
   VICE_DIRECTOR:  "รองผู้อำนวยการ",
   ADMIN:          "ผู้ดูแลระบบ",
+  SUPER_ADMIN:    "ผู้ดูแลระบบสูงสุด",
 }
 
 export function Sidebar({ userName, role }: SidebarProps) {
@@ -32,6 +33,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
 
   const isApprover = role === "DIRECTOR" || role === "VICE_DIRECTOR"
   const isAdmin    = role === "ADMIN"
+  // super admin — เห็นเมนูจัดการระบบเท่านั้น
+  const isSuperAdmin = role === "SUPER_ADMIN"
   const isActive   = (path: string) => pathname === path || pathname.startsWith(path + "/")
 
   const [pendingCount, setPendingCount] = useState<number | null>(null)
@@ -172,8 +175,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
           <span className="nav-label">รายงานและสถิติ</span>
         </Link>
 
-        {/* จัดการระบบ — admin */}
-        {isAdmin && (
+        {/* จัดการระบบ — super admin เท่านั้น */}
+        {isSuperAdmin && (
           <>
             <div className="nav-section-label">จัดการระบบ</div>
             <Link

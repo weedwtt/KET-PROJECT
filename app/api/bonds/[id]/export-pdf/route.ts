@@ -108,6 +108,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     viceDirectorName: viceDirector ? fullName(viceDirector.title, viceDirector.firstName, viceDirector.lastName) : "",
     directorSignatureUrl: director?.signatureUrl ?? null,
     directorName: director ? fullName(director.title, director.firstName, director.lastName) : "",
+    viceDirectorComment: record.viceDirectorComment ?? null,
+    directorComment: record.directorComment ?? null,
   }
 
   const pdf = await htmlToPdf(renderBondHtml(data))

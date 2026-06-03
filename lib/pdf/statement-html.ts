@@ -58,6 +58,8 @@ export interface StatementHtmlData {
   disciplineTeacherSignatureUrl: string | null
   directorSignatureUrl: string | null
   viceDirectorSignatureUrl: string | null
+  viceDirectorComment: string | null
+  directorComment: string | null
 }
 
 function esc(v: unknown): string {
@@ -84,6 +86,15 @@ function checkbox(checked: boolean, label: string): string {
     ? `<svg class="tick" viewBox="0 0 14 14" width="11" height="11"><path d="M2 7.5 L5.5 11 L12 3" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
     : "&nbsp;&nbsp;"
   return `<div class="chk"><span class="box">(&nbsp;${mark}&nbsp;)</span><span>${label}</span></div>`
+}
+
+// ช่องความเห็น: ใช้เส้น border-dotted แบบเดียวกับเส้น "ลงชื่อ" — ถ้ามีข้อความให้วางบนเส้นแรก
+function opinionText(comment: string | null): string {
+  if (!comment || !comment.trim()) {
+    return `<div class="op-dline"></div>\n      <div class="op-dline"></div>`
+  }
+  const text = esc(comment).replace(/\r?\n/g, " ")
+  return `<div class="op-dline op-dline-fill">${text}</div>\n      <div class="op-dline"></div>`
 }
 
 function sigBlock(role: string, url: string | null): string {
@@ -167,18 +178,17 @@ export function renderStatementHtml(d: StatementHtmlData): string {
   /* multi-line text area with dotted rule guides drawn at each line's baseline
      (radial-gradient dots tiled per text line) so long values flow across the
      prepared lines instead of cramming/overlapping on the first one */
+  /* ช่อง "เรื่อง": เส้น border-dotted แบบเดียวกับช่องอื่น (.fill / .detail-line) */
   .ruled {
     flex: 1;
     margin: 0 4px;
     padding: 0 4px;
-    line-height: 21px;
-    min-height: 42px; /* two prepared lines */
+    border-bottom: 1px dotted #999;
+    min-height: 17px;
+    line-height: 1.5;
     text-align: left;
     overflow-wrap: anywhere;
     word-break: break-word;
-    background-image: radial-gradient(circle at 50% 90%, #999 0 0.6px, transparent 0.9px);
-    background-size: 4px 21px;
-    background-repeat: repeat;
   }
   .indent { padding-left: 40px; }
 
@@ -228,7 +238,9 @@ export function renderStatementHtml(d: StatementHtmlData): string {
   .opinions > div { flex: 1; padding: 0 10px; text-align: center; }
   .op-title { font-weight: 700; text-align: left; margin-bottom: 6px; }
   .op-dline { border-bottom: 1px dotted #999; min-height: 17px; margin-bottom: 8px; }
-  .op-sign { display: flex; align-items: flex-end; justify-content: center; margin-top: 14px; position: relative; }
+  /* ความเห็นวางบนเส้น border-dotted เส้นเดียวกับ .op-dline (เหมือนเส้น "ลงชื่อ") */
+  .op-dline-fill { text-align: left; padding: 0 3px; line-height: 17px; overflow-wrap: anywhere; word-break: break-word; }
+  .op-sign { display: flex; align-items: flex-end; justify-content: center; margin-top: 32px; position: relative; }
   .op-sign .sig-prefix { padding-right: 3px; }
   .op-sign .sig-dots { width: 60%; border-bottom: 1px dotted #999; min-height: 16px; }
   .op-sign img { position: absolute; bottom: -26px; left: 0; right: 0; margin: auto; max-height: 92px; max-width: 92%; object-fit: contain; }
@@ -351,8 +363,7 @@ export function renderStatementHtml(d: StatementHtmlData): string {
   <div class="opinions">
     <div>
       <div class="op-title">ความเห็นรองผู้อำนวยการกลุ่มบริหารทั่วไป</div>
-      <div class="op-dline"></div>
-      <div class="op-dline"></div>
+      ${opinionText(d.viceDirectorComment)}
       <div class="op-sign">
         ${d.viceDirectorSignatureUrl ? `<img src="${esc(d.viceDirectorSignatureUrl)}" />` : ""}
         <span class="sig-prefix">ลงชื่อ</span><span class="sig-dots"></span>
@@ -362,8 +373,7 @@ export function renderStatementHtml(d: StatementHtmlData): string {
     </div>
     <div>
       <div class="op-title">ความเห็นผู้อำนวยการโรงเรียน</div>
-      <div class="op-dline"></div>
-      <div class="op-dline"></div>
+      ${opinionText(d.directorComment)}
       <div class="op-sign">
         ${d.directorSignatureUrl ? `<img src="${esc(d.directorSignatureUrl)}" />` : ""}
         <span class="sig-prefix">ลงชื่อ</span><span class="sig-dots"></span>

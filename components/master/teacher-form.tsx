@@ -14,6 +14,7 @@ const ROLE_OPTIONS = [
   { value: "DIRECTOR", label: "ผอ." },
   { value: "VICE_DIRECTOR", label: "รองผอ." },
   { value: "ADMIN", label: "admin" },
+  { value: "SUPER_ADMIN", label: "super admin" },
 ]
 
 const GRADE_HEAD_OPTIONS = [
