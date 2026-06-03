@@ -115,11 +115,16 @@ export function UserForm({ mode, initialData, backUrl = "/dashboard/master/users
       const delegates: { delegate: { id: number } }[] = userData.teacher?.delegatedTo ?? []
       setDelegateTeacherIds(delegates.map((d) => d.delegate.id))
 
-      type UserRow = { username: string; teacherId: number | null; teacher: { id: number; firstName: string; lastName: string; title: { name: string } } | null }
+      type UserRow = { username: string; teacherId: number | null; teacher: { id: number; firstName: string; lastName: string; role: string | null; title: { name: string } } | null }
       const rows: UserRow[] = usersData.rows ?? []
       setAllTeachers(
         rows
-          .filter((u) => u.teacherId != null && u.teacherId !== initialData!.teacherId)
+          .filter(
+            (u) =>
+              u.teacherId != null &&
+              u.teacher?.role !== "DIRECTOR" &&
+              u.teacher?.role !== "VICE_DIRECTOR"
+          )
           .map((u) => ({
             id: u.teacher!.id,
             name: `${u.username} — ${u.teacher!.title.name}${u.teacher!.firstName} ${u.teacher!.lastName}`,

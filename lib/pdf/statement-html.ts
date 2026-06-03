@@ -78,7 +78,11 @@ function field(value: string, opts: { grow?: number; w?: string; left?: boolean 
 }
 
 function checkbox(checked: boolean, label: string): string {
-  const mark = checked ? "✓" : "&nbsp;&nbsp;"
+  // Use an inline SVG tick (not the "✓" glyph — Sarabun has no checkmark glyph,
+  // so it renders as a tofu square box in the PDF).
+  const mark = checked
+    ? `<svg class="tick" viewBox="0 0 14 14" width="11" height="11"><path d="M2 7.5 L5.5 11 L12 3" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    : "&nbsp;&nbsp;"
   return `<div class="chk"><span class="box">(&nbsp;${mark}&nbsp;)</span><span>${label}</span></div>`
 }
 
@@ -216,6 +220,7 @@ export function renderStatementHtml(d: StatementHtmlData): string {
   .sec-title { font-weight: 700; margin-bottom: 5px; }
   .chk { display: flex; align-items: baseline; margin-bottom: 5px; padding-left: 8px; }
   .chk .box { white-space: nowrap; padding-right: 6px; }
+  .tick { vertical-align: -1px; }
   .dots-inline { display: inline-block; width: 56px; border-bottom: 1px dotted #999; }
 
   /* opinions */
@@ -226,8 +231,8 @@ export function renderStatementHtml(d: StatementHtmlData): string {
   .op-sign { display: flex; align-items: flex-end; justify-content: center; margin-top: 14px; position: relative; }
   .op-sign .sig-prefix { padding-right: 3px; }
   .op-sign .sig-dots { width: 60%; border-bottom: 1px dotted #999; min-height: 16px; }
-  .op-sign img { position: absolute; bottom: -18px; max-height: 68px; max-width: 85%; object-fit: contain; }
-  .op-name { margin-top: 22px; }
+  .op-sign img { position: absolute; bottom: -26px; left: 0; right: 0; margin: auto; max-height: 92px; max-width: 92%; object-fit: contain; }
+  .op-name { margin-top: 34px; }
 </style>
 </head>
 <body>
