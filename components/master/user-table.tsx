@@ -11,6 +11,7 @@ const ROLE_LABEL: Record<string, string> = {
   TEACHER: "ครู",
   DISCIPLINE: "ฝ่ายปกครอง",
   ADMIN: "admin",
+  SUPER_ADMIN: "super admin",
 }
 
 const GRADE_LABEL: Record<string, string> = {

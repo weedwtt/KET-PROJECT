@@ -116,6 +116,12 @@ export default function ApproveDetailPage() {
   const [approveError, setApproveError] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedPrincipalId, setSelectedPrincipalId] = useState<number | null>(null)
+  const [comment, setComment] = useState("")
+  // โหมดรวม (delegate ได้ทั้งรองผอ.+ผอ.)
+  const [viceSignatureId, setViceSignatureId] = useState<number | null>(null)
+  const [directorSignatureId, setDirectorSignatureId] = useState<number | null>(null)
+  const [viceComment, setViceComment] = useState("")
+  const [directorComment, setDirectorComment] = useState("")
   const [forwarding, setForwarding] = useState(false)
   const [forwardError, setForwardError] = useState<string | null>(null)
   const [disciplineForwarding, setDisciplineForwarding] = useState(false)
@@ -183,6 +189,7 @@ export default function ApproveDetailPage() {
         body: JSON.stringify({
           teacherId: me.id,
           signatureTeacherId: selectedPrincipalId ?? me.id,
+          comment: comment.trim() || undefined,
         }),
       })
       if (!res.ok) {
@@ -193,6 +200,38 @@ export default function ApproveDetailPage() {
       }
       const result = await res.json()
       toast.success(result.status === "pending_director" ? "ส่งต่อให้ผอ.เรียบร้อย" : "อนุมัติบันทึกถ้อยคำสำเร็จ")
+      router.push("/dashboard/approve")
+    } catch {
+      setApproveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setApproving(false)
+    }
+  }
+
+  async function handleApproveBoth() {
+    if (!me) return
+    setApproving(true); setApproveError(null)
+    try {
+      const res = await fetch(`/api/statements/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teacherId: me.id,
+          approveBoth: true,
+          viceSignatureTeacherId: viceSignatureId,
+          directorSignatureTeacherId: directorSignatureId,
+          viceComment: viceComment.trim() || undefined,
+          directorComment: directorComment.trim() || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setApproveError(err.error ?? "เกิดข้อผิดพลาด")
+        toast.error(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      toast.success("อนุมัติทั้งสองขั้นสำเร็จ")
       router.push("/dashboard/approve")
     } catch {
       setApproveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
@@ -275,6 +314,12 @@ export default function ApproveDetailPage() {
     ? `${selectedStepPrincipal.title.name}${selectedStepPrincipal.firstName} ${selectedStepPrincipal.lastName}`
     : approverName
   const isViceStep = isViceDirectorApprover || (isDelegateActiveStep && isViceDirectorPending && !isAdminAnyStep)
+
+  // โหมดรวม: delegate ที่ได้รับมอบทั้งรองผอ. และ ผอ. → อนุมัติทั้งสองขั้นในครั้งเดียว (เฉพาะขั้นแรก pending)
+  const vicePrincipals = principals.filter((p) => p.role === "VICE_DIRECTOR" || p.role === "ADMIN")
+  const directorPrincipals = principals.filter((p) => p.role === "DIRECTOR" || p.role === "ADMIN")
+  const canApproveBoth = isDelegateApprover && isViceDirectorPending
+    && vicePrincipals.length > 0 && directorPrincipals.length > 0
 
   const allMeasures = [
     ...record.considerationMeasures.map((m) => CONSIDERATION_LABELS[m] ?? m),
@@ -664,6 +709,65 @@ export default function ApproveDetailPage() {
               </div>
             </div>
           ) : (isViceDirectorApprover || isDirectorApprover || isAdminAnyStep || isDelegateActiveStep) ? (
+            canApproveBoth ? (
+            /* ── โหมดรวม: ผู้รับมอบอำนาจอนุมัติทั้งรองผอ. + ผอ. ในครั้งเดียว ── */
+            <div className="ks-card">
+              <div className="ks-card-header">
+                <div className="eyebrow">APPROVE → รองผอ. + ผอ.</div>
+              </div>
+              <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ fontSize: 12.5, padding: "8px 12px", background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", color: "var(--indigo-ink)" }}>
+                  คุณได้รับมอบอำนาจทั้ง<span style={{ fontWeight: 600 }}>รองผู้อำนวยการ</span>และ<span style={{ fontWeight: 600 }}>ผู้อำนวยการ</span> — อนุมัติทั้งสองขั้นได้ในครั้งเดียว
+                </div>
+
+                {/* รองผอ. */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}>1 · ความเห็นรองผู้อำนวยการ</div>
+                  <PrincipalPicker principals={vicePrincipals} selectedId={viceSignatureId} onSelect={setViceSignatureId} />
+                  <textarea
+                    className="ks-textarea"
+                    value={viceComment}
+                    onChange={(e) => setViceComment(e.target.value)}
+                    placeholder="ความเห็นรองผอ. (ไม่บังคับ)"
+                    rows={2}
+                    style={{ width: "100%", marginTop: 8, resize: "vertical", fontFamily: "inherit" }}
+                  />
+                </div>
+
+                {/* ผอ. */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}>2 · ความเห็นผู้อำนวยการ</div>
+                  <PrincipalPicker principals={directorPrincipals} selectedId={directorSignatureId} onSelect={setDirectorSignatureId} />
+                  <textarea
+                    className="ks-textarea"
+                    value={directorComment}
+                    onChange={(e) => setDirectorComment(e.target.value)}
+                    placeholder="ความเห็นผอ. (ไม่บังคับ)"
+                    rows={2}
+                    style={{ width: "100%", marginTop: 8, resize: "vertical", fontFamily: "inherit" }}
+                  />
+                </div>
+
+                {approveError && (
+                  <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
+                    {approveError}
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleApproveBoth}
+                  disabled={approving || !viceSignatureId || !directorSignatureId}
+                  style={{ background: "var(--sage)", width: "100%", justifyContent: "center" }}
+                >
+                  {approving ? (
+                    <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                  ) : (
+                    <><ShieldCheck size={14} /> อนุมัติทั้งสองขั้น (รองผอ. + ผอ.)</>
+                  )}
+                </button>
+              </div>
+            </div>
+            ) : (
             /* ── รองผอ / ผอ / ADMIN / delegate approve panel ── */
             <div className="ks-card">
                   <div className="ks-card-header">
@@ -754,6 +858,19 @@ export default function ApproveDetailPage() {
                             {stepSigName && <span className="sig-name">{stepSigName}</span>}
                           </div>
                         </div>
+                        <div>
+                          <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6 }}>
+                            {isViceStep ? "ความเห็นรองผู้อำนวยการ (ไม่บังคับ)" : "ความเห็นผู้อำนวยการ (ไม่บังคับ)"}
+                          </div>
+                          <textarea
+                            className="ks-textarea"
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder="พิมพ์ความเห็นเพื่อแสดงในเอกสาร PDF"
+                            rows={2}
+                            style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                          />
+                        </div>
                         {approveError && (
                           <div style={{ fontSize: 13, color: "var(--rose)", padding: "8px 12px", background: "var(--rose-wash, #fff0f0)", borderRadius: "var(--radius)" }}>
                             {approveError}
@@ -785,6 +902,7 @@ export default function ApproveDetailPage() {
                     )}
                   </div>
                 </div>
+            )
           ) : (isViceDirectorPending || isDirectorPending) ? (
             /* ── Waiting for director approval (viewed by non-approvers) ── */
             <div className="ks-card">
@@ -832,6 +950,48 @@ export default function ApproveDetailPage() {
 }
 
 // ── Shared UI ──────────────────────────────────────────────────────────────────
+
+function PrincipalPicker({
+  principals, selectedId, onSelect,
+}: {
+  principals: DelegatePrincipal[]
+  selectedId: number | null
+  onSelect: (id: number) => void
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {principals.map((p) => {
+        const pName = `${p.title.name}${p.firstName} ${p.lastName}`
+        const checked = selectedId === p.id
+        return (
+          <label
+            key={p.id}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "8px 12px", borderRadius: "var(--radius)", cursor: "pointer",
+              border: `1px solid ${checked ? "var(--indigo)" : "var(--border)"}`,
+              background: checked ? "var(--indigo-wash)" : "var(--surface-2)",
+            }}
+          >
+            <input
+              type="radio"
+              checked={checked}
+              onChange={() => onSelect(p.id)}
+              style={{ accentColor: "var(--indigo)" }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{pName}</div>
+              <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{ROLE_LABEL[p.role ?? ""] ?? p.role}</div>
+            </div>
+            {p.signatureUrl
+              ? <img src={p.signatureUrl} alt="sig" style={{ height: 32, maxWidth: 64, objectFit: "contain", opacity: 0.8 }} />
+              : <span style={{ fontSize: 11, color: "var(--ink-4)" }}>ไม่มีลายเซ็น</span>}
+          </label>
+        )
+      })}
+    </div>
+  )
+}
 
 function SigBox({ label, dataUrl, pending }: { label: string; dataUrl: string | null; pending?: boolean }) {
   return (
