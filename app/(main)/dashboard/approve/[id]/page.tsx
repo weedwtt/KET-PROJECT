@@ -241,6 +241,36 @@ export default function ApproveDetailPage() {
     }
   }
 
+  // ลงนามเฉพาะรองผอ. (ทีละขั้น) → ส่งต่อให้ ผอ.
+  async function handleApproveVice() {
+    if (!me) return
+    setApproving(true); setApproveError(null)
+    try {
+      const res = await fetch(`/api/statements/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teacherId: me.id,
+          signatureTeacherId: viceSignatureId,
+          comment: viceComment.trim() || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setApproveError(err.error ?? "เกิดข้อผิดพลาด")
+        toast.error(err.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      toast.success("ส่งต่อให้ผอ.เรียบร้อย")
+      router.push("/dashboard/approve")
+    } catch {
+      setApproveError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setApproving(false)
+    }
+  }
+
   if (loading) return (
     <div className="ks-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="spin" style={{ color: "var(--indigo)" }}>
@@ -717,7 +747,7 @@ export default function ApproveDetailPage() {
               </div>
               <div className="ks-card-pad" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ fontSize: 12.5, padding: "8px 12px", background: "var(--indigo-wash)", border: "1px solid var(--periwinkle)", borderRadius: "var(--radius)", color: "var(--indigo-ink)" }}>
-                  คุณได้รับมอบอำนาจทั้ง<span style={{ fontWeight: 600 }}>รองผู้อำนวยการ</span>และ<span style={{ fontWeight: 600 }}>ผู้อำนวยการ</span> — อนุมัติทั้งสองขั้นได้ในครั้งเดียว
+                  คุณได้รับมอบอำนาจทั้ง<span style={{ fontWeight: 600 }}>รองผู้อำนวยการ</span>และ<span style={{ fontWeight: 600 }}>ผู้อำนวยการ</span> — เลือกอนุมัติทีละขั้น หรือทั้งสองขั้นพร้อมกันได้ (ต้องลงนามรองผอ.ก่อนเสมอ)
                 </div>
 
                 {/* รองผอ. */}
@@ -732,6 +762,18 @@ export default function ApproveDetailPage() {
                     rows={2}
                     style={{ width: "100%", marginTop: 8, resize: "vertical", fontFamily: "inherit" }}
                   />
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleApproveVice}
+                    disabled={approving || !viceSignatureId}
+                    style={{ background: "var(--sage)", width: "100%", justifyContent: "center", marginTop: 10 }}
+                  >
+                    {approving ? (
+                      <><svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity=".25"/><path fill="currentColor" opacity=".75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> กำลังบันทึก...</>
+                    ) : (
+                      <><ShieldCheck size={14} /> ลงนามรองผอ. และส่งต่อ ผอ.</>
+                    )}
+                  </button>
                 </div>
 
                 {/* ผอ. */}
@@ -746,6 +788,17 @@ export default function ApproveDetailPage() {
                     rows={2}
                     style={{ width: "100%", marginTop: 8, resize: "vertical", fontFamily: "inherit" }}
                   />
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => toast.error("ต้องอนุมัติในนามรองผู้อำนวยการก่อน จึงจะลงนามผอ.ได้")}
+                    disabled={approving}
+                    style={{ width: "100%", justifyContent: "center", marginTop: 10 }}
+                  >
+                    <ShieldCheck size={14} /> ลงนามผอ.
+                  </button>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 6, textAlign: "center" }}>
+                    🔒 ต้องลงนามรองผอ.ก่อน
+                  </div>
                 </div>
 
                 {approveError && (
@@ -753,6 +806,13 @@ export default function ApproveDetailPage() {
                     {approveError}
                   </div>
                 )}
+
+                {/* ── หรืออนุมัติทั้งสองขั้นพร้อมกัน ── */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-4)", fontSize: 11.5 }}>
+                  <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                  หรืออนุมัติพร้อมกัน
+                  <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                </div>
                 <button
                   className="btn btn-primary"
                   onClick={handleApproveBoth}
