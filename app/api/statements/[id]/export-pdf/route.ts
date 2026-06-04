@@ -113,6 +113,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     db.teacher.findFirst({ where: { role: "VICE_DIRECTOR" }, select: { signatureUrl: true } }),
   ])
 
+  // ลายเซ็น รองผอ./ผอ. จะแสดงเฉพาะเมื่อผ่านการอนุมัติในขั้นนั้นแล้วเท่านั้น
+  // สถานะ: pending = รอรองผอ., pending_director = รองผอ.อนุมัติแล้ว(รอผอ.), approved = อนุมัติครบ
+  // ก่อนอนุมัติไม่ดึงลายเซ็นโปรไฟล์มาแสดง ไม่งั้นลายเซ็นจะขึ้นทั้งที่ยังรออนุมัติอยู่
+  const viceApproved = record.status === "pending_director" || record.status === "approved"
+  const directorApproved = record.status === "approved"
+
   const st = record.student
   const father = st.guardians.find((g) =>
     g.relation?.name.includes("บิดา") || g.relation?.name.includes("พ่อ")
@@ -167,8 +173,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     // ก่อนกดอนุมัติ ไม่งั้นจะขึ้นลายเซ็นทับเส้นทั้งที่ยังรออนุมัติอยู่
     gradeHeadSignatureUrl: record.gradeHeadSignature ?? null,
     disciplineTeacherSignatureUrl: record.disciplineTeacherSignature ?? null,
-    directorSignatureUrl: director?.signatureUrl ?? null,
-    viceDirectorSignatureUrl: viceDirector?.signatureUrl ?? null,
+    directorSignatureUrl: directorApproved ? director?.signatureUrl ?? null : null,
+    viceDirectorSignatureUrl: viceApproved ? viceDirector?.signatureUrl ?? null : null,
+    viceDirectorComment: record.viceDirectorComment ?? null,
+    directorComment: record.directorComment ?? null,
   }
 
   const pdf = await htmlToPdf(renderStatementHtml(data))

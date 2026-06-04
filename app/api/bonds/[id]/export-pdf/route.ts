@@ -71,6 +71,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const violationLine1 = vLines[0] ?? ""
   const violationLine2 = vLines[1] ?? ""
 
+  // ลายเซ็น รองผอ./ผอ. แสดงเฉพาะที่บันทึกไว้จริงตอนอนุมัติ (record.*Signature) เท่านั้น
+  // ก่อนอนุมัติ column เหล่านี้เป็น null — ไม่ดึงลายเซ็นโปรไฟล์ตาม role มาแสดง
+  // ค่า "signed" คือ marker ว่าอนุมัติแล้วแต่ผู้อนุมัติไม่มีรูปลายเซ็น → ไม่ต้องใส่รูป
+  const sigImage = (v: string | null) => (v && v !== "signed" ? v : null)
+
   const data: BondHtmlData = {
     contractDay: contractParts.day,
     contractMonth: contractParts.month,
@@ -104,9 +109,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     // ก่อนกดอนุมัติ ไม่งั้นจะขึ้นลายเซ็นทับเส้นทั้งที่ยังรออนุมัติอยู่
     headTeacherSignatureUrl: record.headTeacherSignature ?? null,
     disciplineTeacherSignatureUrl: record.disciplineTeacherSignature ?? null,
-    viceDirectorSignatureUrl: viceDirector?.signatureUrl ?? null,
+    viceDirectorSignatureUrl: sigImage(record.viceDirectorSignature),
     viceDirectorName: viceDirector ? fullName(viceDirector.title, viceDirector.firstName, viceDirector.lastName) : "",
-    directorSignatureUrl: director?.signatureUrl ?? null,
+    directorSignatureUrl: sigImage(record.directorSignature),
     directorName: director ? fullName(director.title, director.firstName, director.lastName) : "",
   }
 
