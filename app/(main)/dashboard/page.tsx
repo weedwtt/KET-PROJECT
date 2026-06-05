@@ -1,4 +1,6 @@
-﻿import { auth } from "@/auth"
+﻿export const dynamic = 'force-dynamic'
+
+import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
@@ -14,7 +16,7 @@ export default async function DashboardPage() {
   const [studentCount, statementCount, bondCount, approvedCount, recentRecords] = await Promise.all([
     db.student.count(),
     db.statementRecord.count(),
-    db.statementBond.count(),
+    db.bondRecord.count(),
     db.statementRecord.count({ where: { status: "approved" } }),
     db.statementRecord.findMany({
       orderBy: { createdAt: "desc" },
