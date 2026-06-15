@@ -78,13 +78,17 @@ function opinionText(comment: string | null): string {
 }
 
 function checkbox(checked: boolean, label: string): string {
-  const mark = checked ? "✓" : "&nbsp;&nbsp;"
+  // Use an inline SVG tick (not the "✓" glyph — Sarabun has no checkmark glyph,
+  // so it renders as a tofu square box in the PDF on serverless/Vercel).
+  const mark = checked
+    ? `<svg class="tick" viewBox="0 0 14 14" width="11" height="11"><path d="M2 7.5 L5.5 11 L12 3" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    : "&nbsp;&nbsp;"
   return `<div class="chk"><span class="box">(&nbsp;${mark}&nbsp;)</span><span>${label}</span></div>`
 }
 
 // Horizontal signature row: ลงชื่อ [dots + floated sig image] role
 function sigRow(role: string, url: string | null): string {
-  const img = url ? `<img class="sig-img" src="${esc(url)}" />` : ""
+  const img = url ? `<img class="sig-img sig-crop" src="${esc(url)}" />` : ""
   return `
     <div class="sig-row">
       <span class="lbl">ลงชื่อ</span>
@@ -175,6 +179,7 @@ export function renderBondHtml(d: BondHtmlData): string {
   .chk-group { display: inline-flex; flex-direction: column; }
   .chk { display: flex; align-items: baseline; margin-bottom: 6px; }
   .chk .box { white-space: nowrap; padding-right: 6px; }
+  .tick { vertical-align: -1px; }
 
   /* Signature section — 2-column, horizontal rows: ลงชื่อ [dots] role */
   .sig-section { display: flex; margin-top: 16px; }
@@ -184,14 +189,16 @@ export function renderBondHtml(d: BondHtmlData): string {
   .sig-fill {
     flex: 1;
     border-bottom: 1px dotted #999;
-    min-height: 32px;
+    min-height: 38px;
     position: relative;
     margin: 0 4px;
   }
   .sig-img {
     position: absolute;
     bottom: 2px; left: 0; right: 0;
-    max-height: 28px;
+    margin: auto;
+    max-height: 32px;
+    max-width: 85%;
     object-fit: contain;
   }
 
@@ -303,7 +310,7 @@ export function renderBondHtml(d: BondHtmlData): string {
       <div class="approval-title">ความเห็นรองผู้อำนวยการกลุ่มบริหารทั่วไป</div>
       ${opinionText(d.viceDirectorComment)}
       <div class="op-sign">
-        ${d.viceDirectorSignatureUrl ? `<img src="${esc(d.viceDirectorSignatureUrl)}" />` : ""}
+        ${d.viceDirectorSignatureUrl ? `<img class="sig-crop" src="${esc(d.viceDirectorSignatureUrl)}" />` : ""}
         <span class="lbl">ลงชื่อ</span><span class="sig-dots"></span>
       </div>
       <div class="op-name">(${esc(d.viceDirectorName || "นายจิรภัทร ยศรุ่งเรือง")})</div>
@@ -313,7 +320,7 @@ export function renderBondHtml(d: BondHtmlData): string {
       <div class="approval-title">ความเห็นผู้อำนวยการโรงเรียน</div>
       ${opinionText(d.directorComment)}
       <div class="op-sign">
-        ${d.directorSignatureUrl ? `<img src="${esc(d.directorSignatureUrl)}" />` : ""}
+        ${d.directorSignatureUrl ? `<img class="sig-crop" src="${esc(d.directorSignatureUrl)}" />` : ""}
         <span class="lbl">ลงชื่อ</span><span class="sig-dots"></span>
       </div>
       <div class="op-name">(${esc(d.directorName || "นายวิสูตร ยอดสุข")})</div>

@@ -117,7 +117,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     directorComment: record.directorComment ?? null,
   }
 
-  const pdf = await htmlToPdf(renderBondHtml(data))
+  const pdf = await htmlToPdf(renderBondHtml(data), { cropSignatures: true })
 
   const filename = `bond-${id}.pdf`
   return new Response(new Uint8Array(pdf), {

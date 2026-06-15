@@ -4,11 +4,7 @@ import fs from "fs"
 import path from "path"
 import PizZip from "pizzip"
 import Docxtemplater from "docxtemplater"
-
-const THAI_MONTHS = [
-  "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
-  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
-]
+import { THAI_MONTHS, thaiIncidentDateParts, thaiIncidentTime } from "@/lib/datetime"
 
 function thaiDate(d: Date | string | null): string {
   if (!d) return ""
@@ -16,10 +12,10 @@ function thaiDate(d: Date | string | null): string {
   return `${dt.getDate()} ${THAI_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`
 }
 
-function thaiTime(d: Date | string | null): string {
-  if (!d) return ""
-  const dt = typeof d === "string" ? new Date(d) : d
-  return `${String(dt.getHours()).padStart(2,"0")}.${String(dt.getMinutes()).padStart(2,"0")}`
+// วันที่เหตุเกิด (wall-clock UTC) → "d เดือน พ.ศ."
+function incidentDateStr(d: Date | string | null): string {
+  const { day, month, year } = thaiIncidentDateParts(d)
+  return day ? `${day} ${month} ${year}` : ""
 }
 
 function chk(arr: string[], key: string): string {
@@ -125,8 +121,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     violationCategory: record.violationCategory.name,
     subject:         record.subject ?? "",
     content:         (record.content ?? "").replace(/\n/g, " "),
-    incidentDate:    thaiDate(record.incidentAt),
-    incidentTime:    thaiTime(record.incidentAt),
+    incidentDate:    incidentDateStr(record.incidentAt),
+    incidentTime:    thaiIncidentTime(record.incidentAt),
     location:        record.location ?? "",
     recordedBy:      record.recordedBy ?? "",
     recordDate:      thaiDate(record.recordDate),

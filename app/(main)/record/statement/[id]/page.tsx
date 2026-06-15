@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Pencil, Check, Download, FileText } from "lucide-react"
+import { formatThaiIncidentDateTime } from "@/lib/datetime"
 
 type StatementDetail = {
   id: number
@@ -227,7 +228,7 @@ export default function StatementDetailPage() {
             </div>
             <div style={{ padding: "0 24px 18px" }}>
               <InfoRow label="หมวดการผิดระเบียบ" value={record.violationCategory.name} />
-              <InfoRow label="วัน-เวลาที่เกิดเหตุ" value={formatThaiDateTime(record.incidentAt)} mono />
+              <InfoRow label="วัน-เวลาที่เกิดเหตุ" value={formatThaiIncidentDateTime(record.incidentAt)} mono />
               <InfoRow label="สถานที่เกิดเหตุ" value={record.location ?? "—"} />
               <InfoRow label="ผู้บันทึก" value={record.recordedBy ?? "—"} />
               {record.subject && <InfoRow label="เรื่อง" value={record.subject} />}

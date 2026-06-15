@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronRight, ChevronLeft, Check, User } from "lucide-react"
 import { DatePicker } from "@/components/ui/date-picker"
+import { TimePicker } from "@/components/ui/time-picker"
+import { incidentToInputValue } from "@/lib/datetime"
 import { toast } from "sonner"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -171,13 +173,7 @@ export default function EditStatementPage() {
         }
         setStudent(rec.student)
 
-        const incidentAt = rec.incidentAt ? new Date(rec.incidentAt) : null
-        const pad = (n: number) => String(n).padStart(2, "0")
-        const incidentDate = incidentAt
-          ? `${incidentAt.getFullYear()}-${pad(incidentAt.getMonth() + 1)}-${pad(incidentAt.getDate())}`
-          : ""
-        const incidentHour   = incidentAt ? pad(incidentAt.getHours()) : ""
-        const incidentMinute = incidentAt ? pad(incidentAt.getMinutes()) : ""
+        const incidentInput = incidentToInputValue(rec.incidentAt)
 
         setFormData({
           semesterId: String(rec.semester.id), semesterLabel: rec.semester.name,
@@ -186,7 +182,7 @@ export default function EditStatementPage() {
           violationSubCategoryId: rec.violationSubCategory ? String(rec.violationSubCategory.id) : "",
           violationSubCategoryLabel: rec.violationSubCategory?.name ?? "",
           subject: rec.subject, detail: rec.content,
-          incidentDateTime: incidentDate && incidentHour ? `${incidentDate}T${incidentHour}:${incidentMinute}` : "",
+          incidentDateTime: incidentInput,
           location: rec.location ?? "",
           advisor1Name: rec.advisor1Name ?? (rec.student.advisors.find((a: { slot: number }) => a.slot === 1)
             ? (() => { const t = rec.student.advisors.find((a: { slot: number }) => a.slot === 1)!.teacher; return `${t.title.name}${t.firstName} ${t.lastName}` })()
@@ -718,14 +714,11 @@ function Step2Statement({ student, formData, setFormData, onBack, onNext }: Step
             </div>
             <div>
               <FieldLabel>เวลา</FieldLabel>
-              <input
-                className="ks-input"
-                type="time"
+              <TimePicker
                 value={incidentTime}
-                onChange={(e) => {
-                  const time = e.target.value
+                onChange={(v) => {
                   const date = incidentDate || new Date().toISOString().slice(0, 10)
-                  update({ incidentDateTime: `${date}T${time || "00:00"}` })
+                  update({ incidentDateTime: `${date}T${v || "00:00"}` })
                 }}
               />
             </div>

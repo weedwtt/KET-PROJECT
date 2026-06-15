@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { db } from "@/lib/db"
+import { parseIncidentDateTime } from "@/lib/datetime"
 
 const STATEMENT_INCLUDE = {
   student: {
@@ -187,7 +188,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         : undefined,
       subject: subject ?? undefined,
       content: detail ?? undefined,
-      incidentAt: incidentDateTime ? new Date(incidentDateTime) : undefined,
+      incidentAt: incidentDateTime ? parseIncidentDateTime(incidentDateTime) ?? undefined : undefined,
       location: location ?? undefined,
       advisor1Name: advisor1Name !== undefined ? (advisor1Name || null) : undefined,
       advisor2Name: advisor2Name !== undefined ? (advisor2Name || null) : undefined,

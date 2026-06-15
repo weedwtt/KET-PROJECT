@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { db } from "@/lib/db"
+import { parseIncidentDateTime } from "@/lib/datetime"
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 })
     }
 
-    const incidentAt = incidentDateTime ? new Date(incidentDateTime) : null
+    const incidentAt = parseIncidentDateTime(incidentDateTime)
 
     const isSystemDiscipline = !!disciplineTeacherId && !disciplineTeacherSignature
     const isSystemGradeHead = !!gradeHeadTeacherId && !gradeHeadSignature

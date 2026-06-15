@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search, ChevronRight, ChevronLeft, User, Check } from "lucide-react"
 import { DatePicker } from "@/components/ui/date-picker"
+import { TimePicker } from "@/components/ui/time-picker"
 import { toast } from "sonner"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -715,11 +716,9 @@ function Step1Incident({
             </div>
             <div>
               <FieldLabel>เวลา</FieldLabel>
-              <input
-                className="ks-input"
-                type="time"
+              <TimePicker
                 value={data.incidentTime}
-                onChange={(e) => upd({ incidentTime: e.target.value })}
+                onChange={(v) => upd({ incidentTime: v })}
               />
             </div>
             <div>

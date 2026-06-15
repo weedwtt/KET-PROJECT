@@ -25,14 +25,63 @@ const A4_CONTENT_PX = 1116
 // Don't shrink below this — past it the form becomes hard to read.
 const MIN_ZOOM = 0.6
 
-export async function htmlToPdf(html: string): Promise<Buffer> {
+export async function htmlToPdf(html: string, opts?: { cropSignatures?: boolean }): Promise<Buffer> {
   const browser = await launchBrowser()
   try {
     const page = await browser.newPage()
-    // Fonts + logo are inlined as data URIs; signature images are remote URLs.
+    // Fonts, logo, and signature images are all inlined as data URIs.
     // "load" waits for those images, and fonts.ready guards against FOUT.
     await page.setContent(html, { waitUntil: "load" })
     await page.evaluateHandle("document.fonts.ready")
+
+    // Normalize signatures: crop each <img.sig-crop> to its ink bounding box so
+    // signatures display at a consistent size regardless of how big/small the
+    // person signed within the canvas (e.g. iPad-zoomed pads draw tiny ink in a
+    // large transparent canvas). Runs in-page on data-URI images (same-origin,
+    // no canvas taint). Must run BEFORE the zoom step since cropping changes
+    // image heights and thus the document's total height.
+    if (opts?.cropSignatures) {
+      await page.evaluate(`(function () {
+        var imgs = Array.prototype.slice.call(document.querySelectorAll("img.sig-crop"));
+        return Promise.all(imgs.map(function (img) {
+          return new Promise(function (resolve) {
+            try {
+              var w = img.naturalWidth, h = img.naturalHeight;
+              if (!w || !h) return resolve();
+              var c = document.createElement("canvas");
+              c.width = w; c.height = h;
+              var ctx = c.getContext("2d");
+              if (!ctx) return resolve();
+              ctx.drawImage(img, 0, 0);
+              var data = ctx.getImageData(0, 0, w, h).data;
+              var minX = w, minY = h, maxX = -1, maxY = -1;
+              for (var y = 0; y < h; y++) {
+                for (var x = 0; x < w; x++) {
+                  if (data[(y * w + x) * 4 + 3] > 10) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                  }
+                }
+              }
+              if (maxX < minX || maxY < minY) return resolve();
+              var pad = 6;
+              minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+              maxX = Math.min(w - 1, maxX + pad); maxY = Math.min(h - 1, maxY + pad);
+              var cw = maxX - minX + 1, ch = maxY - minY + 1;
+              var out = document.createElement("canvas");
+              out.width = cw; out.height = ch;
+              var octx = out.getContext("2d");
+              if (!octx) return resolve();
+              octx.drawImage(c, minX, minY, cw, ch, 0, 0, cw, ch);
+              img.src = out.toDataURL("image/png");
+              if (img.decode) { img.decode().then(resolve, resolve); } else { resolve(); }
+            } catch (e) { resolve(); }
+          });
+        }));
+      })()`)
+    }
 
     // Auto-fit to a single page: if the laid-out document is taller than one A4
     // page (e.g. a long "รายละเอียด" section), scale the whole document down with
