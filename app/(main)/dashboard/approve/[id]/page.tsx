@@ -7,6 +7,7 @@ import {
   ChevronLeft, CheckCircle2, ShieldCheck, Check, User, UserCheck,
 } from "lucide-react"
 import { toast } from "sonner"
+import { formatThaiIncidentDateTime } from "@/lib/datetime"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -425,7 +426,7 @@ export default function ApproveDetailPage() {
               </div>
               <div className="info-row">
                 <span className="info-label">วันเวลาเกิดเหตุ</span>
-                <span className="info-value">{formatThaiDateTime(record.incidentAt)}</span>
+                <span className="info-value">{formatThaiIncidentDateTime(record.incidentAt)}</span>
               </div>
               <div className="info-row">
                 <span className="info-label">สถานที่</span>

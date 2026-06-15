@@ -98,7 +98,7 @@ function opinionText(comment: string | null): string {
 }
 
 function sigBlock(role: string, url: string | null): string {
-  const img = url ? `<img class="sig-img" src="${esc(url)}" />` : ""
+  const img = url ? `<img class="sig-img sig-crop" src="${esc(url)}" />` : ""
   return `
     <div class="sig">
       <div class="sig-line">${img}<span class="sig-prefix">ลงชื่อ</span><span class="sig-dots"></span></div>
@@ -211,12 +211,14 @@ export function renderStatementHtml(d: StatementHtmlData): string {
 
   /* signature column */
   .sig { text-align: center; position: relative; }
-  .sig-line { display: flex; align-items: flex-end; justify-content: flex-start; position: relative; }
+  /* min-height reserves vertical room for the floated signature image so it stays
+     inside its own block instead of spilling up into the header / row above */
+  .sig-line { display: flex; align-items: flex-end; justify-content: flex-start; position: relative; min-height: 34px; }
   .sig-prefix { white-space: nowrap; padding-right: 3px; }
   .sig-dots { flex: 1; border-bottom: 1px dotted #999; min-height: 16px; }
   .sig-img {
     position: absolute; bottom: 2px; left: 28px; right: 0;
-    margin: auto; max-height: 28px; max-width: 80%; object-fit: contain;
+    margin: auto; max-height: 30px; max-width: 85%; object-fit: contain;
   }
   .sig-role { text-align: center; margin-top: 1px; }
 
@@ -365,7 +367,7 @@ export function renderStatementHtml(d: StatementHtmlData): string {
       <div class="op-title">ความเห็นรองผู้อำนวยการกลุ่มบริหารทั่วไป</div>
       ${opinionText(d.viceDirectorComment)}
       <div class="op-sign">
-        ${d.viceDirectorSignatureUrl ? `<img src="${esc(d.viceDirectorSignatureUrl)}" />` : ""}
+        ${d.viceDirectorSignatureUrl ? `<img class="sig-crop" src="${esc(d.viceDirectorSignatureUrl)}" />` : ""}
         <span class="sig-prefix">ลงชื่อ</span><span class="sig-dots"></span>
       </div>
       <div class="op-name">(นายจิรภัทร ยศรุ่งเรือง)</div>
@@ -375,7 +377,7 @@ export function renderStatementHtml(d: StatementHtmlData): string {
       <div class="op-title">ความเห็นผู้อำนวยการโรงเรียน</div>
       ${opinionText(d.directorComment)}
       <div class="op-sign">
-        ${d.directorSignatureUrl ? `<img src="${esc(d.directorSignatureUrl)}" />` : ""}
+        ${d.directorSignatureUrl ? `<img class="sig-crop" src="${esc(d.directorSignatureUrl)}" />` : ""}
         <span class="sig-prefix">ลงชื่อ</span><span class="sig-dots"></span>
       </div>
       <div class="op-name">(นายวิสูตร ยอดสุข)</div>

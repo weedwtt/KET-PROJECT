@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { htmlToPdf } from "@/lib/pdf/browser"
 import { renderStatementHtml, type StatementHtmlData } from "@/lib/pdf/statement-html"
+import { thaiIncidentDateParts, thaiIncidentTime } from "@/lib/datetime"
 
 // Puppeteer needs the Node.js runtime (not edge) and enough time to spin up Chromium.
 export const runtime = "nodejs"
@@ -27,12 +28,6 @@ function thaiDateStr(d: Date | string | null) {
   if (!d) return ""
   const { day, month, year } = thaiDateParts(d)
   return `${day} ${month} ${year}`
-}
-
-function thaiTime(d: Date | string | null) {
-  if (!d) return ""
-  const dt = typeof d === "string" ? new Date(d) : d
-  return `${String(dt.getHours()).padStart(2, "0")}.${String(dt.getMinutes()).padStart(2, "0")}`
 }
 
 function fullName(t: { name: string } | null | undefined, first: string, last: string) {
@@ -129,7 +124,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const guardian = st.guardians[0]
   const advisor1 = st.advisors.find((a) => a.slot === 1)?.teacher
   const advisor2 = st.advisors.find((a) => a.slot === 2)?.teacher
-  const incident = thaiDateParts(record.incidentAt)
+  const incident = thaiIncidentDateParts(record.incidentAt)
 
   const data: StatementHtmlData = {
     studentName: fullName(st.title, st.firstName, st.lastName),
@@ -159,7 +154,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     incidentDay: incident.day,
     incidentMonth: incident.month,
     incidentYear: incident.year,
-    incidentTime: thaiTime(record.incidentAt),
+    incidentTime: thaiIncidentTime(record.incidentAt),
     location: record.location ?? "",
     recordedBy: record.recordedBy ?? "",
     recordDate: thaiDateStr(record.recordDate),
@@ -179,7 +174,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     directorComment: record.directorComment ?? null,
   }
 
-  const pdf = await htmlToPdf(renderStatementHtml(data))
+  const pdf = await htmlToPdf(renderStatementHtml(data), { cropSignatures: true })
 
   const filename = `statement-${id}.pdf`
   return new Response(new Uint8Array(pdf), {

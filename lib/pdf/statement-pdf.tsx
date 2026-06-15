@@ -20,14 +20,15 @@ const FS_HEAD   = 16   // sz=32  header info rows, consideration, opinion
 const FS_BODY   = 14   // sz=28  table body content
 const FS_DOCNO  = 16   // sz=32  บก.1
 
+// เหตุเกิด (incidentAt) อ่านแบบ wall-clock UTC ให้ตรงกับเวลาที่กรอก ไม่ผูก timezone
 function thaiDate(d: string | null) {
   if (!d) return { day: "—", month: "—", year: "—", time: "—" }
   const dt = new Date(d)
   return {
-    day: String(dt.getDate()),
-    month: THAI_MONTHS[dt.getMonth()],
-    year: String(dt.getFullYear() + 543),
-    time: `${String(dt.getHours()).padStart(2, "0")}.${String(dt.getMinutes()).padStart(2, "0")}`,
+    day: String(dt.getUTCDate()),
+    month: THAI_MONTHS[dt.getUTCMonth()],
+    year: String(dt.getUTCFullYear() + 543),
+    time: `${String(dt.getUTCHours()).padStart(2, "0")}.${String(dt.getUTCMinutes()).padStart(2, "0")}`,
   }
 }
 
